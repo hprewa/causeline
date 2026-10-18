@@ -1,0 +1,67 @@
+---
+name: causeline-investigate
+description: Finds where and when a business metric changed, and what is behind it, by running the pack's root-cause playbook and reporting only what its result contains. Use when the user asks why a KPI or metric dropped, rose, changed or looks wrong (for example "why did the service level drop last Tuesday?"), where a change comes from, which segment, team, place or time slot is responsible, or whether something is hiding inside a flat-looking number.
+when_to_use: Also for "what happened to <metric> in <period>", "is anything unusual in <period>", "root cause", "drill into the drop", "did <thing> cause this", and follow-ups on an earlier investigation.
+---
+
+# Investigating a metric change
+
+You are explaining a change in a business metric. A deterministic playbook does the analysis; your job is to run it, read its `result.json` carefully, and explain it honestly. The analysis tools are `route`, `scan_kpis`, `run_playbook` and `list_playbooks` from the causeline-mcp server (`validate_pack`, `generate_tools`, `check_data` and `analyze_seasonality` are for onboarding; see the `causeline-onboard` skill).
+
+## Rules
+
+1. **Run a playbook before you answer.** Do not answer a "why did this change" question from memory, from the question's wording, or by guessing at causes.
+2. **Never state a number that is not in the result.** Every figure you quote (rates, changes, impacts, counts, shares) must come from `headline`, `findings`, `path`, `masking_flags` or `steps`. You may round, convert a fraction to a percent, or turn a rate change into points; you may not compute new statistics or estimate anything.
+3. **Cite the step.** For each claim, say which step it came from, using the ids in the result, for example "(step `refine`)". A finding's `evidence` lists the steps behind it.
+4. **Do not query the data yourself** (no ad-hoc SQL, no shell tools against the database). If you need a different cut, run the playbook again with different inputs.
+5. **Say what you did not establish.** A finding says where and when something changed, not why it happened in the real world. Describe what the data shows; if the user asks for the cause behind it (a strike, a supplier problem), say that this is outside what the data shows and suggest what to check.
+
+## Workflow
+
+1. **Call `route` with the user's question, in their words.** It decides the KPI, the task and the expert, resolves the period, and returns `announce` (one plain sentence saying what it will do), `needs` (at most one question) and `options` (ranked, each with a `playbook` and `inputs`). Do not pick a playbook or fill inputs yourself.
+2. **Say what was chosen** (the `announce` sentence) before running it, so the user can redirect. If an option's `status` is `draft`, say it is a generic expert that has not been verified.
+3. **If `needs` is set, ask that one question and stop.** Offer its `choices`. Then call `route` again with the answer folded into the question.
+4. **Run it.** By `strategy`:
+   - `expert`: call `run_playbook` with the first option's `playbook` and `inputs`.
+   - `scan`: no KPI was named. Call `scan_kpis` with `scan.period`; for each KPI in `moved` call `route` naming that KPI and run its deep dive; say that the others did not move significantly (quote `scan_kpis`).
+   - `explorer`: no expert covers this. Say so plainly: you can only answer questions about the KPIs this pack defines, and nothing here has been verified for this one. Offer the closest KPI.
+5. Read the result (below) and answer. The task decides the shape: `value` (headline: the value, what it should have been, whether the difference is real), `trend` (`trend`: each period against its own baseline, and the change points), `compare` (`comparison`: A against B, the difference and whether it is real), `deep_rca` (`findings`, `path`, `evidence`).
+
+`list_playbooks` shows the playbooks, the experts and the pack's ontology if you need to explain what is available.
+
+## Reading the result
+
+- **`status`**: `complete`, or `stopped` with a `stopped_reason` and `stopped_detail`.
+  - `data_quality`: some part of the data is much thinner than usual, so any conclusion would be unreliable. Report which nodes and by how much (from `stopped_detail`), and say the analysis was stopped for that reason. Do not offer a cause for the metric movement.
+  - `period_not_found` or `no_baseline`: tell the user which periods are available (the detail says) and offer to rerun.
+  - `no_comparable_baseline`: the period has a calendar flag (a holiday, a peak) that nothing in the baseline shares, so there is nothing like-for-like to compare it with. Say so plainly and that a pooled comparison would mislead; offer a different period or a longer baseline. Do not offer a cause.
+- **`headline`**: the metric's value in the period, its baseline, and the change. Read it by `format`:
+  - `fraction`: values and change are fractions (0.01 is one percentage point). Typical of a rate.
+  - `number`: values are in the metric's own units: seconds for an average handle time, money or counts for a total. Do not call these percentages. `relative_change` is the change as a share of the baseline (0.043 is 4.3%): quote it if you want a percentage, rather than computing one. For a `sum` or `product` the baseline is the **average per baseline period**, so the change compares one period with a typical one.
+- **`seasonality`**: how repeating patterns were handled. With `status: applied`, every comparison is like-for-like: a Saturday is compared with earlier Saturdays, a lunch hour with earlier lunch hours, a holiday only with holidays, and the headline `baseline` is the **seasonally expected** value for this period (its `baseline_naive` is the plain average of the baseline periods, kept for transparency). So a weekend dip or a peak-week surge that follows the usual pattern is not a finding, and you must not describe it as one. Quote `seasonality.notes` as caveats (for example a day that had no comparable baseline and was not judged). With `status: none_declared` the ontology says the metric has no repeating patterns, and plain averages are used.
+- **`evidence`**: records fetched from other tables about the culprit the drill found (an incident log, a change log), each with the source, what it was asked about, a count and a sample. They are **supporting evidence, not findings**: say they are consistent with, or point to, the finding, never that they prove the cause. If `skipped` is set, nothing was asked because no culprit was found; say so. Do not mention records about a different node than the one you are explaining.
+- **`trend`** (trend template): `buckets` give each period's value, what it should have been, and whether it left that baseline; `change_points` are where it left it. A period with a `note` was not judged (no earlier period shares its calendar flags, such as a first holiday or peak week): say so, do not call it normal or abnormal. A change point right after another in the opposite direction is often the recovery, not a new problem.
+- **`comparison`** (compare template): `a` and `b` with value and volume, the `difference` (a minus b), and `significant`. If it is not significant, say the difference is within what chance produces.
+- **`headline.significant` and `z`**: whether the value differs from what it should have been by more than chance. For a value question, answer from these.
+- **`drivers` and `drilled_driver`** (product metrics only): the product is split across its drivers, each with its value, baseline, change and `share` of the product's change (shares add to 1). The run then drills the driver that carries most of the change, and `drilled_driver` names it; the findings below are about that driver's metric. If `drilled_driver` is null, no single driver carried the change: say it is spread across the drivers and give the split.
+- **`onset`**: the first period in the recent run that was already off. If it is earlier than the period asked about, say the change began before the period (and that the baseline then includes some of it, which understates the change).
+- **`findings`**, in rank order. Rank 1 is the most specific explanation. Each has `dimension` and `value`, an `impact` (change in the metric attributed to it, in that metric's units), the `metric` it is about (the driver, for a product), and optionally:
+  - `scope`: the finding holds only inside that node (for example a queue that is bad only at one location). Always include the scope when you name it.
+  - `effect: "mix"`: the metric moved because **volume shifted between groups**, not because any group got worse. Say that plainly.
+  - `persistence`: `persistent` means bad across the whole window; `single_slot` means bad in only part of it, so treat it as less certain.
+- A `path` entry at a time level whose `node` is `(not applied)` means the metric is a total, and the run does not compare slots inside the period for totals (a quiet weekend would otherwise look like a problem). Say where the change is (by group) and that the data does not say when within the period.
+- **`path`**: every node the drill visited, with the decision at each: `drill` (one child explains most of the change), `broad` (no single child explains it, so it is systemic), `masked` (a masking pattern was found and followed), `insufficient_volume` (too little data to conclude). Use it to show how you got to the answer.
+- **`masking_flags`**: patterns that can hide a problem. Explain each in plain words:
+  - `offsetting`: some groups got worse while others got better by a similar amount, so the total looks flat.
+  - `dispersion`: the overall number looks normal, but one group or time slot is significantly worse.
+  - `mix_vs_rate`: the total moved mainly because of volume mix between groups. If the detail mentions Simpson's paradox, every group improved yet the total fell.
+  - `small_cells`: some groups were too small to judge and were left out. Mention it only if it affects the answer.
+- **`steps`**: every query that ran. You rarely need to quote it; cite step ids instead.
+
+If `findings` is empty and the headline change is small, the honest answer is that nothing unusual stands out in that period. Do not invent an explanation. Small unexplained movements do occur by chance.
+
+## Answering
+
+Lead with the answer in one or two sentences: what changed, by how much, and where (and when, if the window narrowed). Then give the evidence as a short list, each item with its step id. Then caveats that matter (stopped runs, `single_slot` findings, a baseline that already contained the problem, groups left out as too small).
+
+Offer to go further, for example to rerun for a neighbouring period, with a different baseline, or to render the result as a page. Do not claim you have produced a page unless you have.

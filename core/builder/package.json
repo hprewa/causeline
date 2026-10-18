@@ -1,0 +1,26 @@
+{
+  "name": "@causeline/builder",
+  "version": "0.1.0",
+  "description": "Agent Builder tools: connect files, profile data, draft and check a pack.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/"
+  },
+  "dependencies": {
+    "@causeline/eval": "0.1.0",
+    "@causeline/generate": "0.1.0",
+    "@causeline/router": "0.1.0",
+    "@causeline/runner": "0.1.0",
+    "@causeline/schema": "0.1.0",
+    "sql.js": "1.12.0",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0"
+  }
+}

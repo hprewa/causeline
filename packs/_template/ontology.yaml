@@ -1,0 +1,27 @@
+# TEMPLATE: copy this folder to packs/<your-use-case>/ and replace the example words with yours.
+# Or skip the files and let the Builder write them with you by conversation (see README).
+#
+# This file is vocabulary only: what the levels, places and KPIs are CALLED. No tables, no columns, no SQL.
+# How each KPI is calculated, and where the data lives, is in data.yaml.
+
+time:
+  # Coarse to fine. The first level is the unit questions are asked in ("why did it drop in week 7?").
+  levels: [week, day]
+  # Repeating patterns the analysis must compare like with like. `none` is a valid answer; the onboarding
+  # analysis (causeline seasonality) tells you what the data supports.
+  seasonality: none
+
+# Things that nest, broad to fine. A child belongs to exactly one parent.
+hierarchies:
+  location: [region, branch]
+
+# Things that do not nest. Any KPI can be broken down by these.
+dimensions: [channel]
+
+metrics:
+  success_rate:
+    type: ratio                     # ratio | sum | product
+    description: Share of requests handled successfully.
+    synonyms: [success, completion rate]
+    direction: higher_is_better     # or lower_is_better
+    min_volume: 30                  # smallest group worth drawing a conclusion from

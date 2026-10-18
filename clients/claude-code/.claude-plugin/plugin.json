@@ -1,0 +1,9 @@
+{
+  "name": "causeline",
+  "displayName": "Causeline",
+  "version": "0.1.0",
+  "description": "Root-cause analysis you can audit. Find where, when and why any KPI changed. Runs deterministic root-cause playbooks over your own ontology and explains the result, using only numbers from the result.",
+  "author": { "name": "Harsh" },
+  "license": "MIT",
+  "keywords": ["root-cause-analysis", "kpi", "analytics", "mcp"]
+}

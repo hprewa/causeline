@@ -1,0 +1,21 @@
+node_modules/
+runs/
+/toolbox
+/toolbox.exe
+packs/*/data/raw/
+packs/*/data/causeline.db
+core/*/dist/
+*.log
+.env
+.env.*
+
+# the plugin is assembled by `npm run bundle:plugin`
+clients/claude-code/server/
+clients/claude-code/skills/
+clients/claude-code/playbooks/
+
+# private planning notes stay out of the repository
+*-PRIORITIES.md
+*-SETUP.md
+*-CORRECTION.md
+HANDOFF.md

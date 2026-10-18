@@ -1,0 +1,24 @@
+# TEMPLATE: where the numbers come from. This is the only file with SQL.
+source: my-database               # the Toolbox source name (toolbox/source.yaml)
+
+facts:
+  requests:
+    # One row per event, every column named. Join as many tables as you need, here, once.
+    sql: |
+      SELECT r.request_id, r.handled_at AS ts, b.region, r.branch, r.channel, r.succeeded
+      FROM requests r JOIN branches b USING (branch)
+    time: ts
+    concepts: [region, branch, channel]   # columns above that carry a business concept
+
+metrics:
+  success_rate: { fact: requests, numerator: succeeded }   # denominator defaults to 1 per row
+
+# Optional: records that explain a finding once the analysis has found where the change is
+# (an incident log, a change log). The analysis asks for rows about the place it found.
+# evidence:
+#   change_log:
+#     description: Changes and incidents logged by the teams
+#     sql: SELECT channel, branch, event_type, started_at, ended_at, detail FROM change_log
+#     time: started_at
+#     until: ended_at
+#     about: [channel, branch]

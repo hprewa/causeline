@@ -1,0 +1,25 @@
+{
+  "name": "causeline",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Causeline: root-cause analysis you can audit. Ontology-driven, deterministic maths, an agent that explains.",
+  "license": "MIT",
+  "workspaces": [
+    "core/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w core/schema -w core/generate -w core/runner -w core/router -w core/onboard -w core/eval -w core/builder -w core/mcp-server -w core/cli",
+    "test": "npm run test -w core/schema -w core/generate -w core/runner -w core/router -w core/onboard -w core/eval -w core/builder -w core/mcp-server",
+    "check:purity": "node scripts/check-core-purity.mjs",
+    "causeline": "node core/cli/dist/src/main.js",
+    "eval": "node core/cli/dist/src/main.js eval --pack packs/contact-centre",
+    "generate": "node core/cli/dist/src/main.js generate --pack packs/contact-centre",
+    "toolbox": "node scripts/toolbox.mjs packs/contact-centre 5000",
+    "test:integration": "node scripts/integration.mjs",
+    "bundle:plugin": "npm run build && node scripts/bundle-plugin.mjs",
+    "eval:all": "npm run eval"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

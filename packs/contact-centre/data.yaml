@@ -1,0 +1,26 @@
+# Contact-centre pack: where the numbers come from. This is the only file that knows about tables
+# and SQL. The ontology and the playbooks speak in concepts; swap the database and only this
+# file changes.
+source: contact-centre-db
+
+facts:
+  calls:
+    # one row per call, with the organisation joined on (agents.csv has one row per agent)
+    sql: |
+      SELECT c.call_id, c.ts, a.centre, a.site, a.team, c.agent, c.queue, c.call_reason,
+             c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
+      FROM calls c LEFT JOIN agents a USING (agent)
+    time: ts
+    concepts: [centre, site, team, agent, queue, call_reason]
+    time_levels:
+      # the label includes the date, so it is unique across the whole window (the runner narrows a
+      # window by a bucket's first and last timestamp)
+      interval_30m: "strftime('%Y-%m-%d %H', ts) || ':' || CASE WHEN CAST(strftime('%M', ts) AS INTEGER) < 30 THEN '00' ELSE '30' END"
+    slots:
+      is_holiday: is_holiday
+      is_peak: is_peak
+
+metrics:
+  service_level: { fact: calls, numerator: answered_within_20s }
+  aht: { fact: calls, numerator: handle_seconds }
+  calls_offered: { fact: calls, value: "1" }

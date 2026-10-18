@@ -1,0 +1,6 @@
+name: calls-offered-deep-rca
+kpi: calls_offered
+task: deep_rca
+examples:
+  - Why did we receive so many more calls in week 7?
+status: verified # call_surge_billing and call_surge_thursday_afternoon pass

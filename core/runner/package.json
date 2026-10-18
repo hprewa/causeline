@@ -1,0 +1,26 @@
+{
+  "name": "@causeline/runner",
+  "version": "0.1.0",
+  "description": "Deterministic playbook runner: guided drill, ratio decomposition, masking checks.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "causeline-run": "./dist/src/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/"
+  },
+  "dependencies": {
+    "@causeline/schema": "0.1.0",
+    "@toolbox-sdk/core": "1.2.0",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0",
+    "@causeline/generate": "0.1.0"
+  }
+}

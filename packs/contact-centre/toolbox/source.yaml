@@ -1,0 +1,7 @@
+# MCP Toolbox source for the contact-centre pack. Tools are generated into tools.generated.yaml
+# by `causeline generate`. The database path is relative to the pack: everything that starts Toolbox for a
+# pack runs it with the pack directory as the working directory.
+kind: source
+name: contact-centre-db
+type: sqlite
+database: "data/causeline.db"

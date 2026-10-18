@@ -1,0 +1,52 @@
+# Progress
+
+Where the project stands and what comes next. Decisions and their reasons are in `decisions.md`.
+
+## What exists
+
+| Area | State |
+|---|---|
+| Schemas and pack validation (ontology, data, playbook, result, eval cases) | done |
+| Tool generator (ontology + data definition to Toolbox tools, with a metadata sidecar) | done |
+| Runner: drill by place and time, rate vs mix, masking checks, like-for-like seasonality, product (driver) split, evidence from other tables | done |
+| Router: KPI, task, period and expert from a plain question; scan of all KPIs for vague questions | done |
+| Onboarding: data checks and seasonality analysis | done |
+| Builder: CSV files to a checked pack by conversation, plain-sentence play-back, number reconciliation, expert verification | done |
+| MCP server and Claude Code plugin; skills `causeline-investigate`, `causeline-onboard`, `causeline-build` | done |
+| Eval harness with planted faults (runner level and agent level) and routing evals | done |
+| Example pack: contact centre (synthetic data) | done |
+| Starter pack for a new use case (`packs/_template`) | done |
+
+Measured on the last run: unit tests green in every package, contact-centre eval 13/13, routing 27/27,
+integration 5/5, core purity check OK.
+
+## Coverage debt
+
+An earlier example pack (a different domain) was retired from this repository. The trap types it covered must be
+re-covered by new packs before they count again:
+
+| Trap type | Covered now | To re-cover with |
+|---|---|---|
+| Offsetting children | yes (`offset_sibling_teams`) | |
+| Time-slot masking | yes (`time_block_wednesday_lunch`) | |
+| Pure mix | yes (`pure_mix_rerouted_queue`) | |
+| Simpson's paradox | yes (`simpson_every_queue_improved`) | |
+| Data gap | yes (`missing_logs_site`) | |
+| Seasonal pattern is not a finding | yes (`lunch_dip_is_not_a_finding`) | |
+| Clean period | yes (`clean_week`) | |
+| Cross-table cause (evidence chain) | no | alerts pack with a rule-change log |
+| Decoy event that moved nothing | no | alerts pack |
+| Two simultaneous causes | no | alerts pack |
+| KPI tree hand-off (a KPI made of parts) | no | depth sprint |
+
+## Next
+
+| # | Sprint | Done when |
+|---|---|---|
+| P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
+| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set |
+| 2 | Multi-point sign-off, Builder on BigQuery, a public-data showcase pack, an alerts example pack | a pack built by conversation reaches `verified` through the status ladder |
+| 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery | branching playbooks with full branch coverage; new depth evals pass |
+| 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
+| 5 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
+| 6 | Real non-coder test and fixes | one analyst, own question, timed, observed |

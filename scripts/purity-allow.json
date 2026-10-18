@@ -1,0 +1,8 @@
+{
+  "_note": "Words that are pack identifiers somewhere but mean something else in the core. Each needs a reason.",
+  "product": "a metric type (ratio | sum | product); one pack also names a hierarchy 'product'",
+  "agent": "the LLM agent that reads results (eval scoring, the MCP server, the skill), not a call-centre agent",
+  "location": "generic English; also a hierarchy name in one pack",
+  "category": "generic English; also a level name in one pack",
+  "network": "generic English (network, as in a Toolbox server); also a level name in one pack"
+}

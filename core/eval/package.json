@@ -1,0 +1,23 @@
+{
+  "name": "@causeline/eval",
+  "version": "0.1.0",
+  "description": "Eval runner and scoring: runner-level (deterministic) and agent-level (live LLM).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/"
+  },
+  "dependencies": {
+    "@causeline/router": "0.1.0",
+    "@causeline/runner": "0.1.0",
+    "@causeline/schema": "0.1.0",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0"
+  }
+}

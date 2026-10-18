@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use Causeline, please cite it as below."
+title: "Causeline: root-cause analysis you can audit"
+type: software
+authors:
+  - name: "Harsh"
+license: MIT
+version: 0.1.0

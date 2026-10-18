@@ -1,0 +1,23 @@
+{
+  "name": "@causeline/cli",
+  "version": "0.1.0",
+  "description": "The `causeline` command: dispatches to the generator and the runner.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "causeline": "./dist/src/main.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@causeline/builder": "0.1.0",
+    "@causeline/eval": "0.1.0",
+    "@causeline/generate": "0.1.0",
+    "@causeline/onboard": "0.1.0",
+    "@causeline/router": "0.1.0",
+    "@causeline/runner": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0"
+  }
+}

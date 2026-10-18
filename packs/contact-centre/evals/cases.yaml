@@ -1,0 +1,118 @@
+# Eval cases for the contact-centre pack, in this pack's own terms. `setup` is passed to
+# data/generate.py; `inputs` is what the runner is asked to do; `question` is all the agent gets.
+# Periods are 2026-Wnn bucket labels (SQLite %W; week 1 starts Monday 2026-01-05).
+#
+# Plain cases, then the four masking patterns, then the two other metric types (a product and a sum).
+
+# 1. one team answers far fewer calls in time
+- id: understaffed_team
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: team, value: team_05 }
+    must_mention: [team_05]
+
+# 2. most of a site's calls are missing from the data: the data is wrong, not the operation
+- id: missing_logs_site
+  setup: "--fault missing_logs:s_3:wk8"
+  question: "Service level at site 3 looks odd in week 8. What happened?"
+  inputs: { metric: service_level, period: 2026-W08 }
+  expect:
+    stopped_reason: data_quality
+    must_mention: [s_3]
+
+# 3. nothing planted: the harness must not invent a cause
+- id: clean_week
+  setup: "--seed 42"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+# 4. OFFSET: one team gets worse while a sibling at the same site gets better; the site looks flat
+- id: offset_sibling_teams
+  setup: "--fault offset:team=team_01:team=team_02:wk6"
+  question: "Service level looks flat in week 6 but the teams feel uneven. Is something hiding?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    masking_flags: [offsetting]
+    top_finding: { dimension: team, value: team_01 }
+
+# 5. TIME MASKING: a bad block of one day inside a week that looks normal
+- id: time_block_wednesday_lunch
+  setup: "--fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    masking_flags: [dispersion]
+    top_finding: { dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }
+
+# 6. PURE MIX: calls are rerouted to a slower queue; no queue got worse
+- id: pure_mix_rerouted_queue
+  setup: "--fault slow_queue:billing:0.65 --fault reroute:*:billing:wk7:0.4"
+  question: "Why did service level drop in week 7? No queue seems to have got worse."
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    masking_flags: [mix_vs_rate]
+    top_finding: { dimension: queue, value: billing, effect: mix }
+
+# 7. SIMPSON'S PARADOX: every queue improved, yet the total fell
+- id: simpson_every_queue_improved
+  setup: "--fault slow_queue:billing:0.65 --fault improve:wk7:0.1 --fault reroute:*:billing:wk7:0.6"
+  question: "Every queue improved in week 7, yet overall service level fell. How?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    masking_flags: [mix_vs_rate]
+    top_finding: { dimension: queue, value: billing, effect: mix }
+    must_mention: [Simpson]
+
+# 8. A PRODUCT metric: workload = calls x handle time. Handle time is the driver that moved, and then the team.
+- id: workload_aht_driver
+  setup: "--fault long_calls:team_09:wk7:1.5"
+  question: "Why did workload rise in week 7?"
+  inputs: { metric: workload, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: team, value: team_09, metric: aht }
+    must_mention: [aht]
+
+# 9. A SUM metric: one queue gets many more calls
+- id: call_surge_billing
+  setup: "--fault surge:billing:wk7:0.5"
+  question: "Why did we receive so many more calls in week 7?"
+  inputs: { metric: calls_offered, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: queue, value: billing, metric: calls_offered }
+
+# 10. SEASONALITY, nothing planted: service level dips at lunch every day. That is the pattern, not an incident.
+- id: lunch_dip_is_not_a_finding
+  setup: "--seed 42"
+  question: "Service level always seems to dip around lunchtime. Is anything wrong in week 5?"
+  inputs: { metric: service_level, period: 2026-W05 }
+  expect:
+    no_findings: true
+
+# 11. A SUM metric located in time: a busy afternoon on one day, on every queue. A day-of-week
+# pattern makes every Thursday afternoon look busy against a pooled baseline, so this needed seasonality.
+- id: call_surge_thursday_afternoon
+  setup: "--fault surge_block:wk7:thu:14-17:0.6"
+  question: "Why did we receive so many more calls in week 7?"
+  inputs: { metric: calls_offered, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: interval_30m, value: "2026-02-19 14:30..2026-02-19 16:30", metric: calls_offered }
+
+# 12. TASK TEMPLATES. trend: the lunch dip and Monday effects repeat every week, so they are not change points
+- id: trend_clean_has_no_change_points
+  setup: "--seed 42"
+  question: "How has service level been moving?"
+  inputs: { metric: service_level, period: 2026-W10, playbook: trend }
+  expect:
+    no_change_points: true
+
+# 13. compare: two teams, one of them understaffed in week 7
+- id: compare_two_teams
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Compare service level for team_05 and team_06 in week 7."
+  inputs: { metric: service_level, period: 2026-W07, playbook: compare, more: { concept: team, a: team_06, b: team_05 } }
+  expect:
+    comparison_significant: true

@@ -1,0 +1,12 @@
+name: value
+description: What is the number? A KPI's value in a period, against what that period should have been.
+inputs:
+  metric:   { type: string }
+  period:   { type: string }          # a bucket at the top time level, e.g. 2026-W10
+  baseline: { type: int, default: 4 } # periods to compare against
+steps:
+  - id: data_check
+    compute: coverage_and_counts       # stop if data is incomplete
+  - id: headline
+    compute: change_vs_baseline        # value, expected value, change and whether it is real
+output: result.json

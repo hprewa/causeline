@@ -1,0 +1,32 @@
+{
+  "name": "@causeline/mcp-server",
+  "version": "0.1.0",
+  "description": "causeline-mcp: the playbook runner as an MCP server.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "causeline-mcp": "./dist/src/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@causeline/builder": "0.1.0",
+    "@causeline/generate": "0.1.0",
+    "@causeline/onboard": "0.1.0",
+    "@causeline/router": "0.1.0",
+    "@causeline/runner": "0.1.0",
+    "@causeline/schema": "0.1.0",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0",
+    "@causeline/eval": "0.1.0"
+  }
+}

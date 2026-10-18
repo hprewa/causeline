@@ -1,0 +1,29 @@
+# Routing eval for the contact-centre pack: "Last week" is the
+# latest complete week (2026-W10).
+- { question: "Why did service level drop in week 7?", expect: { kpi: service_level, task: deep_rca, period: 2026-W07, expert: service-level-deep-rca } }
+- { question: "Why was the SLA bad last week?", expect: { kpi: service_level, task: deep_rca, period: 2026-W10, expert: service-level-deep-rca } }
+- { question: "Why did servise level drop last week?", expect: { kpi: service_level, task: deep_rca, period: 2026-W10 } }
+- { question: "What was the service level in week 5?", expect: { kpi: service_level, task: value, period: 2026-W05 } }
+- { question: "How is the SLA trending?", expect: { kpi: service_level, task: trend } }
+- { question: "service level", expect: { kpi: service_level, task: value, needs: period } }
+- { question: "Is the lunchtime dip in service level a problem?", expect: { kpi: service_level, task: deep_rca, needs: period } }
+- { question: "Is there anything unusual in service level in week 3?", expect: { kpi: service_level, task: deep_rca, period: 2026-W03 } }
+- { question: "What was average handle time in week 5?", expect: { kpi: aht, task: value, period: 2026-W05 } }
+- { question: "what was aht last week", expect: { kpi: aht, task: value, period: 2026-W10 } }
+- { question: "Is handle time trending up?", expect: { kpi: aht, task: trend } }
+- { question: "Why did handle time rise in week 8?", expect: { kpi: aht, task: deep_rca, period: 2026-W08 } }
+- { question: "How many calls did we get last week?", expect: { kpi: calls_offered, task: value, period: 2026-W10 } }
+- { question: "How have calls changed over time?", expect: { kpi: calls_offered, task: trend } }
+- { question: "Why did we get so many more calls in week 7?", expect: { kpi: calls_offered, task: deep_rca, period: 2026-W07, expert: calls-offered-deep-rca } }
+- { question: "Why did the workload go up in week 6?", expect: { kpi: workload, task: deep_rca, period: 2026-W06, expert: workload-deep-rca } }
+- { question: "What was the workload last week?", expect: { kpi: workload, task: deep_rca, period: 2026-W10 } }
+- { question: "Compare service level in week 9 vs week 8", expect: { kpi: service_level, task: compare, period: 2026-W09 } }
+- { question: "compare calls in week 10 and week 9", expect: { kpi: calls_offered, task: compare, period: 2026-W10 } }
+- { question: "service level for team_01 versus team_02 last week", expect: { kpi: service_level, task: compare, period: 2026-W10 } }
+- { question: "Why was last week bad?", expect: { strategy: scan, period: 2026-W10 } }
+- { question: "Is anything wrong this week?", expect: { strategy: scan, period: 2026-W10 } }
+- { question: "Did anything unusual happen in week 4?", expect: { strategy: scan, period: 2026-W04 } }
+- { question: "What went wrong?", expect: { strategy: scan, needs: period } }
+- { question: "What's the capital of France?", expect: { strategy: explorer } }
+- { question: "How many agents do we have?", expect: { strategy: explorer } }
+- { question: "Which team should I promote?", expect: { strategy: explorer } }

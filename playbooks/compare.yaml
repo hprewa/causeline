@@ -1,0 +1,16 @@
+name: compare
+description: A against B. Two periods, or two values of one concept (two teams, two queues), side by side.
+inputs:
+  metric:  { type: string }
+  period:  { type: string }           # the period (or the first period)
+  against: { type: string, default: "" }   # the second period, to compare two periods
+  concept: { type: string, default: "" }   # a hierarchy level or dimension, to compare two of its values
+  a:       { type: string, default: "" }
+  b:       { type: string, default: "" }
+  baseline: { type: int, default: 4 }
+steps:
+  - id: data_check
+    compute: coverage_and_counts
+  - id: compare
+    compute: compare
+output: result.json

@@ -1,0 +1,14 @@
+name: trend
+description: How is a KPI moving? Every period against its own like-for-like baseline, with the change points.
+inputs:
+  metric:   { type: string }
+  period:   { type: string }          # the period the question is about; the whole series is returned
+  baseline: { type: int, default: 4 }
+steps:
+  - id: data_check
+    compute: coverage_and_counts
+  - id: headline
+    compute: change_vs_baseline
+  - id: trend
+    compute: trend
+output: result.json

@@ -1,0 +1,43 @@
+# Contact-centre pack: the second domain pack, written to prove the core stays domain-free.
+# This file is vocabulary only: what the levels, dimensions and KPIs are called. How each KPI is
+# calculated, and which tables hold the calls, is in data.yaml.
+
+time:
+  # interval_30m is a pack-defined level; data.yaml says how to compute it.
+  levels: [week, day, interval_30m]
+  # Declared, then confirmed by onboarding (causeline seasonality): service level dips at lunch and on
+  # Mondays, handle time is longer on Mondays, and call volume follows both the weekday and the
+  # hour. The holiday and the peak week are unusual days that are only compared with their own kind.
+  seasonality:
+    cycles: [weekday, hour_of_day]
+    calendar: [is_holiday, is_peak]
+
+hierarchies:
+  org: [centre, site, team, agent]
+
+dimensions: [queue, call_reason]
+
+metrics:
+  service_level:
+    type: ratio
+    description: Share of calls answered within 20 seconds.
+    synonyms: [SLA, answer rate, calls answered in time]
+    direction: higher_is_better
+    min_volume: 100
+  aht:
+    type: ratio
+    description: Average handle time, in seconds per call.
+    synonyms: [handle time, average handle time]
+    direction: lower_is_better
+    min_volume: 100
+  calls_offered:
+    type: sum
+    description: Calls received.
+    synonyms: [call volume, volume, demand, calls, calls received]
+    direction: lower_is_better
+    min_volume: 100
+  workload:
+    type: product
+    description: Handle time the centre has to staff for, calls times seconds per call.
+    drivers: [calls_offered, aht]
+    direction: lower_is_better

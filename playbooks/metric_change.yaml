@@ -1,0 +1,29 @@
+name: metric_change
+description: Find where and when a metric changed, using the pack's ontology.
+inputs:
+  metric:   { type: string }          # any ratio metric in ontology.yaml
+  period:   { type: string }          # a bucket at the top time level, e.g. 2026-W10
+  baseline: { type: int, default: 4 } # periods to compare against
+steps:
+  - id: data_check
+    compute: coverage_and_counts       # stop if data is incomplete
+  - id: headline
+    compute: change_vs_baseline
+  - id: when
+    compute: guided_drill
+    over: time                         # week -> day -> shift ...
+  - id: where
+    compute: guided_drill
+    over: hierarchies                  # every hierarchy in the ontology
+    within: when                       # only inside the time window found
+  - id: flat
+    compute: rank_dimensions           # queue, segment, ...
+    within: when
+  - id: refine
+    compute: rank_dimensions           # the same dimensions, inside each node found above
+    within: where
+  - id: cross_check
+    compute: persistence               # culprit bad all window, or one slot?
+  - id: evidence
+    evidence: "*"                     # whatever the pack records about the culprit (incident logs, scans), if it has any
+output: result.json

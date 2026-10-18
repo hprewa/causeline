@@ -1,0 +1,25 @@
+{
+  "name": "@causeline/schema",
+  "version": "0.1.0",
+  "description": "Zod-authored schemas for ontology.yaml, playbook.yaml, result.json and eval cases; emits JSON Schema and a validation CLI.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "causeline-validate": "./dist/src/validate.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node dist/src/build.js",
+    "test": "node --test dist/test/"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.5",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.14.0"
+  }
+}

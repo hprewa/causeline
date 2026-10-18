@@ -1,0 +1,6 @@
+name: workload-deep-rca
+kpi: workload
+task: deep_rca
+examples:
+  - Why did the workload we have to staff for go up?
+status: verified # workload_aht_driver passes
