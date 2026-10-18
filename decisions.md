@@ -27,8 +27,6 @@ Technical decisions, with the reason, in the order they were made.
   large child is really worse than its siblings.
 - **The Builder uses pure-npm SQLite (`sql.js`) for CSV files.** Why: nothing else for a non-coder to install. SQL it
   accepts is a single read-only SELECT.
-- **Repository history was reset** (fresh repository named Causeline). Why: keep the public history free of private
-  planning material.
 - **Retired the first example pack from this repository** and kept the contact-centre pack as the worked example.
   Why: the public project is not tied to one domain; the lost trap-type coverage is listed in `PROGRESS.md`.
 - **The starter pack (`packs/_template`) is validated by a test.** Why: it is the entry point for a new use case and

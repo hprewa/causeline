@@ -21,10 +21,10 @@ metrics:
     min_volume: 200
     description: Delivered on time and in full, over all cases.
     synonyms: ["completion", "completion rate"]
-    children: [on_time, in_full]
+    children: [timely, complete]
     relation: both_required
-  on_time: { type: ratio, direction: higher_is_better, min_volume: 200 }
-  in_full: { type: ratio, direction: higher_is_better, min_volume: 200 }
+  timely: { type: ratio, direction: higher_is_better, min_volume: 200 }
+  complete: { type: ratio, direction: higher_is_better, min_volume: 200 }
   handling_cost: { type: sum, direction: lower_is_better, min_volume: 200 }
   requests_sent: { type: sum, direction: higher_is_better }
   cost_per_request: { type: ratio, direction: lower_is_better }
@@ -37,7 +37,7 @@ test("an ontology is vocabulary: levels are plain names and KPIs carry no formul
   const o = Ontology.parse(load());
   assert.deepEqual(o.time.levels, ["week", "day", "shift", "hour"]);
   assert.equal(o.metrics.success_rate.type, "ratio");
-  assert.deepEqual(o.metrics.success_rate.children, ["on_time", "in_full"]);
+  assert.deepEqual(o.metrics.success_rate.children, ["timely", "complete"]);
   assert.equal(o.metrics.success_rate.relation, "both_required");
   assert.ok(!("numerator" in o.metrics.success_rate));
 });
@@ -51,7 +51,7 @@ test("the old table-shaped fields are not part of an ontology any more", () => {
   // unknown keys are stripped, not smuggled in: the parsed ontology has no such field
   assert.ok(!("entity" in Ontology.parse(withEntity)));
   const withFormula = load();
-  withFormula.metrics.success_rate.numerator = "on_time * in_full";
+  withFormula.metrics.success_rate.numerator = "timely * complete";
   assert.ok(!("numerator" in Ontology.parse(withFormula).metrics.success_rate));
 });
 

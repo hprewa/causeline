@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && node dist/src/build.js",
-    "test": "node --test dist/test/"
+    "test": "node ../../scripts/run-tests.mjs"
   },
   "dependencies": {
     "zod": "^3.23.8",
