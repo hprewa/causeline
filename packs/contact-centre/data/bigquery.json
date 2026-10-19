@@ -1,0 +1,6 @@
+{
+  "tables": {
+    "calls": { "file": "calls.csv", "schema": "call_id:STRING,ts:TIMESTAMP,agent:STRING,queue:STRING,call_reason:STRING,answered_within_20s:INTEGER,handle_seconds:INTEGER,is_holiday:INTEGER,is_peak:INTEGER" },
+    "agents": { "file": "agents.csv", "schema": "agent:STRING,team:STRING,site:STRING,centre:STRING" }
+  }
+}

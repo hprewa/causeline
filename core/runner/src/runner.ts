@@ -7,7 +7,7 @@ import { runProductMetric } from "./product.js";
 import { LoggingToolCaller } from "./toolcaller.js";
 import { ToolIndex } from "./toolindex.js";
 import { VERSION } from "./version.js";
-import type { ToolCaller } from "./types.js";
+import { RunStop, type ToolCaller } from "./types.js";
 
 export type RunInputs = Record<string, string | number | boolean>;
 
@@ -141,18 +141,25 @@ export async function runPlaybook(opts: RunOptions): Promise<Result> {
     });
   }
   if (def.type === "product") {
-    return runProductMetric({
-      playbook,
-      ontology,
-      tools: opts.tools,
-      index: new ToolIndex(opts.meta),
-      inputs,
-      metric,
-      def,
-      th,
-      generator,
-      recurse: (next) => runPlaybook({ ...opts, inputs: next }),
-    });
+    try {
+      const r = await runProductMetric({
+        playbook,
+        ontology,
+        tools: opts.tools,
+        index: new ToolIndex(opts.meta),
+        inputs,
+        metric,
+        def,
+        th,
+        generator,
+        recurse: (next) => runPlaybook({ ...opts, inputs: next }),
+      });
+      const cost = opts.tools.cost?.();
+      return cost ? { ...r, cost } : r;
+    } catch (e) {
+      if (!(e instanceof RunStop)) throw e;
+      return Result.parse({ playbook: playbook.name, inputs, status: "stopped", headline: null, findings: [], stopped_reason: e.reason, stopped_detail: e.detail, generator, ...(opts.tools.cost?.() ? { cost: opts.tools.cost?.() } : {}) });
+    }
   }
 
   const tools = new LoggingToolCaller(opts.tools);
@@ -183,7 +190,12 @@ export async function runPlaybook(opts: RunOptions): Promise<Result> {
     const fn = COMPUTE[name];
     if (!fn) throw new Error(`step "${step.id}" uses unknown compute "${name}" (have: ${Object.keys(COMPUTE).join(", ")})`);
     ctx.stepKinds.set(step.id, { compute: name, over: step.over });
-    await fn(ctx, step);
+    try {
+      await fn(ctx, step);
+    } catch (e) {
+      if (!(e instanceof RunStop)) throw e;
+      ctx.stop = { reason: e.reason, detail: e.detail };
+    }
     if (ctx.stop) break;
   }
 
@@ -204,6 +216,7 @@ export async function runPlaybook(opts: RunOptions): Promise<Result> {
     steps: tools.log,
     stopped_reason: ctx.stop?.reason ?? null,
     stopped_detail: ctx.stop?.detail ?? null,
+    ...(opts.tools.cost?.() ? { cost: opts.tools.cost?.() } : {}),
     narrative: null,
     generator,
   });

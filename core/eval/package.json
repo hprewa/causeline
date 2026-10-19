@@ -11,6 +11,7 @@
     "test": "node ../../scripts/run-tests.mjs"
   },
   "dependencies": {
+    "@causeline/connect-bigquery": "0.1.0",
     "@causeline/router": "0.1.0",
     "@causeline/runner": "0.1.0",
     "@causeline/schema": "0.1.0",

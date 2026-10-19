@@ -8,8 +8,22 @@ export interface AgentMetrics {
   ms: number;
 }
 
+/** The parts of a run's result that must be the same on every database, so two backends can be compared. */
+export interface RunSummary {
+  status: string;
+  stopped_reason: string | null;
+  headline: { value: number; baseline: number; change: number } | null;
+  /** The top findings, as `dimension=value` with any scope, in rank order. */
+  findings: string[];
+  masking_flags: string[];
+  /** Queries and bytes read, on a database that bills by data read. */
+  cost?: { queries: number; bytes_scanned: number; estimated_usd: number };
+}
+
 export interface CaseOutcome {
   id: string;
+  /** What the run found, for comparing databases. */
+  summary?: RunSummary;
   runner: Score | { error: string };
   runnerMs: number;
   steps: number;

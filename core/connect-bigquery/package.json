@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@causeline/generate": "0.1.0",
+    "@causeline/runner": "0.1.0",
     "@causeline/schema": "0.1.0",
     "@google-cloud/bigquery": "^8.0.0",
     "yaml": "^2.5.1"

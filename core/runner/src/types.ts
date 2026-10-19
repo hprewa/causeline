@@ -1,3 +1,5 @@
+import type { Cost } from "@causeline/schema";
+
 /**
  * What every tool returns, never a rate or a computed total. For a ratio: numerator and denominator.
  * For a sum: the total (`num`), the row count (`den`) and the sum of squares (`sq`), from which the
@@ -33,6 +35,22 @@ export type Row = Record<string, unknown>;
  */
 export interface ToolCaller {
   call(tool: string, params: Record<string, string>, stepId: string): Promise<Row[]>;
+  /** What the queries so far have cost, for a database that bills by data read. Absent otherwise. */
+  cost?(): Cost | undefined;
+}
+
+/**
+ * Thrown by a tool caller to end the run cleanly with a stated reason (a cost limit) instead of failing it.
+ * The runner turns it into a `stopped` result.
+ */
+export class RunStop extends Error {
+  constructor(
+    readonly reason: string,
+    readonly detail: string,
+  ) {
+    super(detail);
+    this.name = "RunStop";
+  }
 }
 
 export type Direction = "higher_is_better" | "lower_is_better";

@@ -162,6 +162,17 @@ export type SeasonalityNote = z.infer<typeof SeasonalityNote>;
 export const Status = z.enum(["complete", "stopped", "error"]);
 export type Status = z.infer<typeof Status>;
 
+/** What a run cost on a database that bills by data read (BigQuery). Absent on a database that does not. */
+export const Cost = z.object({
+  queries: z.number().int().nonnegative(),
+  bytes_scanned: z.number().nonnegative(),
+  /** An estimate at on-demand list price; the first terabyte each month is free. */
+  estimated_usd: z.number().nonnegative(),
+  /** The most one run may read; null when there is no limit. */
+  budget_bytes: z.number().nonnegative().nullable(),
+});
+export type Cost = z.infer<typeof Cost>;
+
 export const Result = z.object({
   playbook: z.string().min(1),
   inputs: z.record(z.string(), z.unknown()).default({}),
@@ -190,6 +201,8 @@ export const Result = z.object({
   stopped_reason: z.string().nullable().default(null),
   /** Human-readable specifics for stopped_reason, e.g. which nodes had missing data. */
   stopped_detail: z.string().nullable().default(null),
+  /** Data read by the run's queries, when the database bills for it. */
+  cost: Cost.optional(),
   /** Filled in by the LLM after the run; null until then. */
   narrative: z.string().nullable().default(null),
   generator: Generator,

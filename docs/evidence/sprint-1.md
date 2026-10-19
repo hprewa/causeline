@@ -100,3 +100,36 @@ placeholder, timestamp handling, slot filters, onboarding and evidence tools) an
 
 **Not shown:** that the BigQuery tools return the *same answers* as the SQLite ones (step 4 runs the 13 cases on
 both and compares findings), and cost accounting.
+
+## Step 4: BigQuery connector, parity and cost control
+
+**What was built:** `core/connect-bigquery` (dry runs, a cost meter, plain-words explanations of Google errors, a
+connection check, a dataset loader); `Result.cost` and a clean stop (`RunStop`) in the runner; a BigQuery
+preparation step for evals (`packs/_lib/bigquery-prepare.mjs`, chosen with `CAUSELINE_TARGET=bigquery`, one dataset
+per case); a per-case comparable `summary` in eval results; `scripts/parity.mjs` to compare two result files.
+
+**Parity (the correctness test of the new dialect):** the 13 planted-fault cases run on SQLite and on BigQuery.
+Result: **13/13 on both, and the comparison is identical**: same status, same findings in the same order, same
+masking flags, headline value, baseline and change equal to 1e-9. The BigQuery run read 0.91 GB in 222 queries,
+about $0.005 at list price (before the free tier).
+
+**A silent failure found by the parity run, not by any test:** the first BigQuery run passed 11 of 13. Both failures
+needed the finest time level, and the cause was that **Toolbox's BigQuery source returns only 50 rows per query
+unless `maxQueryResultRows` is set**, dropping the rest without an error. The same request returned 672 rows on
+SQLite and 50 on BigQuery. It also hid the `small_cells` flag for the 60 agents. Fixes: the source sets
+`maxQueryResultRows: 100000`, and `withCostControl` now refuses to run on a BigQuery source whose limit is missing
+or below 10,000, with a plain explanation. Any BigQuery source written later (by hand or by the Builder) must carry
+the same setting; this guard is what enforces it.
+
+**Other facts settled:** `writeMode: blocked` on the source makes Toolbox suppress every `bigquery-sql` tool as
+write-capable, so it cannot be used; read-only access must come from the account's permissions. The source also
+supports `maximumBytesBilled` (a hard per-query stop), now set to 20 GB.
+
+**Cost control, live:** with the per-question limit set to 0.02 GB, a case stopped with reason `cost_budget` after 5
+queries and 17 MB; the query that would have crossed the limit was not sent, and the result still reported what was
+spent. The default limit is 5 GB per question (`CAUSELINE_BQ_BUDGET_GB`, 0 = none). Each tool is dry-run once and
+that estimate is reused, which is exact for an unpartitioned table and an upper bound for a partitioned one.
+
+**Not shown:** a stale-credentials message from a live failure (the explanation is unit-tested against the error
+text only); cost on tables much larger than the example; the connection check wired into the MCP server (step 7).
+The plugin bundle grew from 2.3 MB to 3.5 MB with the BigQuery client.

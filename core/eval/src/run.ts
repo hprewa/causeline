@@ -1,11 +1,12 @@
 import { join } from "node:path";
 import { findToolboxBinary, loadPackForRun, loadPlaybook, runPlaybook, SdkToolCaller, ToolboxProcess } from "@causeline/runner";
-import type { EvalCase } from "@causeline/schema";
+import { withCostControl } from "@causeline/connect-bigquery";
+import type { EvalCase, Result } from "@causeline/schema";
 import { runClaudeCode } from "./agent.js";
 import { loadCases } from "./cases.js";
 import { prepareCase } from "./prepare.js";
 import { scoreAgent, scoreRunner } from "./score.js";
-import type { CaseOutcome } from "./table.js";
+import type { CaseOutcome, RunSummary } from "./table.js";
 
 export interface AgentConfig {
   pluginDir: string;
@@ -29,6 +30,19 @@ export interface EvalOptions {
   corePlaybooksDir?: string;
 }
 
+/** The comparable parts of a result (see RunSummary). */
+export function summarise(r: Result): RunSummary {
+  const scope = (s?: Record<string, string>) => (s && Object.keys(s).length ? ` in ${Object.entries(s).map(([k, v]) => `${k}=${v}`).join(",")}` : "");
+  return {
+    status: r.status,
+    stopped_reason: r.stopped_reason,
+    headline: r.headline ? { value: r.headline.value, baseline: r.headline.baseline, change: r.headline.change } : null,
+    findings: r.findings.slice(0, 5).map((f) => `${f.dimension}=${f.value}${scope(f.scope)}`),
+    masking_flags: r.masking_flags.map((m) => `${m.type}@${m.level ?? ""}`),
+    ...(r.cost ? { cost: { queries: r.cost.queries, bytes_scanned: r.cost.bytes_scanned, estimated_usd: r.cost.estimated_usd } } : {}),
+  };
+}
+
 async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
   const log = opts.log ?? (() => {});
   log(`[${c.id}] preparing`);
@@ -45,11 +59,12 @@ async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
         playbook: loadPlaybook(c.inputs.playbook, workDir, opts.corePlaybooksDir),
         ontology: def.ontology,
         meta: def.meta,
-        tools: new SdkToolCaller(toolbox.url),
+        tools: withCostControl(workDir, new SdkToolCaller(toolbox.url)),
         inputs: { metric: c.inputs.metric, period: c.inputs.period, ...(c.inputs.baseline ? { baseline: c.inputs.baseline } : {}), ...(c.inputs.more ?? {}) },
       });
       outcome.runner = scoreRunner(result, c.expect);
       outcome.steps = result.steps.length;
+      outcome.summary = summarise(result);
     } catch (e) {
       outcome.runner = { error: (e as Error).message };
     } finally {

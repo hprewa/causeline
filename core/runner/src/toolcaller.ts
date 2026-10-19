@@ -1,4 +1,5 @@
 import { parseToolRef, type StepLog } from "@causeline/schema";
+import type { Cost } from "@causeline/schema";
 import type { Row, ToolCaller } from "./types.js";
 
 /** Wraps any ToolCaller so every call is logged with its name, params, row count and duration. */
@@ -11,6 +12,10 @@ export class LoggingToolCaller implements ToolCaller {
     const rows = await this.inner.call(tool, params, stepId);
     this.log.push({ id: stepId, tool, params, rows: rows.length, ms: Date.now() - started });
     return rows;
+  }
+
+  cost(): Cost | undefined {
+    return this.inner.cost?.();
   }
 }
 

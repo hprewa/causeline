@@ -4,3 +4,9 @@ name: bq-db
 type: bigquery
 project: ${CAUSELINE_BQ_PROJECT}
 location: US
+# Toolbox returns only 50 rows per query unless told otherwise, which would silently cut off any split with more
+# than 50 groups. Causeline refuses to run on a BigQuery source without a limit of at least 10000.
+maxQueryResultRows: 100000
+# a hard stop for any single query (bytes billed). Do not set writeMode: blocked: Toolbox then suppresses every
+# bigquery-sql tool as write-capable. Read-only access is a matter of the account's permissions.
+maximumBytesBilled: 20000000000
