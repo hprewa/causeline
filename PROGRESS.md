@@ -64,7 +64,7 @@ re-covered by new packs before they count again:
 | 5 | Date-range windows | done | 5186dd9 | Step 5 |
 | 6 | Intent core | done | c408240 | Step 6 |
 | 7 | Running intent and surfaces | done | efc35ce | Step 7 |
-| 8 | Proof and docs: live agent on BigQuery, setup guide | done | see `git log` (message starts "Sprint 1 step 8") | Step 8 |
+| 8 | Proof and docs: live agent on BigQuery, setup guide | done | fbb6510 | Step 8 |
 
 ## Next
 
