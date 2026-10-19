@@ -53,10 +53,10 @@ export function generateOnboardingTools(ont: Ontology, data: DataDefs, dialect: 
 
     for (const cand of candidateCycles(ont, data, formula.fact)) {
       const slot = cand.kind === "calendar" ? { slot: typeof f.fact.slots[cand.name] === "string" ? (f.fact.slots[cand.name] as string) : q(cand.name), instance: day } : f.candidate(cand.name)!;
-      const where = `FROM ${from} WHERE ${ts} BETWEEN ? AND ?`;
+      const where = `FROM ${from} WHERE ${ts} BETWEEN ${dialect.timeParam("start")} AND ${dialect.timeParam("end")}`;
       const statement = ratio
         ? [
-            `SELECT CAST(${slot.slot} AS TEXT) AS slot, COUNT(DISTINCT ${slot.instance}) AS instances,`,
+            `SELECT ${dialect.text(slot.slot)} AS slot, COUNT(DISTINCT ${slot.instance}) AS instances,`,
             `  COALESCE(SUM(${num}), 0) AS num, COALESCE(SUM(${den}), 0) AS den, COALESCE(SUM(${num} * ${num}), 0) AS sq`,
             where,
             `GROUP BY 1 ORDER BY 1;`,
@@ -64,7 +64,7 @@ export function generateOnboardingTools(ont: Ontology, data: DataDefs, dialect: 
         : [
             // a total's variance is across occurrences (days, hours), not across rows, so total per occurrence first
             `SELECT slot, COUNT(*) AS instances, COALESCE(SUM(t), 0) AS num, COALESCE(SUM(n_rows), 0) AS den, COALESCE(SUM(t * t), 0) AS sq`,
-            `FROM (SELECT CAST(${slot.slot} AS TEXT) AS slot, ${slot.instance} AS inst, SUM(${num}) AS t, COUNT(*) AS n_rows`,
+            `FROM (SELECT ${dialect.text(slot.slot)} AS slot, ${slot.instance} AS inst, SUM(${num}) AS t, COUNT(*) AS n_rows`,
             `      ${where} GROUP BY 1, 2)`,
             `GROUP BY slot ORDER BY slot;`,
           ].join("\n");
@@ -83,8 +83,8 @@ export function generateOnboardingTools(ont: Ontology, data: DataDefs, dialect: 
       params: [],
       meta: { kind: "check", check: "values", metric },
       statement: [
-        `SELECT COUNT(*) AS n_rows, COALESCE(SUM(${num} IS NULL), 0) AS num_nulls, MIN(${num}) AS num_min, MAX(${num}) AS num_max,`,
-        `  COALESCE(SUM(${den} IS NULL), 0) AS den_nulls, MIN(${den}) AS den_min, MAX(${den}) AS den_max`,
+        `SELECT COUNT(*) AS n_rows, ${dialect.countNulls(num)} AS num_nulls, MIN(${num}) AS num_min, MAX(${num}) AS num_max,`,
+        `  ${dialect.countNulls(den)} AS den_nulls, MIN(${den}) AS den_min, MAX(${den}) AS den_max`,
         `FROM ${from};`,
       ].join("\n"),
     });
@@ -106,7 +106,7 @@ export function generateOnboardingTools(ont: Ontology, data: DataDefs, dialect: 
           meta: { kind: "check", check: "parent", fact: name, arg: levels[i] },
           statement: [
             `SELECT (SELECT COUNT(*) FROM (SELECT 1 FROM ${from} GROUP BY ${child} HAVING COUNT(DISTINCT ${parent}) > 1)) AS violations,`,
-            `  (SELECT group_concat(c, ', ') FROM (SELECT ${child} AS c FROM ${from} GROUP BY ${child} HAVING COUNT(DISTINCT ${parent}) > 1 LIMIT 5)) AS examples;`,
+            `  (SELECT ${dialect.stringAgg("c", ", ")} FROM (SELECT ${child} AS c FROM ${from} GROUP BY ${child} HAVING COUNT(DISTINCT ${parent}) > 1 LIMIT 5)) AS examples;`,
           ].join("\n"),
         });
       }
@@ -134,7 +134,7 @@ export function generateOnboardingTools(ont: Ontology, data: DataDefs, dialect: 
       description: "Row count and the number of NULLs in every column the ontology uses (time, concepts, calendar flags).",
       params: [],
       meta: { kind: "check", check: "nulls", fact: name },
-      statement: `SELECT COUNT(*) AS n_rows${columns.map((c) => `, COALESCE(SUM(${q(c)} IS NULL), 0) AS ${q(c)}`).join("")} FROM ${from};`,
+      statement: `SELECT COUNT(*) AS n_rows${columns.map((c) => `, ${dialect.countNulls(q(c))} AS ${q(c)}`).join("")} FROM ${from};`,
     });
     void ts;
   }
@@ -156,7 +156,7 @@ export function generateEvidenceTools(data: DataDefs, dialect: Dialect): ToolDef
     ],
     meta: { kind: "evidence" as const, evidence: name, about: ev.about },
     statement: [
-      `WITH p AS (SELECT ? AS w_start, ? AS w_end${ev.about.map((c) => `, ? AS ${q(c)}`).join("")})`,
+      `WITH p AS (SELECT ${dialect.timeParam("start")} AS w_start, ${dialect.timeParam("end")} AS w_end${ev.about.map((c) => `, ${dialect.param(c)} AS ${q(c)}`).join("")})`,
       `SELECT e.* FROM (${ev.sql.trim()}) AS e, p`,
       ev.until
         ? `WHERE e.${q(ev.time)} <= p.w_end AND COALESCE(e.${q(ev.until)}, e.${q(ev.time)}) >= p.w_start${ev.about.map((c) => ` AND (p.${q(c)} = '' OR e.${q(c)} = p.${q(c)})`).join("")}`

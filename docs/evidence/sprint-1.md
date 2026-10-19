@@ -70,3 +70,33 @@ all unit tests, integration 5/5.
 ignores the old sidecar (`loadPack(..., { skipMeta: true })`).
 
 **Not shown:** the new SQL on BigQuery (step 3).
+
+## Step 3: the BigQuery dialect and pack targets
+
+**Change:** the generator's SQL differences now live behind the `Dialect` interface (named or positional
+parameters, timestamp conversion, text casts, list membership, null counts, string aggregation, timestamps as text),
+with a SQLite and a BigQuery implementation and BigQuery versions of the built-in time levels and repeating cycles.
+`data.yaml` names its `dialect` (default sqlite). A pack can carry a variant per database as a *target*
+(`data.<target>.yaml`, `toolbox.<target>/`, `tools.meta.<target>.yaml`; `causeline generate --target`); packs made by
+the Builder use the standard names and need no target. The contact-centre pack has a `bigquery` target. The BigQuery
+project comes from the environment (`${CAUSELINE_BQ_PROJECT}` in the source file), so no id is stored in the repository.
+
+**Checked against the real service (zero cost):** `node scripts/bq-dryrun.mjs packs/contact-centre --dataset
+<project.dataset>` generates the BigQuery tools for a dataset and dry-runs each statement. Result: **57 of 57
+statements valid** on the first run (syntax, names and types all accepted). One call of each reads about 168 MB in
+total on the 120,000-row example data.
+
+**Facts settled by direct queries:** `@end` is allowed as a parameter name; `FORMAT_TIMESTAMP('%Y-W%W', ts)` gives
+the same week labels as SQLite's `strftime('%Y-W%W')` (`2026-W01`); a text timestamp with a `T` and `Z` converts back
+with `TIMESTAMP()`; `%E*S` prints whole seconds when there are no fractions, so results read the same as on SQLite.
+
+**SQLite unchanged:** regenerating the example pack leaves its generated files byte-identical; 13/13 eval cases and
+all unit tests as before.
+
+**Tests added:** golden SQL for the BigQuery dialect (named parameters all declared and used, no positional
+placeholder, timestamp handling, slot filters, onboarding and evidence tools) and the target mechanism.
+
+**Requirement stated for BigQuery packs:** a fact's time column must be a `TIMESTAMP`.
+
+**Not shown:** that the BigQuery tools return the *same answers* as the SQLite ones (step 4 runs the 13 cases on
+both and compares findings), and cost accounting.

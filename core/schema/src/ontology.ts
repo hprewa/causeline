@@ -30,6 +30,14 @@ export const BUILTIN_TIME_LEVEL_SQL: Record<string, Record<(typeof BUILTIN_TIME_
     day: "strftime('%Y-%m-%d', %COL%)",
     hour: "strftime('%Y-%m-%d %H', %COL%)",
   },
+  bigquery: {
+    year: "FORMAT_TIMESTAMP('%Y', %COL%)",
+    quarter: "CONCAT(FORMAT_TIMESTAMP('%Y', %COL%), '-Q', CAST(EXTRACT(QUARTER FROM %COL%) AS STRING))",
+    month: "FORMAT_TIMESTAMP('%Y-%m', %COL%)",
+    week: "FORMAT_TIMESTAMP('%Y-W%W', %COL%)",
+    day: "FORMAT_TIMESTAMP('%Y-%m-%d', %COL%)",
+    hour: "FORMAT_TIMESTAMP('%Y-%m-%d %H', %COL%)",
+  },
 };
 
 /**
@@ -43,6 +51,8 @@ export type BuiltinSlot = (typeof BUILTIN_SLOTS)[number];
 
 const HALF_HOUR = "strftime('%H', %COL%) || ':' || CASE WHEN CAST(strftime('%M', %COL%) AS INTEGER) < 30 THEN '00' ELSE '30' END";
 
+const BQ_HALF_HOUR = "CONCAT(FORMAT_TIMESTAMP('%H', %COL%), ':', IF(EXTRACT(MINUTE FROM %COL%) < 30, '00', '30'))";
+
 export const BUILTIN_SLOT_SQL: Record<string, Record<BuiltinSlot, { slot: string; instance: string; cycleDays: number }>> = {
   sqlite: {
     weekday: { slot: "strftime('%w', %COL%)", instance: "date(%COL%)", cycleDays: 7 },
@@ -50,6 +60,13 @@ export const BUILTIN_SLOT_SQL: Record<string, Record<BuiltinSlot, { slot: string
     half_hour_of_day: { slot: HALF_HOUR, instance: `strftime('%Y-%m-%d', %COL%) || ' ' || ${HALF_HOUR}`, cycleDays: 1 },
     day_of_month: { slot: "strftime('%d', %COL%)", instance: "date(%COL%)", cycleDays: 30.4 },
     month_of_year: { slot: "strftime('%m', %COL%)", instance: "strftime('%Y-%m', %COL%)", cycleDays: 365.25 },
+  },
+  bigquery: {
+    weekday: { slot: "FORMAT_TIMESTAMP('%w', %COL%)", instance: "FORMAT_TIMESTAMP('%Y-%m-%d', %COL%)", cycleDays: 7 },
+    hour_of_day: { slot: "FORMAT_TIMESTAMP('%H', %COL%)", instance: "FORMAT_TIMESTAMP('%Y-%m-%d %H', %COL%)", cycleDays: 1 },
+    half_hour_of_day: { slot: BQ_HALF_HOUR, instance: `CONCAT(FORMAT_TIMESTAMP('%Y-%m-%d', %COL%), ' ', ${BQ_HALF_HOUR})`, cycleDays: 1 },
+    day_of_month: { slot: "FORMAT_TIMESTAMP('%d', %COL%)", instance: "FORMAT_TIMESTAMP('%Y-%m-%d', %COL%)", cycleDays: 30.4 },
+    month_of_year: { slot: "FORMAT_TIMESTAMP('%m', %COL%)", instance: "FORMAT_TIMESTAMP('%Y-%m', %COL%)", cycleDays: 365.25 },
   },
 };
 

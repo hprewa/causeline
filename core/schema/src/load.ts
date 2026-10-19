@@ -11,6 +11,14 @@ export const DATA_FILE = "data.yaml";
 /** At the pack root, deliberately outside `toolbox/`: Toolbox parses every file in its config folder and rejects unknown fields. */
 export const META_FILE = "tools.meta.yaml";
 
+/**
+ * A pack can carry one variant of its data definition per database: a *target* (`bigquery`) reads `data.<target>.yaml`,
+ * `tools.meta.<target>.yaml` and `toolbox.<target>/`. The ontology, experts, playbooks and evals are shared. No target
+ * means the standard names, which is what every pack made by the Builder uses.
+ */
+export const targetFile = (base: string, target?: string) => (target ? base.replace(/\.yaml$/, `.${target}.yaml`) : base);
+export const targetDir = (base: string, target?: string) => (target ? `${base}.${target}` : base);
+
 export interface PackDefinition {
   dir: string;
   ontology: Ontology;
@@ -30,13 +38,14 @@ function describe(file: string, issues: { path: (string | number)[]; message: st
 
 /** Read and parse a pack's three definition files, with errors that name the file and the field. */
 /** `skipMeta`: do not read the generated sidecar (generating it, or checking whether it is stale, must work when it is unreadable). */
-export function loadPack(dir: string, opts: { requireMeta?: boolean; skipMeta?: boolean } = {}): PackDefinition {
+export function loadPack(dir: string, opts: { requireMeta?: boolean; skipMeta?: boolean; target?: string } = {}): PackDefinition {
   const ont = Ontology.safeParse(readYaml(join(dir, ONTOLOGY_FILE)));
   if (!ont.success) throw new Error(describe(join(dir, ONTOLOGY_FILE), ont.error.issues));
-  const data = DataDefs.safeParse(readYaml(join(dir, DATA_FILE)));
-  if (!data.success) throw new Error(describe(join(dir, DATA_FILE), data.error.issues));
+  const dataPath = join(dir, targetFile(DATA_FILE, opts.target));
+  const data = DataDefs.safeParse(readYaml(dataPath));
+  if (!data.success) throw new Error(describe(dataPath, data.error.issues));
   let meta: ToolsMeta | undefined;
-  const metaPath = join(dir, META_FILE);
+  const metaPath = join(dir, targetFile(META_FILE, opts.target));
   if (opts.skipMeta) {
     // the sidecar is about to be (re)written, or compared with what would be written
   } else if (existsSync(metaPath)) {

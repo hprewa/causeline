@@ -19,3 +19,7 @@ clients/claude-code/playbooks/
 *-SETUP.md
 *-CORRECTION.md
 HANDOFF.md
+
+# BigQuery variants are generated per dataset when a pack is prepared
+packs/*/toolbox.bigquery/tools.generated.yaml
+packs/*/tools.meta.bigquery.yaml

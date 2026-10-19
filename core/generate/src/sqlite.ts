@@ -6,6 +6,12 @@ export const sqlite: Dialect = {
   toolType: "sqlite-sql",
   quote: (id) => `"${id}"`,
   param: () => "?",
+  timeParam: () => "?",
+  text: (expr) => `CAST(${expr} AS TEXT)`,
+  inList: (list, expr) => `instr(',' || ${list} || ',', ',' || CAST(${expr} AS TEXT) || ',') > 0`,
+  countNulls: (expr) => `COALESCE(SUM(${expr} IS NULL), 0)`,
+  stringAgg: (expr, separator) => `group_concat(${expr}, '${separator}')`,
+  timestampText: (expr) => expr,
   timeBucket(level, custom, timeColumn) {
     if (custom) return custom;
     const template = BUILTIN_TIME_LEVEL_SQL.sqlite[level as keyof (typeof BUILTIN_TIME_LEVEL_SQL)["sqlite"]];

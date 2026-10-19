@@ -1,0 +1,6 @@
+# The BigQuery source. The project comes from the environment, so no project id is stored in the repository.
+kind: source
+name: bq-db
+type: bigquery
+project: ${CAUSELINE_BQ_PROJECT}
+location: US

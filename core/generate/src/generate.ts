@@ -3,6 +3,7 @@ import { conceptsOf, isRatioFormula, type DataDefs, type Ontology, type ToolMeta
 import type { Dialect } from "./dialect.js";
 import { factContext, type FactCtx } from "./fact.js";
 import { generateEvidenceTools, generateOnboardingTools } from "./onboarding-tools.js";
+import { dialectOf } from "./dialects.js";
 import { sqlite } from "./sqlite.js";
 
 export interface ToolParam {
@@ -40,6 +41,9 @@ const RANGE_PARAMS: ToolParam[] = [
   { name: "end", description: "End of the range, inclusive, as a timestamp string." },
 ];
 
+/** Tool parameters that carry timestamps. */
+export const TIME_PARAMS = new Set(["cur_start", "cur_end", "base_start", "base_end", "start", "end", "w_start", "w_end"]);
+
 const filterParam = (concept: string): ToolParam => ({
   name: concept,
   optional: true,
@@ -62,7 +66,7 @@ export function metaOf(tools: ToolDef[]): ToolsMeta {
  * - product: no tools of its own; its drivers are ordinary metrics.
  * Each metric's SQL reads from its fact's SELECT, so joins across tables live in data.yaml only.
  */
-export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = sqlite): Generated {
+export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = dialectOf(data.dialect)): Generated {
   const tools: ToolDef[] = [];
   const skipped: Generated["skipped"] = [];
   const hierarchies = Object.entries(ont.hierarchies);
@@ -97,7 +101,7 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
       description: `Comma-separated ${sl.name} slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.`,
     }));
     const slotFilter = (list: typeof f.slots) =>
-      list.map((sl) => ` AND (p.s_${sl.name} = '' OR instr(',' || p.s_${sl.name} || ',', ',' || CAST(${sl.expr} AS TEXT) || ',') > 0)`).join("");
+      list.map((sl) => ` AND (p.s_${sl.name} = '' OR ${dialect.inList(`p.s_${sl.name}`, sl.expr)})`).join("");
     const inCur = `${ts} BETWEEN p.cur_s AND p.cur_e${slotFilter(f.slots.filter((sl) => sl.calendar))}`;
     const inBase = `${ts} BETWEEN p.base_s AND p.base_e${slotFilter(f.slots)}`;
     const slotColumns = f.slots.map((sl) => `, CASE WHEN MIN(${sl.expr}) = MAX(${sl.expr}) THEN MIN(${sl.expr}) END AS slot_${sl.name}`).join("");
@@ -113,12 +117,12 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
     const windowSums = windowItems.map((item, i) => `  ${item}${i < windowItems.length - 1 ? "," : ""}`);
     const windowFilter = `(${inCur} OR (${inBase}))`;
     /** Every parameter is read once, into a one-row CTE, so a value used twice is still passed once (positional dialects). */
-    const cte = (pairs: [param: string, alias: string][]) => `WITH p AS (SELECT ${pairs.map(([param, alias]) => `${dialect.param(param)} AS ${alias}`).join(", ")})`;
+    const cte = (pairs: [param: string, alias: string][]) => `WITH p AS (SELECT ${pairs.map(([param, alias]) => `${TIME_PARAMS.has(param) ? dialect.timeParam(param) : dialect.param(param)} AS ${alias}`).join(", ")})`;
     /** Optional filters: a concept left empty restricts nothing. */
     const confine = (concepts: string[]) => concepts.map((c) => ` AND (p.f_${c} = '' OR ${q(c)} = p.f_${c})`).join("");
     const filtersFor = (concepts: string[]) => ({ params: concepts.map(filterParam), pairs: concepts.map((c): [string, string] => [c, `f_${c}`]) });
     const seriesSelect = (bucket: string) =>
-      `SELECT ${bucket} AS bucket, MIN(${ts}) AS bucket_start, MAX(${ts}) AS bucket_end,\n` +
+      `SELECT ${bucket} AS bucket, ${dialect.timestampText(`MIN(${ts})`)} AS bucket_start, ${dialect.timestampText(`MAX(${ts})`)} AS bucket_end,\n` +
       `  COALESCE(SUM(${num}), 0) AS num, COALESCE(SUM(${den}), 0) AS den, COALESCE(SUM(${sq}), 0) AS sq${slotColumns}`;
 
     // A slice tool splits the metric by one concept and may be confined to any other concept: the filters are
@@ -147,7 +151,7 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
       description: `Row count and time extent of the data behind ${metric}.`,
       params: [],
       meta: { kind: "extent", metric },
-      statement: `SELECT COUNT(*) AS n_rows, MIN(${ts}) AS min_ts, MAX(${ts}) AS max_ts FROM ${from};`,
+      statement: `SELECT COUNT(*) AS n_rows, ${dialect.timestampText(`MIN(${ts})`)} AS min_ts, ${dialect.timestampText(`MAX(${ts})`)} AS max_ts FROM ${from};`,
     });
 
     // time: one series tool; the time level is a value (`aggregation`), chosen by a CASE over the ontology's levels

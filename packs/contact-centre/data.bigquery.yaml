@@ -1,0 +1,26 @@
+# Contact-centre pack, BigQuery variant of data.yaml: the same facts and formulas in GoogleSQL.
+# `__DATASET__` stands for "<project>.<dataset>"; the eval preparation step fills it in and loads the data there.
+# The time column of a fact must be a TIMESTAMP in BigQuery.
+source: bq-db
+dialect: bigquery
+
+facts:
+  calls:
+    # one row per call, with the organisation joined on (agents has one row per agent)
+    sql: |
+      SELECT c.call_id, c.ts, a.centre, a.site, a.team, c.agent, c.queue, c.call_reason,
+             c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
+      FROM `__DATASET__.calls` c LEFT JOIN `__DATASET__.agents` a USING (agent)
+    time: ts
+    concepts: [centre, site, team, agent, queue, call_reason]
+    time_levels:
+      # the label includes the date, so it is unique across the whole window
+      interval_30m: "CONCAT(FORMAT_TIMESTAMP('%Y-%m-%d %H', ts), ':', IF(EXTRACT(MINUTE FROM ts) < 30, '00', '30'))"
+    slots:
+      is_holiday: is_holiday
+      is_peak: is_peak
+
+metrics:
+  service_level: { fact: calls, numerator: answered_within_20s }
+  aht: { fact: calls, numerator: handle_seconds }
+  calls_offered: { fact: calls, value: "1" }

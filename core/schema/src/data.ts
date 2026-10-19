@@ -73,9 +73,15 @@ export const EvidenceSource = z.object({
 });
 export type EvidenceSource = z.infer<typeof EvidenceSource>;
 
+/** The SQL dialects the generator can write. */
+export const DIALECTS = ["sqlite", "bigquery"] as const;
+export type DialectName = (typeof DIALECTS)[number];
+
 export const DataDefs = z.object({
   /** The Toolbox source the generated tools run against. */
   source: z.string().min(1),
+  /** The SQL dialect of this file's SELECTs and of the source (default sqlite). Generated tools are written in it. */
+  dialect: z.enum(DIALECTS).default("sqlite"),
   facts: z.record(Identifier, Fact).refine((f) => Object.keys(f).length > 0, { message: "define at least one fact" }),
   metrics: z.record(z.string().min(1), MetricFormula).default({}),
   evidence: z.record(Identifier, EvidenceSource).default({}),
