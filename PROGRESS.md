@@ -63,7 +63,7 @@ re-covered by new packs before they count again:
 | 4 | Connector, parity and cost | done | 535d7a9 | Step 4 |
 | 5 | Date-range windows | done | 5186dd9 | Step 5 |
 | 6 | Intent core | done | c408240 | Step 6 |
-| 7 | Running intent and surfaces | done | see `git log` (message starts "Sprint 1 step 7") | Step 7 |
+| 7 | Running intent and surfaces | done | efc35ce | Step 7 |
 | 8 | Proof and docs: live agent on BigQuery, setup guide | not started | | |
 
 ## Next

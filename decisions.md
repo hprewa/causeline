@@ -82,7 +82,7 @@ Evidence for every step is in `docs/evidence/sprint-1.md`; the plan is the table
   A named month, a range and "since a date" are never cut. Why: sample data would otherwise make "last week" empty.
 - **`baseline` (a count of earlier windows) replaces the planned `baseline_rule`.** Why: there was only ever one rule.
 
-### Step 7: running intent and surfaces (commit recorded in `PROGRESS.md`)
+### Step 7: running intent and surfaces (commit efc35ce)
 - **The conversation's state lives in the MCP server for the life of the session: the intent so far, what was said since the
   last answer, and numbered answers.** Tools: `get_intent`, `set_intent`, `run_intent`, `recall`, `start_over`,
   `check_connection`. `route` and `scan_kpis` stay for vague questions. Why: a question is built over messages, and nothing
