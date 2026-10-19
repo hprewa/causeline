@@ -1,0 +1,144 @@
+# Intent eval for the contact-centre pack: what a person says over one or more messages, the change a model
+# should make to the intent from each, and what must be true afterwards. The data holds 2026-01-05 (a Monday)
+# to 2026-03-15 (a Sunday) and `as_of: data_end` makes "today" the day after, so last week is 2026-03-09..2026-03-15
+# (period label 2026-W10). Weeks run Monday to Sunday.
+
+- id: yesterday_value
+  turns:
+    - say: "What was the SLA yesterday?"
+      set: { kpi: SLA, task: value, period: { kind: relative, unit: day } }
+      expect: { status: ready, kpi: service_level, task: value, window: { start: "2026-03-15", end: "2026-03-15" }, says: [yesterday] }
+
+- id: last_week_deep_dive_by_day_for_one_team
+  turns:
+    - say: "Why was service level bad last week for team 5? Show it daily."
+      set: { kpi: service_level, task: deep_rca, period: { kind: relative, unit: week }, aggregation: daily, filters: { team: team_05 } }
+      expect:
+        status: ready
+        window: { start: "2026-03-09", end: "2026-03-15" }
+        aggregation: day
+        filters: { team: team_05 }
+        says: [deep dive, "team team_05", "last week (9–15 March 2026)", "by day"]
+
+- id: last_four_weeks_trend
+  turns:
+    - say: "How has handle time moved over the last 4 weeks, weekly?"
+      set: { kpi: aht, task: trend, period: { kind: relative, unit: week, offset: 1, count: 4 }, aggregation: weekly }
+      expect: { status: ready, window: { start: "2026-02-16", end: "2026-03-15" }, aggregation: week }
+
+- id: last_month_and_last_thirty_days
+  turns:
+    - say: "Call volume last month"
+      set: { kpi: call volume, task: value, period: { kind: relative, unit: month } }
+      expect: { status: ready, kpi: calls_offered, window: { start: "2026-02-01", end: "2026-02-28" } }
+    - say: "Actually the last 30 days"
+      set: { period: { kind: relative, unit: day, offset: 1, count: 30 } }
+      expect: { status: ready, kpi: calls_offered, window: { start: "2026-02-14", end: "2026-03-15" } }
+
+- id: since_a_date_and_year_to_date
+  turns:
+    - say: "Service level since 1 February"
+      set: { kpi: service_level, task: trend, period: { kind: since, date: "2026-02-01" } }
+      expect: { status: ready, window: { start: "2026-02-01", end: "2026-03-15" } }
+    - say: "And year to date?"
+      set: { period: { kind: to_date, unit: year } }
+      # the year began before the data did: it is cut at the first day the data holds, and says so
+      expect: { status: ready, window: { start: "2026-01-05", end: "2026-03-15" } }
+
+- id: one_month_by_day
+  turns:
+    - say: "Service level, 1 to 28 February, by day"
+      set: { kpi: service_level, task: trend, period: { kind: range, start: "2026-02-01", end: "2026-02-28" }, aggregation: day }
+      expect: { status: ready, window: { start: "2026-02-01", end: "2026-02-28" }, aggregation: day }
+
+- id: compare_two_labelled_weeks
+  turns:
+    - say: "Compare service level in week 9 vs week 8"
+      set: { kpi: service_level, task: compare, period: { kind: label, label: 2026-W09 }, comparison: { kind: period, period: { kind: label, label: 2026-W08 } } }
+      expect: { status: ready, window: { start: "2026-03-02", end: "2026-03-08" }, against: { start: "2026-02-23", end: "2026-03-01" } }
+
+- id: compare_last_week_with_the_one_before
+  turns:
+    - say: "Is service level better than the week before last week?"
+      set: { kpi: service_level, task: compare, period: { kind: relative, unit: week }, comparison: previous }
+      expect: { status: ready, window: { start: "2026-03-09", end: "2026-03-15" }, against: { start: "2026-03-02", end: "2026-03-08" } }
+
+- id: compare_asks_what_with
+  turns:
+    - say: "Compare service level for last week"
+      set: { kpi: service_level, task: compare, period: { kind: relative, unit: week } }
+      expect: { status: ask, slot: comparison, offers: [previous, same_last_year] }
+    - say: "against the previous week"
+      set: { comparison: previous }
+      expect: { status: ready, against: { start: "2026-03-02", end: "2026-03-08" } }
+
+- id: a_comparison_the_data_cannot_make
+  turns:
+    - say: "Service level last week against the same week last year"
+      set: { kpi: service_level, task: compare, period: { kind: relative, unit: week }, comparison: same_last_year }
+      expect: { status: ask, slot: comparison, says: ["covers 2026-01-05 to 2026-03-15"] }
+    - say: "February against January"
+      set: { period: { kind: calendar, unit: month, index: 2 }, comparison: { kind: period, period: { kind: calendar, unit: month, index: 1 } } }
+      # January began before the data did, and a named month is not cut short
+      expect: { status: ask, slot: comparison, says: ["2026-01-01"] }
+
+- id: built_up_over_several_messages
+  turns:
+    - say: "How's service level?"
+      set: { kpi: service_level }
+      expect: { status: ask, slot: task, offers: [value, compare, trend, deep_rca] }
+    - say: "Why did it drop?"
+      set: { task: deep_rca }
+      expect: { status: ask, slot: period }
+    - say: "Last week"
+      set: { period: { kind: relative, unit: week } }
+      expect: { status: ready, window: { start: "2026-03-09", end: "2026-03-15" } }
+    - say: "Just team 3"
+      set: { filters: { team: "team 3" } }
+      # "team 3" is not a team; the near one is offered, not assumed
+      expect: { status: ask, slot: filters, offers: [team_03] }
+    - say: "Yes, team_03"
+      set: { filters: { team: team_03 } }
+      expect: { status: ready, filters: { team: team_03 }, window: { start: "2026-03-09", end: "2026-03-15" } }
+
+- id: switching_to_another_kpi_keeps_the_rest
+  turns:
+    - say: "Why did service level drop last week at site 2?"
+      set: { kpi: service_level, task: deep_rca, period: { kind: relative, unit: week }, filters: { site: s_2 } }
+      expect: { status: ready, filters: { site: s_2 } }
+    - say: "And call volume?"
+      set: { kpi: call volume }
+      expect: { status: ready, kpi: calls_offered, task: deep_rca, filters: { site: s_2 }, window: { start: "2026-03-09", end: "2026-03-15" } }
+    - say: "Never mind the site"
+      set: { filters: { site: null } }
+      expect: { status: ready, filters: {} }
+
+- id: a_filter_value_that_is_not_in_the_data
+  turns:
+    - say: "Service level for the billin queue last week"
+      set: { kpi: service_level, task: value, period: { kind: relative, unit: week }, filters: { queue: billin } }
+      expect: { status: ask, slot: filters, offers: [billing] }
+    - say: "Service level for the refunds queue last week"
+      set: { filters: { queue: refunds } }
+      expect: { status: ask, slot: filters, says: ["Some that exist"] }
+    - say: "Service level for the tickets department last week"
+      set: { filters: { queue: null, department: tickets } }
+      expect: { status: ask, slot: filters }
+
+- id: a_period_the_data_does_not_hold
+  turns:
+    - say: "Service level in 2024"
+      set: { kpi: service_level, task: value, period: { kind: calendar, unit: year, year: 2024 } }
+      expect: { status: ask, slot: period, says: ["covers 2026-01-05 to 2026-03-15"] }
+    - say: "Last week then"
+      set: { period: { kind: relative, unit: week } }
+      expect: { status: ready, window: { start: "2026-03-09", end: "2026-03-15" } }
+
+- id: a_view_finer_than_the_period_allows
+  turns:
+    - say: "Service level yesterday by week"
+      set: { kpi: service_level, task: value, period: { kind: relative, unit: day }, aggregation: week }
+      expect: { status: ask, slot: aggregation, offers: [day, interval_30m] }
+    - say: "By half hour"
+      set: { aggregation: interval_30m }
+      expect: { status: ready, aggregation: interval_30m }

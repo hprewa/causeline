@@ -2,6 +2,8 @@
 # `__DATASET__` stands for "<project>.<dataset>"; the eval preparation step fills it in and loads the data there.
 # The time column of a fact must be a TIMESTAMP in BigQuery.
 source: bq-db
+# Sample data that stops at a fixed date: "last week" means the last week it holds, not the last week of the calendar.
+as_of: data_end
 dialect: bigquery
 
 facts:

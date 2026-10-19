@@ -2,6 +2,8 @@
 # and SQL. The ontology and the playbooks speak in concepts; swap the database and only this
 # file changes.
 source: contact-centre-db
+# Sample data that stops at a fixed date: "last week" means the last week it holds, not the last week of the calendar.
+as_of: data_end
 
 facts:
   calls:

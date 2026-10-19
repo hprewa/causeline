@@ -82,6 +82,11 @@ export const DataDefs = z.object({
   source: z.string().min(1),
   /** The SQL dialect of this file's SELECTs and of the source (default sqlite). Generated tools are written in it. */
   dialect: z.enum(DIALECTS).default("sqlite"),
+  /**
+   * What "today" means to a question. `today` is the real date; `data_end` is the day after the data's last day,
+   * for data that stops at a fixed date (a sample, a historic extract), so "last week" means the last week it holds.
+   */
+  as_of: z.enum(["today", "data_end"]).default("today"),
   facts: z.record(Identifier, Fact).refine((f) => Object.keys(f).length > 0, { message: "define at least one fact" }),
   metrics: z.record(z.string().min(1), MetricFormula).default({}),
   evidence: z.record(Identifier, EvidenceSource).default({}),

@@ -5,5 +5,6 @@ export * from "./playbook.js";
 export * from "./agent.js";
 export * from "./result.js";
 export * from "./evalcase.js";
+export * from "./intent.js";
 export * from "./validate-pack.js";
 export * from "./load.js";

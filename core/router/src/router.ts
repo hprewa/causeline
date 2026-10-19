@@ -59,14 +59,14 @@ function nearPhrase(qWords: string[], phrase: string[]): boolean {
   return false;
 }
 
-interface KpiHit {
+export interface KpiHit {
   kpi: string;
   /** 1 for the KPI's own name, a bit less for a synonym or a near spelling. */
   score: number;
   via: string;
 }
 
-function matchKpis(question: string, ont: Ontology): KpiHit[] {
+export function matchKpis(question: string, ont: Ontology): KpiHit[] {
   const qWords = words(question);
   const padded = ` ${qWords.join(" ")} `;
   const hits: KpiHit[] = [];

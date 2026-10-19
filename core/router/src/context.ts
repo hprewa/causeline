@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { defaultPlaybooksDir, loadPlaybook, runPlaybook, toBuckets, ToolIndex, type ToolCaller } from "@causeline/runner";
+import { defaultPlaybooksDir, loadPlaybook, runPlaybook, toBuckets, ToolIndex, type Bucket, type ToolCaller } from "@causeline/runner";
 import { loadAgents, loadPack, type Route } from "@causeline/schema";
 import { route } from "./router.js";
 
@@ -15,15 +15,20 @@ export function playbookNames(packDir: string, coreDir: string = defaultPlaybook
 }
 
 /**
- * The complete periods of the top time level, oldest first. A final period with far fewer rows than the
+ * The complete buckets of the top time level, oldest first. A final bucket with far fewer rows than the
  * one before is still being filled in and is left out, so "last week" means the last whole one.
  */
-export async function completePeriods(tools: ToolCaller, index: ToolIndex, metric: string, level: string): Promise<string[]> {
+export async function completeBuckets(tools: ToolCaller, index: ToolIndex, metric: string, level: string): Promise<Bucket[]> {
   const counts = (await tools.call(index.extent(metric), {}, "route"))[0];
   const series = toBuckets(await tools.call(index.series(metric, level), { start: String(counts.min_ts), end: String(counts.max_ts) }, "route"));
   const last = series[series.length - 1];
   const before = series[series.length - 2];
-  return (last && before && last.den < 0.6 * before.den ? series.slice(0, -1) : series).map((b) => b.bucket);
+  return last && before && last.den < 0.6 * before.den ? series.slice(0, -1) : series;
+}
+
+/** The labels of the complete periods of the top time level, oldest first. */
+export async function completePeriods(tools: ToolCaller, index: ToolIndex, metric: string, level: string): Promise<string[]> {
+  return (await completeBuckets(tools, index, metric, level)).map((b) => b.bucket);
 }
 
 export interface RouteWithDataOptions {

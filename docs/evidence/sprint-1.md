@@ -165,3 +165,47 @@ Routing 27/27, integration 5/5, all unit tests pass.
 back-to-back windows, so the weekday mix of the node queries is slightly unbalanced (the headline is still
 seasonally adjusted); trend and compare over arbitrary ranges; natural-language dates (step 6 does that, outside the
 runner).
+
+## Step 6: intent core
+
+**Change:** a fixed structure for what a person wants, and deterministic code that checks and resolves it.
+- `Intent` / `IntentPatch` / `PeriodSpec` / `ComparisonSpec` (`core/schema/src/intent.ts`). The period is data: `range`,
+  `relative {unit, offset, count}`, `to_date`, `since`, `calendar {month|quarter|year, index, year?}`, `label`. An agent
+  fills it from the conversation; code never parses free text. A message is a patch (left out: unchanged, null: cleared).
+- `core/intent` (new package): `resolveSpec` turns a period into whole days against "today" (periods never include
+  today; weeks run Monday to Sunday); `resolveAgainst` makes the other side of a comparison (previous unit, same dates a
+  year earlier, or another period); `validateIntent` checks KPI (name, synonym, one clear near match, else asks),
+  task, period, comparison, aggregation (a level of the ontology, "daily"/"by week" accepted, refused if the period is
+  shorter than the level), every filter concept and value against the data (a near spelling is offered, never taken),
+  and that the data holds the period; it returns either a ready, resolved intent with a plain-words play-back, or **one**
+  question with options. `mergeIntent` applies a patch. `intentEnv` reads the data's reach, its period labels and
+  concept values through the pack's own tools.
+- `as_of: data_end` in `data.yaml` (set for the contact-centre sample): "today" is the day after the data's last day, so
+  "last week" is the last week the data holds. Real warehouses keep the default (`today`).
+- A "to date" span that begins before the data does (year to date on data that starts on 5 January) is cut to the first day
+  the data holds and says so. A named month or quarter, a range and `since` a date are never cut: they ask.
+- Router: `matchKpis` exported; `completeBuckets` added (labels with the days they cover).
+
+**Checkpoint demo:** `node scripts/period-table.mjs 2026-10-14` prints the resolved natural periods (a Wednesday):
+yesterday 2026-10-13; last week 10-05..10-11; last 4 weeks 09-14..10-11; last month September; last quarter Q3; year to
+date 01-01..10-13; since 1 August; Q3 and Q2 in full; Q4 so far; December means last December. A second clock
+(2026-01-01) shows the year boundary.
+
+**Tests:** 16 unit tests in `core/intent` (the table above as assertions; Monday/Sunday week edges; today is never
+included; a property test that consecutive "last N units" spans touch with no gap or overlap across 450 clocks and
+five units; comparisons; play-back; the fixed order of questions; KPI, filter and aggregation matching; fixed-end data;
+labels; patch merging) and 2 for the eval scorer, including that each kind of wrong answer is a named miss.
+
+**Eval (fixture tier):** `packs/contact-centre/evals/intents.yaml`, 15 conversations (single messages and a five-message
+build-up; topic switch keeping the rest; a filter value not in the data; a period or comparison the data cannot hold;
+a view finer than the period allows), run against the pack's real clean data through Toolbox:
+`causeline eval --pack packs/contact-centre --intents` gives **15/15**. The expected dates were worked out by hand from
+the data's first and last day (2026-01-05 and 2026-03-15), not copied from output. Routing still 27/27; all unit tests,
+purity pass.
+
+**Not shown / limits:**
+- This tier feeds the patches a model *should* make; whether a model makes them is the live tier (step 7).
+- Not yet connected to a running session or the runner: `run_intent`, history and recall are step 7.
+- Comparison of two periods still reaches the runner as labels (see step 5); mapping resolved windows to that is step 7.
+- Weeks are Monday to Sunday; a pack whose business week differs is not yet configurable.
+- Fixture eval ran on SQLite only; the lookups go through the pack's tools, so BigQuery is expected to match (step 7 runs both).
