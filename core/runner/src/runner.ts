@@ -8,6 +8,7 @@ import { LoggingToolCaller } from "./toolcaller.js";
 import { ToolIndex } from "./toolindex.js";
 import { VERSION } from "./version.js";
 import { RunStop, type ToolCaller } from "./types.js";
+import { parseScope, ScopedToolCaller } from "./scope.js";
 
 export type RunInputs = Record<string, string | number | boolean>;
 
@@ -117,9 +118,12 @@ function seasonalityNote(ctx: RunContext): SeasonalityNote {
   };
 }
 
-export async function runPlaybook(opts: RunOptions): Promise<Result> {
+export async function runPlaybook(given: RunOptions): Promise<Result> {
+  const inputs = coerceInputs(given.playbook, given.inputs);
+  // a scope confines every query to one value of one or more concepts; a product's recursive runs share the wrapper
+  const scope = parseScope(inputs.scope);
+  const opts: RunOptions = Object.keys(scope).length > 0 && !(given.tools instanceof ScopedToolCaller) ? { ...given, tools: new ScopedToolCaller(given.tools, given.meta, scope) } : given;
   const { playbook, ontology } = opts;
-  const inputs = coerceInputs(playbook, opts.inputs);
   const metric = String(inputs.metric);
   const def = ontology.metrics[metric];
   if (!def) throw new Error(`metric "${metric}" is not in the ontology (have: ${Object.keys(ontology.metrics).join(", ")})`);

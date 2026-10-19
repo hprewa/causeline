@@ -10,6 +10,7 @@ inputs:
   concept: { type: string, default: "" }   # a hierarchy level or dimension, to compare two of its values
   a:       { type: string, default: "" }
   b:       { type: string, default: "" }
+  scope: { type: string, default: "" }   # confine the run to values of concepts: JSON, {"concept": "value"}
   baseline: { type: int, default: 4 }
 steps:
   - id: data_check

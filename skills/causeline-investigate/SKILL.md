@@ -6,28 +6,34 @@ when_to_use: Also for "what happened to <metric> in <period>", "is anything unus
 
 # Investigating a metric change
 
-You are explaining a change in a business metric. A deterministic playbook does the analysis; your job is to run it, read its `result.json` carefully, and explain it honestly. The analysis tools are `route`, `scan_kpis`, `run_playbook` and `list_playbooks` from the causeline-mcp server (`validate_pack`, `generate_tools`, `check_data` and `analyze_seasonality` are for onboarding; see the `causeline-onboard` skill).
+You are explaining a change in a business metric. A deterministic playbook does the analysis; your job is to run it, read its `result.json` carefully, and explain it honestly. The analysis tools are `get_intent`, `set_intent`, `run_intent`, `recall`, `start_over`, `check_connection`, `route`, `scan_kpis`, `run_playbook` and `list_playbooks` from the causeline-mcp server (`validate_pack`, `generate_tools`, `check_data` and `analyze_seasonality` are for onboarding; see the `causeline-onboard` skill).
 
 ## Rules
 
-1. **Run a playbook before you answer.** Do not answer a "why did this change" question from memory, from the question's wording, or by guessing at causes.
+1. **Run the analysis before you answer.** Do not answer a "why did this change" question from memory, from the question's wording, or by guessing at causes.
 2. **Never state a number that is not in the result.** Every figure you quote (rates, changes, impacts, counts, shares) must come from `headline`, `findings`, `path`, `masking_flags` or `steps`. You may round, convert a fraction to a percent, or turn a rate change into points; you may not compute new statistics or estimate anything.
 3. **Cite the step.** For each claim, say which step it came from, using the ids in the result, for example "(step `refine`)". A finding's `evidence` lists the steps behind it.
 4. **Do not query the data yourself** (no ad-hoc SQL, no shell tools against the database). If you need a different cut, run the playbook again with different inputs.
 5. **Say what you did not establish.** A finding says where and when something changed, not why it happened in the real world. Describe what the data shows; if the user asks for the cause behind it (a strike, a supplier problem), say that this is outside what the data shows and suggest what to check.
 
-## Workflow
+## Workflow: build the question, confirm it, run it
 
-1. **Call `route` with the user's question, in their words.** It decides the KPI, the task and the expert, resolves the period, and returns `announce` (one plain sentence saying what it will do), `needs` (at most one question) and `options` (ranked, each with a `playbook` and `inputs`). Do not pick a playbook or fill inputs yourself.
-2. **Say what was chosen** (the `announce` sentence) before running it, so the user can redirect. If an option's `status` is `draft`, say it is a generic expert that has not been verified.
-3. **If `needs` is set, ask that one question and stop.** Offer its `choices`. Then call `route` again with the answer folded into the question.
-4. **Run it.** By `strategy`:
-   - `expert`: call `run_playbook` with the first option's `playbook` and `inputs`.
-   - `scan`: no KPI was named. Call `scan_kpis` with `scan.period`; for each KPI in `moved` call `route` naming that KPI and run its deep dive; say that the others did not move significantly (quote `scan_kpis`).
-   - `explorer`: no expert covers this. Say so plainly: you can only answer questions about the KPIs this pack defines, and nothing here has been verified for this one. Offer the closest KPI.
-5. Read the result (below) and answer. The task decides the shape: `value` (headline: the value, what it should have been, whether the difference is real), `trend` (`trend`: each period against its own baseline, and the change points), `compare` (`comparison`: A against B, the difference and whether it is real), `deep_rca` (`findings`, `path`, `evidence`).
+The user's question becomes an **intent**: a fixed structure (KPI, task, period, comparison, view, filters). You fill it in from what they say; code checks it against the data, works out the dates, and reads it back in plain words. You never compute dates, never guess a value, and nothing runs until the intent is complete.
 
-`list_playbooks` shows the playbooks, the experts and the pack's ontology if you need to explain what is available.
+1. **Call `get_intent` first** in a new conversation. It gives today's date and what the data covers, the KPIs (and other names people use for them), the concepts you can filter by, the views (time levels), recent period labels, the intent so far and the numbered answers so far.
+2. **For each message, call `set_intent`** with the message and *only what it changes*: `kpi`, `task` (`value`, `compare`, `trend`, `deep_rca`), `period`, `comparison`, `aggregation` (the view), `filters`. Leave a slot out to keep it; set it to `null` to clear it; set a filter to `null` to drop it.
+   - **Periods are structure, not text.** Yesterday = `{kind: relative, unit: day}`. Last week = `{kind: relative, unit: week}`. Last 4 weeks = `{kind: relative, unit: week, count: 4}`. Last 30 days = `{kind: relative, unit: day, count: 30}`. Last month, last quarter: the same with that unit. Year to date = `{kind: to_date, unit: year}`. Since 1 August = `{kind: since, date}`. Q3 = `{kind: calendar, unit: quarter, index: 3}`; August = `{kind: calendar, unit: month, index: 8}`. Exact dates = `{kind: range, start, end}`. A period label from `get_intent` = `{kind: label, label}`.
+   - Comparison: `previous`, `same_last_year`, or `{kind: period, period: ...}` ("Q3 vs Q2": period Q3, comparison period Q2, task `compare`).
+   - Use the KPI and concept names from `get_intent`. Pass a filter value exactly as the user wrote it, words included ("team 5", not "5"); the code looks it up in the data and offers the nearest match instead of guessing.
+3. **Read the result of `set_intent`.**
+   - `check.status` is `ask`: ask the user that **one** question, in your own words, offering its options. Then call `set_intent` with their answer. Do not answer it for them.
+   - `check.status` is `ready`: say the `playback` back to the user in a sentence so they can correct it ("So: ..."). If `topic_switch` is present, say what carried over from the last question. Mention any `notes`.
+4. **Call `run_intent`** when the intent is ready and the user has not objected. It re-checks and refuses (with the question) if anything is missing; it never guesses. If it says it `cannot` run something, tell the user why and offer what can be done.
+5. **Answer from the result** (below), then offer to refine. The intent is kept, so "now for team 3", "by day" or "and call volume?" is another `set_intent` with just that change, then `run_intent`. `recall` brings an earlier numbered answer back; `start_over` is for a clearly new question where nothing should carry over.
+
+If a run cannot connect to the data (a cloud warehouse sign-in, a missing project), call `check_connection` and tell the user what it says.
+
+`route` and `scan_kpis` remain for a vague question with no KPI named ("why was last week bad?"): `scan_kpis` checks every KPI for a period and lists the ones that moved; then build and run an intent for each KPI that moved, and say the others did not move significantly. If nothing in the pack covers the question, say so plainly and offer the closest KPI. `list_playbooks` shows the playbooks, experts and ontology if you need to explain what is available.
 
 ## Reading the result
 

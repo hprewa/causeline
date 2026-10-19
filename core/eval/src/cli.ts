@@ -14,7 +14,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
   --model <name>          model for the agent
   --max-turns <n>         agent turn limit (default 12)
   --routing               score the pack's routing eval (evals/routing.yaml) instead of its cases; needs at least 90%
-  --intents               score the pack's intent eval (evals/intents.yaml): conversations to resolved intents; needs all of them
+  --intents               score the pack's intent eval (evals/intents.yaml): conversations to resolved intents; needs all of them (add --agent claude-code for a live attempt at each)
   --reuse                 reuse a case's prepared pack when its setup has not changed
   --toolbox <path>        Toolbox binary (default: CAUSELINE_TOOLBOX, PATH, or ./toolbox.exe)
   --work-dir <dir>        where per-case packs are built (default: runs/eval-work/<pack name>)
@@ -51,9 +51,25 @@ export async function runEvalCli(argv: string[]): Promise<number> {
     return outcomes.filter((o) => o.pass).length / Math.max(1, outcomes.length) >= 0.9 ? 0 : 1;
   }
   if (switches.has("intents")) {
-    const outcomes = await runIntentEval({ packDir: resolve(pack), workRoot: resolve(flags.get("work-dir") ?? join(defaultWorkRoot(), basename(resolve(pack)))), toolbox: flags.get("toolbox"), log: (l) => console.error(l) });
+    const withAgent = flags.get("agent");
+    if (withAgent && withAgent !== "claude-code") throw new Error(`unknown agent "${withAgent}" (only claude-code is supported)`);
+    const outcomes = await runIntentEval({
+      packDir: resolve(pack),
+      workRoot: resolve(flags.get("work-dir") ?? join(defaultWorkRoot(), basename(resolve(pack)))),
+      toolbox: flags.get("toolbox"),
+      only: flags.get("case")?.split(","),
+      log: (l) => console.error(l),
+      ...(withAgent ? { agent: { pluginDir: resolve(flags.get("plugin-dir") ?? join("clients", "claude-code")), bare: !switches.has("no-bare"), model: flags.get("model"), maxTurns: Number(flags.get("max-turns") ?? 20), timeoutMs: 10 * 60 * 1000 } } : {}),
+    });
     console.log(renderIntents(outcomes));
-    return outcomes.every((o) => o.pass) ? 0 : 1;
+    if (withAgent) {
+      const dir = resolve(flags.get("out-dir") ?? join("runs", "evals"));
+      mkdirSync(dir, { recursive: true });
+      const file = join(dir, `intents-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
+      writeFileSync(file, JSON.stringify(outcomes, null, 2) + "\n", "utf-8");
+      console.log(`results: ${file}`);
+    }
+    return outcomes.every((o) => o.pass && (!o.agent || o.agent.pass)) ? 0 : 1;
   }
   const agentName = flags.get("agent");
   if (agentName && agentName !== "claude-code") throw new Error(`unknown agent "${agentName}" (only claude-code is supported)`);

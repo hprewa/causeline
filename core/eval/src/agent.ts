@@ -5,8 +5,10 @@ import type { AgentMetrics } from "./table.js";
 export interface AgentRun {
   narrative: string;
   toolCalls: { name: string; input: unknown; /** The start of what the tool answered, for diagnosis. */ output?: string }[];
-  /** The result.json the agent's run_playbook call returned, if any. */
+  /** The result.json the agent's run_playbook or run_intent call returned, if any. */
   result: Result | null;
+  /** What each intent tool answered, in order (the full bodies), for scoring the question the agent built. */
+  intents: { tool: string; body: any }[];
   metrics: AgentMetrics;
   /** Set when the run failed to start or finished with an error. */
   error?: string;
@@ -34,6 +36,8 @@ const textOf = (content: unknown): string => {
 export function parseStream(lines: string[]): AgentRun {
   const toolCalls: AgentRun["toolCalls"] = [];
   const runPlaybookIds = new Set<string>();
+  const intentIds = new Map<string, string>();
+  const intents: AgentRun["intents"] = [];
   let result: Result | null = null;
   let narrative = "";
   const metrics: AgentMetrics = { turns: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, ms: 0 };
@@ -53,7 +57,9 @@ export function parseStream(lines: string[]): AgentRun {
       for (const block of ((msg.message as { content?: StreamBlock[] })?.content ?? [])) {
         if (block.type === "tool_use" && block.name) {
           toolCalls.push({ name: block.name, input: block.input, ...(block.id ? { id: block.id } : {}) } as { name: string; input: unknown });
-          if (/run_playbook$/.test(block.name) && block.id) runPlaybookIds.add(block.id);
+          if (/(run_playbook|run_intent)$/.test(block.name) && block.id) runPlaybookIds.add(block.id);
+          const intentTool = /(set_intent|run_intent|recall|start_over|get_intent)$/.exec(block.name)?.[1];
+          if (intentTool && block.id) intentIds.set(block.id, intentTool);
         }
       }
     } else if (msg.type === "user") {
@@ -61,6 +67,10 @@ export function parseStream(lines: string[]): AgentRun {
         if (block.type === "tool_result" && block.tool_use_id) {
           const call = toolCalls.find((c) => (c as { id?: string }).id === block.tool_use_id);
           if (call) call.output = textOf(block.content).slice(0, 600);
+        }
+        if (block.type === "tool_result" && block.tool_use_id && intentIds.has(block.tool_use_id)) {
+          const body = safeJson(textOf(block.content));
+          if (body) intents.push({ tool: intentIds.get(block.tool_use_id)!, body });
         }
         if (block.type === "tool_result" && block.tool_use_id && runPlaybookIds.has(block.tool_use_id)) {
           // run_playbook returns { file, result }; accept a bare result too
@@ -80,7 +90,7 @@ export function parseStream(lines: string[]): AgentRun {
       if (msg.is_error === true || (typeof msg.subtype === "string" && msg.subtype !== "success")) error = `claude finished with ${String(msg.subtype)}: ${narrative.slice(0, 300)}`;
     }
   }
-  return { narrative, toolCalls, result, metrics, ...(error ? { error } : {}), ...(session ? { session } : {}) };
+  return { narrative, toolCalls, result, intents, metrics, ...(error ? { error } : {}), ...(session ? { session } : {}) };
 }
 
 function safeJson(text: string): unknown {
@@ -107,7 +117,7 @@ export interface AgentOptions {
 }
 
 /** MCP tools of the plugin's server, as Claude Code names them: mcp__plugin_<plugin>_<server>__<tool>. */
-export const PLUGIN_TOOLS = ["list_playbooks", "run_playbook", "validate_pack", "generate_tools", "check_data", "analyze_seasonality", "route", "scan_kpis", "build_status", "connect_files", "describe_data", "test_fact", "save_pack", "play_back", "reconcile_metric", "add_incident", "verify_expert"].map((t) => `mcp__plugin_causeline_causeline-mcp__${t}`);
+export const PLUGIN_TOOLS = ["get_intent", "set_intent", "run_intent", "recall", "start_over", "check_connection", "list_playbooks", "run_playbook", "validate_pack", "generate_tools", "check_data", "analyze_seasonality", "route", "scan_kpis", "build_status", "connect_files", "describe_data", "test_fact", "save_pack", "play_back", "reconcile_metric", "add_incident", "verify_expert"].map((t) => `mcp__plugin_causeline_causeline-mcp__${t}`);
 
 const quote = (arg: string) => (/^[\w./:=@%+-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '\\"')}"`);
 

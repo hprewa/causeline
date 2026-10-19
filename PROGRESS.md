@@ -1,6 +1,15 @@
 # Progress
 
-Where the project stands and what comes next. Decisions and their reasons are in `decisions.md`.
+Where the project stands and what comes next. Decisions and their reasons are in `decisions.md`; the proof for each step
+is in `docs/evidence/`.
+
+## How progress is tracked
+
+- Work is planned as sprints of numbered steps. Each step ends in one commit that updates this file, `decisions.md` and the
+  sprint's evidence document together, so `git log` reads as the step-by-step history.
+- A step is `done` only when its checks ran and the evidence says what was **not** shown. Anything unfinished is listed
+  under the step, not dropped.
+- The tables below are the index: what exists, the step table of the current sprint, coverage debt, and what is next.
 
 ## What exists
 
@@ -14,11 +23,16 @@ Where the project stands and what comes next. Decisions and their reasons are in
 | Builder: CSV files to a checked pack by conversation, plain-sentence play-back, number reconciliation, expert verification | done |
 | MCP server and Claude Code plugin; skills `causeline-investigate`, `causeline-onboard`, `causeline-build` | done |
 | Eval harness with planted faults (runner level and agent level) and routing evals | done |
-| Example pack: contact centre (synthetic data) | done |
+| Example pack: contact centre (synthetic data), on SQLite and on BigQuery with identical results | done |
+| Standard tool parameters (one slice tool per KPI and concept with optional filters; one series tool with the time level as a value) | done |
+| BigQuery: dialect, pack targets, dry-run checks, per-question cost budget | done |
+| Date-range questions (whole days) | done |
+| Intent: a fixed structure an agent fills in, natural periods resolved by code, one question at a time, plain-words play-back | done |
+| Running intent: a question built over messages, scoped runs, recall, topic switches, connection check | done (live-agent proof: step 8) |
 | Starter pack for a new use case (`packs/_template`) | done |
 
-Measured on the last run: unit tests green in every package, contact-centre eval 13/13, routing 27/27,
-integration 5/5, core purity check OK.
+Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
+BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 6/6, core purity check OK.
 
 ## Coverage debt
 
@@ -39,12 +53,25 @@ re-covered by new packs before they count again:
 | Two simultaneous causes | no | alerts pack |
 | KPI tree hand-off (a KPI made of parts) | no | depth sprint |
 
+## Sprint 1: step by step
+
+| Step | What | State | Commit | Evidence (`docs/evidence/sprint-1.md`) |
+|---|---|---|---|---|
+| 1 | BigQuery spike | done | f8534c6 | Step 1 |
+| 2 | Standard parameters on SQLite | done | 6fd9fe0 | Step 2 |
+| 3 | BigQuery dialect and targets | done | db337a8 | Step 3 |
+| 4 | Connector, parity and cost | done | 535d7a9 | Step 4 |
+| 5 | Date-range windows | done | 5186dd9 | Step 5 |
+| 6 | Intent core | done | c408240 | Step 6 |
+| 7 | Running intent and surfaces | done | see `git log` (message starts "Sprint 1 step 7") | Step 7 |
+| 8 | Proof and docs: live agent on BigQuery, setup guide | not started | | |
+
 ## Next
 
 | # | Sprint | Done when |
 |---|---|---|
 | P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
-| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set |
+| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. Steps 1 to 7 done, step 8 left |
 | 2 | Multi-point sign-off, Builder on BigQuery, a public-data showcase pack, an alerts example pack | a pack built by conversation reaches `verified` through the status ladder |
 | 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery | branching playbooks with full branch coverage; new depth evals pass |
 | 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |

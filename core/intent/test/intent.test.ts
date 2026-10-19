@@ -165,6 +165,10 @@ test("a filter value must exist in the data; a near spelling is offered, never s
   assert.equal(ok.status === "ready" && ok.resolved.filters.region, "North", "case is the data's, not the person's");
   const spaced = await f({ site: "harbour view" });
   assert.equal(spaced.status === "ready" && spaced.resolved.filters.site, "Harbour View");
+  const padded = await f({ site: "site 01" });
+  assert.equal(padded.status === "ready" && padded.resolved.filters.site, "site_1", "01 and 1 are the same number");
+  const spacedNumber = await f({ site: "Site 2" });
+  assert.equal(spacedNumber.status === "ready" && spacedNumber.resolved.filters.site, "site_2");
   const typo = await f({ region: "Nroth" });
   assert.ok(typo.status === "ask" && typo.slot === "filters" && typo.detail === "region" && typo.options.some((o) => o.value === "North"), JSON.stringify(typo));
   const missing = await f({ region: "Atlantis" });

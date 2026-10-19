@@ -1,5 +1,6 @@
 import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import type { ServerConfig } from "./config.js";
+import { IntentService } from "./intent.js";
 import { addIncidentTool, buildStatusTool, connectFilesTool, describeDataTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
@@ -62,7 +63,45 @@ const incidentInput = fromJsonSchema<Record<string, unknown>>(
 );
 const verifyInput = fromJsonSchema<{ kpi: string }>(obj({ kpi: { type: "string" } }, ["kpi"]));
 
-const runPlaybookInput = fromJsonSchema<RunArgs>({
+const periodSpecSchema = {
+  type: "object",
+  description:
+    "The period as structure, never as text. kind=relative {unit: day|week|month|quarter|year, offset (default 1: how many units back the span ends; 1 = the last complete one, 0 = the current one so far), count (default 1)}: yesterday = day/1/1, last week = week/1/1, last 4 weeks = week/1/4, last 30 days = day/1/30, last month = month/1/1. kind=to_date {unit}: year to date. kind=since {date: YYYY-MM-DD}. kind=calendar {unit: month|quarter|year, index (month 1-12 or quarter 1-4), year?}: Q3 = quarter/3, August = month/8 (no year: the latest one that has begun). kind=range {start, end} as YYYY-MM-DD, both included. kind=label {label}: a period label from get_intent.",
+  properties: {
+    kind: { enum: ["relative", "to_date", "since", "calendar", "range", "label"] },
+    unit: { type: "string" },
+    offset: { type: "integer" },
+    count: { type: "integer" },
+    date: { type: "string" },
+    index: { type: "integer" },
+    year: { type: "integer" },
+    start: { type: "string" },
+    end: { type: "string" },
+    label: { type: "string" },
+  },
+  required: ["kind"],
+};
+const setIntentInput = fromJsonSchema<{ message?: string; patch?: unknown }>(
+  obj({
+    message: { type: "string", description: "The user's message, as they wrote it (kept so the conversation can be recalled)." },
+    patch: {
+      type: "object",
+      description: "Only what this message changes. null clears a slot; filters merge by concept and null removes one.",
+      properties: {
+        kpi: { type: ["string", "null"], description: "A KPI name from get_intent, or the words the user used for it." },
+        task: { enum: ["value", "compare", "trend", "deep_rca", null], description: "value: the number. compare: two periods (set comparison). trend: movement over time. deep_rca: why it changed and where." },
+        period: { anyOf: [periodSpecSchema, { type: "null" }] },
+        comparison: { description: "For compare: 'previous' (the period just before), 'same_last_year', or {kind: 'period', period: <a period>} for a named one ('Q3 vs Q2').", anyOf: [{ enum: ["previous", "same_last_year"] }, { type: "object" }, { type: "null" }] },
+        aggregation: { type: ["string", "null"], description: "The view: a time level from get_intent ('by day' = day). Leave out to let the analysis choose." },
+        filters: { type: "object", description: "Concept -> value, for example {concept_name: 'value'}. Use the concept names from get_intent.", additionalProperties: { type: ["string", "null"] } },
+        baseline: { type: ["integer", "null"], description: "How many earlier periods make up what it should have been. Leave out unless the user asks." },
+      },
+    },
+  }, ["patch"]),
+);
+const recallInput = fromJsonSchema<{ n?: number }>(obj({ n: { type: "integer", description: "The number of the answer to bring back." } }));
+
+const runPlaybookInput =fromJsonSchema<RunArgs>({
   type: "object",
   properties: {
     name: { type: "string", description: "Playbook name, as returned by list_playbooks (for example metric_change)." },
@@ -172,6 +211,15 @@ export function createServer(cfg: ServerConfig, callers: Callers): McpServer {
   builder("reconcile_metric", "Match a KPI to a number the user knows", "Compute a KPI for a period and compare with a number from the user's own report. A match marks the KPI reconciled; a mismatch returns both numbers and where to look. A KPI that has not matched cannot have a verified expert.", reconcileInput, (a) => reconcileMetricTool(cfg, callers, a));
   builder("add_incident", "Record a past incident", "Remember a past incident the user knows the cause of (period, where it was, how they would ask) as a test case run on their real data. Ask the user for one per KPI.", incidentInput, (a) => addIncidentTool(cfg, a as never));
   builder("verify_expert", "Check an expert against the user's incident", "Run the KPI's recorded incidents through the analysis. Only if the KPI is reconciled and every incident is found where the user said does the expert become verified. Say plainly what failed otherwise.", verifyInput, (a) => verifyExpertTool(cfg, a));
+
+  // --- the running intent: a question built up over messages, checked against the data, then run ------------------------
+  const intent = new IntentService(cfg, callers);
+  builder("get_intent", "Read the question so far", "Start of any question about a KPI. Returns everything you need to fill the intent in correctly: today's date and what the data covers, the KPIs (with other names people use), the concepts you can filter by, the views (time levels), recent period labels, the intent built so far, what the user said since the last answer, and the numbered answers so far. Read it before calling set_intent.", null, () => intent.get(), true);
+  builder("set_intent", "Update the question", "Record the user's message and the change it makes to the intent. Fill in only what they said; leave other slots out to keep them, set a slot to null to clear it, and set a filter to null to drop it. You never compute dates: say them as the period structure and the code resolves them against today and the data. Returns either the question to ask the user (exactly one), or the intent read back in plain words for the user to confirm. A new KPI with the rest unchanged is a topic switch: the result says what carried over; tell the user.", setIntentInput, (a) => intent.set(a));
+  builder("run_intent", "Run the question", "Run the intent once set_intent says it is ready (it re-checks, and refuses with the one question to ask if anything is missing or unclear). Returns the full result, the play-back and any notes. Explain the result using only what it contains. The intent is kept so the user can refine it.", null, () => intent.run());
+  builder("recall", "Go back to an earlier answer", "Without n: the numbered list of answers so far. With n: bring that answer's question back as the active intent so the user can adjust it ('the same, for another value').", recallInput, (a) => intent.recall(a), true);
+  builder("start_over", "Forget the question being built", "Clear the intent being built (for a clearly new question where nothing should carry over). The answers so far are kept and can be recalled.", null, () => intent.startOver());
+  builder("check_connection", "Can the data be reached?", "For a pack that reads a cloud database: whether this computer is signed in, the project accepts queries and the dataset can be read, in plain words with what to do when not. Call it when a run fails to connect or before the first question on a new database.", null, () => intent.checkConnection(), true);
 
   server.registerTool(
     "generate_tools",

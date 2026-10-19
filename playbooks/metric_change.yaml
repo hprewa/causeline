@@ -6,6 +6,7 @@ inputs:
   start_date: { type: string, default: "" } # ... or a range of whole days (YYYY-MM-DD, both inclusive)
   end_date:   { type: string, default: "" }
   aggregation: { type: string, default: "" } # the time level to start looking at inside the range (default: the second level)
+  scope: { type: string, default: "" }   # confine the run to values of concepts: JSON, {"concept": "value"}
   baseline: { type: int, default: 4 } # periods to compare against
 steps:
   - id: data_check

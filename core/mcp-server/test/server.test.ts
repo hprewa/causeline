@@ -67,7 +67,7 @@ after(async () => {
 
 test("exposes exactly the causeline-mcp tools, with read-only hints where they apply", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["add_incident", "analyze_seasonality", "build_status", "check_data", "connect_files", "describe_data", "generate_tools", "list_playbooks", "play_back", "reconcile_metric", "route", "run_playbook", "save_pack", "scan_kpis", "test_fact", "validate_pack", "verify_expert"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "connect_files", "describe_data", "generate_tools", "get_intent", "list_playbooks", "play_back", "recall", "reconcile_metric", "route", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "start_over", "test_fact", "validate_pack", "verify_expert"]);
   const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
   assert.equal(byName.list_playbooks.annotations?.readOnlyHint, true);
   assert.equal(byName.generate_tools.annotations?.readOnlyHint, false);
@@ -83,7 +83,7 @@ test("list_playbooks returns the core playbook and a summary of the ontology", a
   assert.deepEqual(out.playbooks.map((p: any) => p.name).sort(), ["compare", "metric_change", "trend", "value"]);
   const change = out.playbooks.find((p: any) => p.name === "metric_change");
   assert.equal(change.source, "core");
-  assert.deepEqual(Object.keys(change.inputs), ["metric", "period", "start_date", "end_date", "aggregation", "baseline"]);
+  assert.deepEqual(Object.keys(change.inputs), ["metric", "period", "start_date", "end_date", "aggregation", "scope", "baseline"]);
   assert.equal(out.ontology.experts.length, 8, "a generic expert per KPI and task: 2 KPIs x 4 tasks");
   assert.ok(out.ontology.experts.every((e: any) => e.status === "draft"));
   assert.equal(out.ontology.period_level, "week");

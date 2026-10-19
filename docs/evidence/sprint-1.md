@@ -209,3 +209,54 @@ purity pass.
 - Comparison of two periods still reaches the runner as labels (see step 5); mapping resolved windows to that is step 7.
 - Weeks are Monday to Sunday; a pack whose business week differs is not yet configurable.
 - Fixture eval ran on SQLite only; the lookups go through the pack's tools, so BigQuery is expected to match (step 7 runs both).
+
+## Step 7: running intent and surfaces
+
+**Change:**
+- **MCP tools** (`core/mcp-server/src/intent.ts`): `get_intent` (today and the data's reach, KPIs with other names, concepts,
+  views, recent period labels, the intent so far, messages since the last answer, numbered answers), `set_intent` (a message
+  plus the patch a model made; returns the one question, or the play-back), `run_intent` (re-checks, then plans and runs; refuses
+  with the question when incomplete), `recall(n)` (brings an answer back as the active intent), `start_over`, `check_connection`
+  (BigQuery sign-in, project and dataset in plain words). `route` and `scan_kpis` remain for vague questions.
+- **Plan from intent** (`core/intent/src/plan.ts`): the expert for the KPI and task, else the core template; a window becomes
+  dates (or the data's label when the person named one); aggregation and baseline pass through; a comparison runs only on whole
+  top-level periods of the data (found by their days), otherwise it says why and runs nothing.
+- **Scope** (`core/runner/src/scope.ts`): the intent's filters are applied to every query. This was missing: before it, the runner had
+  no way to restrict a run, so "just team 5" would have been read back and then ignored. The tools already take each concept
+  as an optional filter; a split by a scoped concept keeps only that value's row; a tool that cannot be confined is an error.
+- **Session** (`core/intent/src/session.ts`): active intent, unread messages, numbered history (50), topic switch that says what carried over.
+- **KPI canonicalised** on `set_intent`, so "call volume" is stored as the ontology's name and a change of KPI is recognised.
+- **Filter values:** numbers equal regardless of leading zeros ("team 5" is `team_05`) when exactly one value fits; a misspelling still asks.
+  Found by the live run below (the model said "5", then "team 5", and each time got a needless question).
+- **Cost control in the server:** a BigQuery pack is metered in the MCP server too, not only in evals.
+- **Skill** `causeline-investigate` rewritten to the flow get_intent, set_intent, confirm the play-back, run_intent, refine; the
+  rules and "reading the result" are unchanged.
+- **Eval harness:** recognises the intent tools; `--intents --agent claude-code` gives each conversation to a live agent
+  (as one prompt with the user's messages in order) and scores where the question ended up.
+
+**Tests:** runner 108 (6 new on scope, including: confined to where a planted fault is it is found, confined elsewhere nothing is,
+two scopes narrow together, a product reaches its drivers, a drill inside a scope never widens it, an unconfinable concept is an
+error); intent 24 (plan, session, matching); eval 24; integration 6/6, including one conversation over stdio against a real Toolbox:
+ask, confirm, run by date range, a misspelt team offered not guessed, a scoped run worse than the whole, a topic switch, recall,
+a comparison of non-whole weeks refused with a reason, a trend over four weeks, start over.
+
+**Evals:** SQLite 18/18, routing 27/27, intent fixture tier 16/16 (a new case for leading zeros; the "team 3" case now uses a misspelling).
+
+**Live agent (Claude Code, own login, 9 attempts over 7 distinct conversations, in the runs below):**
+- First run, 6 conversations: 5 passed, $1.04. The miss: the model sent "5" for "team 5"; the system asked "Did you mean team_05?"
+  rather than guess, which is the intended safe behaviour, but needless. The skill now says to pass values exactly as written, and the
+  matcher treats equal numbers as equal (above). After the wording change alone the same conversation still asked (now about "team 5"); after the matcher change, a re-run of it and of a new leading-zero conversation: 2/2, $0.32.
+- Cost per conversation: $0.09 to $0.25, 6 to 12 turns.
+
+**BigQuery:** a scripted conversation (`node scripts/intent-demo.mjs`, `CAUSELINE_TARGET=bigquery`) gives the same answers as on SQLite
+(same top finding team_05, same headline change -0.2941347722688046), with cost in each result: 22 queries, 99 MB, about $0.0006 for a
+deep dive; 18 queries and 115 MB for the same scoped by day; 8 queries and 28 MB for a comparison.
+
+**BigQuery evals:** the intent fixture tier 16/16 and the 18 runner cases 18/18; parity against SQLite: 18 cases compared, identical (1.26 GB in 302 queries, about $0.007).
+
+**Not shown / limits:**
+- Live tier covers 7 of the 16 conversations, on SQLite only; it is one prompt per conversation, not turn-by-turn with a human.
+- Whether a model always sends a valid patch is measured by the live tier, not guaranteed; invalid patches are refused with the field named.
+- State lives in the server process: a restart forgets the conversation (the answers' result files remain on disk).
+- A comparison needs whole periods of the data; "last 5 days against the 5 before" is refused with a reason, not run.
+- Sub-day periods, a configurable week start, and an intent for "A against B" of two values of one concept remain open (route still handles the latter).

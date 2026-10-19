@@ -167,7 +167,9 @@ export function scoreAgent(ev: AgentEvidence, expect: Expectation): Score {
   const checks: Check[] = [];
   const called = ev.toolCalls.filter((t) => /run_playbook$/.test(t.name));
   const picked = called.map((t) => (t.input as { name?: string } | undefined)?.name);
-  checks.push({ name: "playbook_called", ok: picked.includes(ev.expectedPlaybook), detail: `run_playbook invocations: ${picked.join(", ") || "none"}` });
+  // the running intent picks the playbook itself: the one it ran is in the result it returned
+  if (ev.toolCalls.some((t) => /run_intent$/.test(t.name)) && ev.result) picked.push(ev.result.playbook);
+  checks.push({ name: "playbook_called", ok: picked.includes(ev.expectedPlaybook), detail: `playbooks run: ${picked.join(", ") || "none"}` });
   checks.push({ name: "result_available", ok: ev.result !== null, detail: ev.result ? undefined : "no result.json came back from run_playbook" });
 
   if (expect.top_finding) {

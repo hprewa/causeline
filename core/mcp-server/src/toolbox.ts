@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { withCostControl } from "@causeline/connect-bigquery";
 import { SdkToolCaller, ToolboxProcess, type ToolCaller } from "@causeline/runner";
 import type { ServerConfig } from "./config.js";
 
@@ -24,7 +27,9 @@ export class ToolboxManager {
 
   /** A fresh caller each time: it loads the current toolset, so regenerated tools are picked up. */
   async caller(): Promise<ToolCaller> {
-    return new SdkToolCaller(await this.url());
+    const caller = new SdkToolCaller(await this.url());
+    // a pack that reads a cloud database is metered: each query is priced before it runs and a budget stops a runaway
+    return existsSync(join(this.config.packDir, "data.yaml")) ? withCostControl(this.config.packDir, caller) : caller;
   }
 
   async stop(): Promise<void> {

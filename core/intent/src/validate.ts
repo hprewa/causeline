@@ -29,6 +29,9 @@ const TASK_OPTIONS: IntentOption[] = [
   { value: "deep_rca", label: "a deep dive into why it changed" },
 ];
 
+/** Lower-case, separators as spaces, and no leading zeros in numbers ("Item_05" -> "item 5"). */
+const unpadded = (s: string) => norm(s).replace(/\d+/g, (d) => String(Number(d)));
+
 function editDistance(a: string, b: string): number {
   const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)] as number[]);
   for (let j = 1; j <= b.length; j++) dp[0][j] = j;
@@ -65,6 +68,14 @@ export function matchLevel(text: string, levels: string[]): string | null {
   if (/ily$/.test(t)) t = t.replace(/ily$/, "y");
   else if (/ly$/.test(t)) t = t.replace(/ly$/, "");
   return direct(t);
+}
+
+/** The ontology's name for a KPI the person named in their own words, when exactly one clearly fits; else null. */
+export function canonicalKpi(text: string, ont: Ontology): string | null {
+  const exact = Object.keys(ont.metrics).find((k) => norm(k) === norm(text));
+  if (exact) return exact;
+  const hits = matchKpis(text, ont);
+  return hits.length > 0 && (hits.length === 1 || hits[0].score - hits[1].score >= 0.1) ? hits[0].kpi : null;
 }
 
 /**
@@ -163,6 +174,13 @@ export async function validateIntent(intent: Intent, env: IntentEnv): Promise<In
     const exact = members.find((m) => norm(m) === norm(value));
     if (exact) {
       filters[concept] = exact;
+      continue;
+    }
+    // "item 5" and "item_05" name the same thing: numbers are equal whatever their leading zeros, when only one value fits
+    const sameNumbers = members.filter((m) => unpadded(m) === unpadded(value));
+    if (sameNumbers.length === 1) {
+      filters[concept] = sameNumbers[0];
+      notes.push(`${concept} "${value}" read as ${sameNumbers[0]}`);
       continue;
     }
     const near = closest(value, members);

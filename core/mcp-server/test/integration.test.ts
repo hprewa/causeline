@@ -154,3 +154,92 @@ test("route and scan_kpis over stdio: a plain question reaches the right expert,
     await client.close();
   }
 });
+
+test("a question built over several messages: ask, confirm, run, refine, switch topic, recall, start over", { skip: !enabled && "set CAUSELINE_INTEGRATION=1" }, async () => {
+  const pack = resolve(repo, "packs", "contact-centre");
+  const base = loadCases(pack, ["clean_week"])[0];
+  const workDir = await prepareCase(pack, { ...base, setup: "--fault understaffed:team_05:wk7" }, mkdtempSync(resolve(tmpdir(), "mcp-intent-")), false);
+  const client = new Client({ name: "integration", version: "0.0.1" });
+  await client.connect(
+    new StdioClientTransport({
+      command: process.execPath,
+      args: [resolve(here, "..", "src", "main.js")],
+      env: { ...process.env, CAUSELINE_PACK: workDir, CAUSELINE_PLAYBOOKS: resolve(repo, "playbooks") } as Record<string, string>,
+    }),
+  );
+  const tool = async (name: string, args: Record<string, unknown> = {}) => {
+    const res = (await client.callTool({ name, arguments: args })) as any;
+    assert.equal(res.isError, undefined, `${name}: ${res.content?.[0]?.text}`);
+    return res.structuredContent;
+  };
+  try {
+    const bundle = await tool("get_intent");
+    assert.equal(bundle.data_covers.end, "2026-03-15");
+    assert.deepEqual(bundle.kpis.map((k: any) => k.name).sort(), ["aht", "calls_offered", "service_level", "workload"]);
+
+    // nothing is run before the question is complete
+    assert.equal((await tool("run_intent")).ran, false);
+
+    let r = await tool("set_intent", { message: "how is the SLA doing?", patch: { kpi: "SLA" } });
+    assert.equal(r.check.status, "ask");
+    assert.equal(r.check.slot, "task");
+    r = await tool("set_intent", { message: "why did it drop in the week of 16 February?", patch: { task: "deep_rca", period: { kind: "range", start: "2026-02-16", end: "2026-02-22" } } });
+    assert.equal(r.check.status, "ready", JSON.stringify(r.check));
+    assert.match(r.check.playback, /deep dive into service level for 16–22 February 2026/);
+
+    const first = await tool("run_intent");
+    assert.equal(first.ran, true);
+    assert.equal(first.n, 1);
+    assert.equal(first.result.findings[0].value, "team_05", "found by date range, not by label");
+    assert.equal(first.result.inputs.start_date, "2026-02-16");
+
+    // refine: a team that is not quite a team name is offered, not guessed; then the run is confined to it
+    r = await tool("set_intent", { message: "just team 5", patch: { filters: { team: "tem 05" } } });
+    assert.equal(r.check.status, "ask");
+    assert.deepEqual(r.check.options.map((o: any) => o.value), ["team_05"]);
+    r = await tool("set_intent", { message: "yes", patch: { filters: { team: "team_05" } } });
+    assert.equal(r.check.status, "ready");
+    const scoped = await tool("run_intent");
+    assert.equal(scoped.result.inputs.scope, '{"team":"team_05"}');
+    assert.ok(scoped.result.headline.change < first.result.headline.change, "the team on its own is worse than everyone");
+
+    // a new KPI carries the rest over, and says so
+    r = await tool("set_intent", { message: "and call volume?", patch: { kpi: "call volume", filters: { team: null } } });
+    assert.equal(r.topic_switch.to, "calls_offered");
+    assert.ok(r.topic_switch.kept.includes("the same period"));
+
+    // go back to the first answer and compare instead
+    const back = await tool("recall", { n: 1 });
+    assert.equal(back.active.kpi, "service_level");
+    assert.deepEqual(back.active.filters, {});
+    r = await tool("set_intent", { message: "compare with the week before", patch: { task: "compare", period: { kind: "relative", unit: "week" }, comparison: "previous" } });
+    assert.equal(r.check.status, "ready", JSON.stringify(r.check));
+    const cmp = await tool("run_intent");
+    assert.equal(cmp.ran, true);
+    assert.equal(cmp.result.playbook, "compare");
+
+    // a comparison that is not whole weeks of the data says so instead of guessing
+    await tool("set_intent", { patch: { period: { kind: "relative", unit: "day", offset: 1, count: 5 } } });
+    const odd = await tool("run_intent");
+    assert.equal(odd.ran, false);
+    assert.match(odd.cannot, /whole weeks of the data/);
+
+    const history = await tool("recall");
+    assert.equal(history.history.length, 3);
+    const fresh = await tool("start_over");
+    assert.deepEqual(fresh.active, { filters: {} });
+    assert.equal(fresh.history_kept, 3);
+
+    // movement over several weeks, by week
+    await tool("set_intent", { patch: { kpi: "aht", task: "trend", period: { kind: "relative", unit: "week", offset: 1, count: 4 }, aggregation: "weekly" } });
+    const trend = await tool("run_intent");
+    assert.equal(trend.ran, true, JSON.stringify(trend.check ?? trend.cannot));
+    assert.equal(trend.result.playbook, "trend");
+    assert.equal(trend.result.status, "complete", trend.result.stopped_detail);
+
+    const conn = await tool("check_connection");
+    assert.equal(conn.ok, true);
+  } finally {
+    await client.close();
+  }
+});

@@ -93,9 +93,9 @@
     - say: "Last week"
       set: { period: { kind: relative, unit: week } }
       expect: { status: ready, window: { start: "2026-03-09", end: "2026-03-15" } }
-    - say: "Just team 3"
-      set: { filters: { team: "team 3" } }
-      # "team 3" is not a team; the near one is offered, not assumed
+    - say: "Just tem 3"
+      set: { filters: { team: "tem 03" } }
+      # a misspelling is not a team; the near one is offered, not assumed
       expect: { status: ask, slot: filters, offers: [team_03] }
     - say: "Yes, team_03"
       set: { filters: { team: team_03 } }
@@ -112,6 +112,12 @@
     - say: "Never mind the site"
       set: { filters: { site: null } }
       expect: { status: ready, filters: {} }
+
+- id: a_number_with_or_without_its_leading_zero_is_the_same_value
+  turns:
+    - say: "Service level last week for team 5"
+      set: { kpi: service_level, task: value, period: { kind: relative, unit: week }, filters: { team: "team 5" } }
+      expect: { status: ready, filters: { team: team_05 } }
 
 - id: a_filter_value_that_is_not_in_the_data
   turns:
