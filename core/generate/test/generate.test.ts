@@ -41,21 +41,16 @@ const { tools, skipped, meta } = generateTools(ontologyOf(), dataOf());
 const byName = new Map(tools.map((t) => [t.name, t]));
 
 test("emits each tool family for a ratio metric", () => {
-  for (const name of [
-    "m_extent",
-    "m_by_week", "m_by_day", "m_by_slot",
-    "m_by_a1", "m_by_a2_in_a1", "m_by_a3_in_a2", "m_by_a2", "m_by_a3",
-    "m_by_b1", "m_by_b2_in_b1",
-    "m_by_d1", "m_by_d1_in_a1", "m_by_d1_in_b2",
-    "m_by_day_for_a1", "m_by_day_for_b2", "m_by_day_for_d1",
-  ]) {
-    assert.ok(byName.has(name), `missing tool ${name}`);
-  }
+  // one series tool (the time level is a value), one slice tool per concept (parents are optional filters)
+  const expected = ["m_extent", "m_series", "m_by_a1", "m_by_a2", "m_by_a3", "m_by_b1", "m_by_b2", "m_by_d1"];
+  for (const name of expected) assert.ok(byName.has(name), `missing tool ${name}`);
+  assert.deepEqual([...byName.keys()].filter((n) => n.startsWith("m_") && !n.startsWith("m_seasonal_")).sort(), [...expected].sort());
+  assert.ok(![...byName.keys()].some((n) => /_in_|_for_|m_by_(week|day|slot)$/.test(n)), "no per-parent or per-level variants");
   assert.ok(!byName.has("row_counts") && !byName.has("coverage_by_a1"), "coverage comes from the slice denominators; there is one extent tool per metric");
 });
 
 test("every statement reads from the fact's own SELECT, so joins live in data.yaml only", () => {
-  const s = byName.get("m_by_a2_in_a1")!.statement;
+  const s = byName.get("m_by_a2")!.statement;
   assert.match(s, /FROM \(SELECT e\.ts, e\.a1, p\.a2/);
   assert.match(s, /JOIN parts p USING \(part_id\)\) AS "events", p/);
   assert.ok(!/FROM "facts"/.test(s));
@@ -63,27 +58,27 @@ test("every statement reads from the fact's own SELECT, so joins live in data.ya
 
 test("a sum metric gets the same tool family, with a sum of squares for its variance", () => {
   assert.deepEqual(skipped, [], "nothing is skipped");
-  for (const name of ["total_by_week", "total_by_a2_in_a1", "total_by_a2", "total_by_d1", "total_by_d1_in_a1", "total_by_day_for_a1"]) {
+  for (const name of ["total_series", "total_by_a2", "total_by_d1", "total_by_a1", "total_extent"]) {
     assert.ok(byName.has(name), `missing tool ${name}`);
   }
-  const children = byName.get("total_by_a2_in_a1")!.statement;
+  const children = byName.get("total_by_a2")!.statement;
   assert.match(children, /SUM\(CASE WHEN "ts" BETWEEN p.cur_s AND p.cur_e THEN \(amount\) END\), 0\) AS cur_num/);
   assert.match(children, /THEN 1 END\), 0\) AS cur_den/, "the row count");
   assert.match(children, /THEN \(amount\) \* \(amount\) END\), 0\) AS cur_sq/);
   assert.match(children, /AS base_sq\s*\nFROM/, "no trailing comma after the last column");
-  assert.match(byName.get("total_by_week")!.statement, /AS num, COALESCE\(SUM\(1\), 0\) AS den, COALESCE\(SUM\(\(amount\) \* \(amount\)\), 0\) AS sq/);
+  assert.match(byName.get("total_series")!.statement, /AS num, COALESCE\(SUM\(1\), 0\) AS den, COALESCE\(SUM\(\(amount\) \* \(amount\)\), 0\) AS sq/);
 });
 
 test("ratio tools also carry the sum of squared numerators, for non-binary numerators", () => {
-  const children = byName.get("m_by_a2_in_a1")!.statement;
+  const children = byName.get("m_by_a2")!.statement;
   assert.match(children, /THEN \(ok_flag\) \* \(ok_flag\) END\), 0\) AS cur_sq/);
   assert.match(children, /AS base_sq\s*\nFROM/);
-  assert.match(byName.get("m_by_week")!.statement, /COALESCE\(SUM\(\(ok_flag\) \* \(ok_flag\)\), 0\) AS sq/);
+  assert.match(byName.get("m_series")!.statement, /COALESCE\(SUM\(\(ok_flag\) \* \(ok_flag\)\), 0\) AS sq/);
 });
 
 test("a product metric generates no tools of its own; its drivers do", () => {
   assert.ok(![...byName.keys()].some((n) => n.startsWith("work_")));
-  assert.ok(byName.has("total_by_week") && byName.has("m_by_week"));
+  assert.ok(byName.has("total_series") && byName.has("m_series"));
 });
 
 test("every statement has exactly one placeholder per declared parameter", () => {
@@ -93,20 +88,28 @@ test("every statement has exactly one placeholder per declared parameter", () =>
   }
 });
 
-test("parameter order follows placeholder order for parent-scoped tools", () => {
-  const t = byName.get("m_by_a2_in_a1")!;
-  assert.deepEqual(t.params.map((p) => p.name), ["cur_start", "cur_end", "base_start", "base_end", "a1"]);
-  assert.match(t.statement, /"a1" = \?\s*\nGROUP BY "a2"/);
+test("parameter order follows placeholder order; every concept but the split one is an optional filter", () => {
+  const t = byName.get("m_by_a2")!;
+  assert.deepEqual(t.params.map((p) => p.name), ["cur_start", "cur_end", "base_start", "base_end", "a1", "a3", "b1", "b2", "d1"]);
+  assert.deepEqual(t.params.filter((p) => p.optional).map((p) => p.name), ["a1", "a3", "b1", "b2", "d1"]);
+  assert.match(t.statement, /WITH p AS \(SELECT \? AS cur_s, \? AS cur_e, \? AS base_s, \? AS base_e, \? AS f_a1, \? AS f_a3, \? AS f_b1, \? AS f_b2, \? AS f_d1\)/);
+  assert.match(t.statement, /AND \(p\.f_a1 = '' OR "a1" = p\.f_a1\)/);
+  assert.ok(!t.params.some((p) => p.name === "a2"), "a split cannot be confined to itself");
 });
 
 test("a custom time level uses the data definition's SQL; a built-in uses the dialect's", () => {
-  assert.match(byName.get("m_by_slot")!.statement, /strftime\('%Y-%m-%d', ts\) \|\| '-x'/);
-  assert.match(byName.get("m_by_week")!.statement, /strftime\('%Y-W%W', "ts"\)/);
+  const series = byName.get("m_series")!.statement;
+  assert.match(series, /WHEN 'slot' THEN strftime\('%Y-%m-%d', ts\) \|\| '-x'/);
+  assert.match(series, /WHEN 'week' THEN strftime\('%Y-W%W', "ts"\)/);
+  assert.match(series, /CASE p\.aggregation /, "the level is a value, not an identifier");
 });
 
-test("persistence tools use the second time level", () => {
-  assert.ok(byName.get("m_by_day_for_a2")!.statement.includes('"a2" = ?'));
-  assert.ok(!byName.has("m_by_week_for_a2"));
+test("the series tool takes the time level as a value and can be confined to any concept", () => {
+  const t = byName.get("m_series")!;
+  assert.deepEqual(t.params.slice(0, 3).map((p) => p.name), ["start", "end", "aggregation"]);
+  assert.equal(t.params[2].optional, undefined, "aggregation is required");
+  assert.ok(t.statement.includes('(p.f_a2 = \'\' OR "a2" = p.f_a2)'));
+  assert.deepEqual(t.meta, { kind: "series", metric: "m", levels: ["week", "day", "slot"], filters: ["a1", "a2", "a3", "b1", "b2", "d1"] });
 });
 
 test("rendered YAML is multi-document, Toolbox-shaped, with no extra fields, and every parameter has a description", () => {
@@ -135,21 +138,16 @@ test("duplicate tool names are rejected", () => {
   assert.throws(() => generateTools(clash, data), /duplicate tool name/);
 });
 
-test("global per-level tools carry no parent filter", () => {
-  const global = byName.get("m_by_a2")!;
-  assert.deepEqual(global.params.map((p) => p.name), ["cur_start", "cur_end", "base_start", "base_end"]);
-  assert.ok(!/"a1" = \?/.test(global.statement));
-  assert.match(global.statement, /GROUP BY "a2"/);
-});
-
 // --- the sidecar index: tools are found by what they answer ---------------------------------------
 
 test("the sidecar index says what every tool answers, and round-trips through its schema", () => {
-  assert.deepEqual(meta.tools.m_by_a2_in_a1, { kind: "slice", metric: "m", by: "a2", filters: ["a1"] });
-  assert.deepEqual(meta.tools.m_by_a2, { kind: "slice", metric: "m", by: "a2", filters: [] });
-  assert.deepEqual(meta.tools.m_by_day_for_a1, { kind: "series", metric: "m", level: "day", filters: ["a1"] });
-  assert.equal(findSlice(meta, "total", "d1", ["b2"]), "total_by_d1_in_b2");
-  assert.equal(findSeries(meta, "m", "slot"), "m_by_slot");
+  assert.deepEqual(meta.tools.m_by_a2, { kind: "slice", metric: "m", by: "a2", filters: ["a1", "a3", "b1", "b2", "d1"] });
+  assert.equal(findSlice(meta, "total", "d1", ["b2"]), "total_by_d1");
+  assert.equal(findSlice(meta, "total", "d1", ["d1"]), undefined, "a split cannot be confined to itself");
+  assert.equal(findSlice(meta, "total", "d1", ["nope"]), undefined, "an unknown concept is not a filter");
+  assert.equal(findSeries(meta, "m", "slot"), "m_series?aggregation=slot");
+  assert.equal(findSeries(meta, "m", "slot", ["a1"]), "m_series?aggregation=slot");
+  assert.equal(findSeries(meta, "m", "year"), undefined, "a level the ontology does not have");
   assert.equal(Object.keys(meta.tools).length, tools.length);
   assert.deepEqual(ToolsMeta.parse(JSON.parse(JSON.stringify(meta))), meta);
   assert.match(renderMeta(meta), /^# GENERATED/);
@@ -173,15 +171,15 @@ const seasonal = generateTools(ontologyOf({ cycles: ["weekday"], calendar: ["fla
 const sByName = new Map(seasonal.tools.map((t) => [t.name, t]));
 
 test("seasonal: node tools take one optional slot parameter per cycle and per calendar flag", () => {
-  const t = sByName.get("m_by_a2_in_a1")!;
-  assert.deepEqual(t.params.map((p) => p.name), ["cur_start", "cur_end", "base_start", "base_end", "s_weekday", "s_flag", "a1"]);
-  assert.deepEqual(t.params.filter((p) => p.optional).map((p) => p.name), ["s_weekday", "s_flag"]);
-  assert.match(t.statement, /WITH p AS \(SELECT \? AS cur_s, \? AS cur_e, \? AS base_s, \? AS base_e, \? AS s_weekday, \? AS s_flag\)/);
+  const t = sByName.get("m_by_a2")!;
+  assert.deepEqual(t.params.slice(0, 6).map((p) => p.name), ["cur_start", "cur_end", "base_start", "base_end", "s_weekday", "s_flag"]);
+  assert.deepEqual(t.params.filter((p) => p.optional).map((p) => p.name).slice(0, 2), ["s_weekday", "s_flag"]);
+  assert.match(t.statement, /WITH p AS \(SELECT \? AS cur_s, \? AS cur_e, \? AS base_s, \? AS base_e, \? AS s_weekday, \? AS s_flag, /);
   for (const tool of seasonal.tools) assert.equal((tool.statement.match(/\?/g) ?? []).length, tool.params.length, tool.name);
 });
 
 test("seasonal: a cycle slot restricts the BASELINE rows only; a calendar flag restricts both sides", () => {
-  const sql = sByName.get("m_by_a2_in_a1")!.statement;
+  const sql = sByName.get("m_by_a2")!.statement;
   const lines = sql.split("\n");
   const cur = lines.filter((l) => /AS cur_(num|den|sq)\b/.test(l));
   const base = lines.filter((l) => /AS base_(num|den|sq)\b/.test(l));
@@ -198,29 +196,28 @@ test("seasonal: a cycle slot restricts the BASELINE rows only; a calendar flag r
 });
 
 test("seasonal: series tools report each bucket's slot, or NULL when the bucket spans several", () => {
-  const sql = sByName.get("m_by_day")!.statement;
+  const sql = sByName.get("m_series")!.statement;
   assert.match(sql, /CASE WHEN MIN\(strftime\('%w', "ts"\)\) = MAX\(strftime\('%w', "ts"\)\) THEN MIN\(strftime\('%w', "ts"\)\) END AS slot_weekday/);
   assert.match(sql, /CASE WHEN MIN\("flag"\) = MAX\("flag"\) THEN MIN\("flag"\) END AS slot_flag/);
-  assert.ok(sByName.get("m_by_day_for_a1")!.statement.includes("AS slot_weekday"), "persistence series too");
 });
 
 test("seasonal: a flag that is SQL in data.yaml uses that SQL", () => {
   const withSql = generateTools(ontologyOf({ cycles: ["weekday"], calendar: ["flag"] }), dataOf({ flag: "CASE WHEN a1 = 'x' THEN 1 ELSE 0 END" }));
-  assert.match(withSql.tools.find((t) => t.name === "m_by_day")!.statement, /MIN\(CASE WHEN a1 = 'x' THEN 1 ELSE 0 END\)/);
+  assert.match(withSql.tools.find((t) => t.name === "m_series")!.statement, /MIN\(CASE WHEN a1 = 'x' THEN 1 ELSE 0 END\)/);
 });
 
 test("seasonal: slot parameters render as optional with an empty default; a flat ontology adds none", () => {
-  const doc = parseAllDocuments(renderYaml(seasonal.tools, "src")).map((d) => d.toJS()).find((d) => d.name === "m_by_a2_in_a1");
+  const doc = parseAllDocuments(renderYaml(seasonal.tools, "src")).map((d) => d.toJS()).find((d) => d.name === "m_by_a2");
   const slot = doc.parameters.find((p: { name: string }) => p.name === "s_weekday");
   assert.equal(slot.required, false);
   assert.equal(slot.default, "");
-  assert.ok(!byName.get("m_by_a2_in_a1")!.params.some((p) => p.name.startsWith("s_")), "seasonality: none has no slot parameters");
-  assert.ok(!byName.get("m_by_day")!.statement.includes("slot_"));
+  assert.ok(!byName.get("m_by_a2")!.params.some((p) => p.name.startsWith("s_")), "seasonality: none has no slot parameters");
+  assert.ok(!byName.get("m_series")!.statement.includes("slot_"));
 });
 
 test("seasonal: a pack-defined cycle uses its own SQL from data.yaml", () => {
   const custom = generateTools(ontologyOf({ cycles: ["pay"] }), dataOf({ pay: { expr: "CAST(strftime('%d', ts) AS INTEGER) / 7", instance: "date(ts)", cycle_days: 30 } }));
-  assert.match(custom.tools.find((t) => t.name === "m_by_day")!.statement, /MIN\(CAST\(strftime\('%d', ts\) AS INTEGER\) \/ 7\)/);
+  assert.match(custom.tools.find((t) => t.name === "m_series")!.statement, /MIN\(CAST\(strftime\('%d', ts\) AS INTEGER\) \/ 7\)/);
   assert.ok(custom.tools.some((t) => t.name === "m_seasonal_pay"), "a custom cycle is also a candidate for onboarding");
 });
 

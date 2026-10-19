@@ -40,6 +40,12 @@ const RANGE_PARAMS: ToolParam[] = [
   { name: "end", description: "End of the range, inclusive, as a timestamp string." },
 ];
 
+const filterParam = (concept: string): ToolParam => ({
+  name: concept,
+  optional: true,
+  description: `Restrict the rows to this ${concept}. Empty for no restriction.`,
+});
+
 /** Build the sidecar index from the tools' own `meta`. */
 export function metaOf(tools: ToolDef[]): ToolsMeta {
   return { tools: Object.fromEntries(tools.map((t) => [t.name, t.meta])) };
@@ -61,7 +67,6 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
   const skipped: Generated["skipped"] = [];
   const hierarchies = Object.entries(ont.hierarchies);
   const allColumns = conceptsOf(ont);
-  const persistLevel = ont.time.levels[1] ?? ont.time.levels[0];
   const facts = new Map<string, FactCtx>();
   const factOf = (name: string) => {
     if (!facts.has(name)) facts.set(name, factContext(ont, data, name, dialect));
@@ -91,8 +96,6 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
       optional: true,
       description: `Comma-separated ${sl.name} slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.`,
     }));
-    const windowParams = [...WINDOW_PARAMS, ...slotParams];
-    const windowCte = `WITH p AS (SELECT ? AS cur_s, ? AS cur_e, ? AS base_s, ? AS base_e${f.slots.map((sl) => `, ? AS s_${sl.name}`).join("")})`;
     const slotFilter = (list: typeof f.slots) =>
       list.map((sl) => ` AND (p.s_${sl.name} = '' OR instr(',' || p.s_${sl.name} || ',', ',' || CAST(${sl.expr} AS TEXT) || ',') > 0)`).join("");
     const inCur = `${ts} BETWEEN p.cur_s AND p.cur_e${slotFilter(f.slots.filter((sl) => sl.calendar))}`;
@@ -109,21 +112,31 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
     ];
     const windowSums = windowItems.map((item, i) => `  ${item}${i < windowItems.length - 1 ? "," : ""}`);
     const windowFilter = `(${inCur} OR (${inBase}))`;
+    /** Every parameter is read once, into a one-row CTE, so a value used twice is still passed once (positional dialects). */
+    const cte = (pairs: [param: string, alias: string][]) => `WITH p AS (SELECT ${pairs.map(([param, alias]) => `${dialect.param(param)} AS ${alias}`).join(", ")})`;
+    /** Optional filters: a concept left empty restricts nothing. */
+    const confine = (concepts: string[]) => concepts.map((c) => ` AND (p.f_${c} = '' OR ${q(c)} = p.f_${c})`).join("");
+    const filtersFor = (concepts: string[]) => ({ params: concepts.map(filterParam), pairs: concepts.map((c): [string, string] => [c, `f_${c}`]) });
     const seriesSelect = (bucket: string) =>
       `SELECT ${bucket} AS bucket, MIN(${ts}) AS bucket_start, MAX(${ts}) AS bucket_end,\n` +
       `  COALESCE(SUM(${num}), 0) AS num, COALESCE(SUM(${den}), 0) AS den, COALESCE(SUM(${sq}), 0) AS sq${slotColumns}`;
-    const slice = (by: string, filters: string[], description: string, extraParams: ToolParam[], name: string) => {
+
+    // A slice tool splits the metric by one concept and may be confined to any other concept: the filters are
+    // optional values, so one tool serves a whole level, the children of one node, or a dimension within a node.
+    const slice = (by: string) => {
+      const others = allColumns.filter((c) => c !== by);
+      const flt = filtersFor(others);
       tools.push({
-        name,
-        description,
-        params: [...windowParams, ...extraParams],
-        meta: { kind: "slice", metric, by, filters },
+        name: `${metric}_by_${by}`,
+        description: `${metric} components for each ${by}, current period vs baseline; optionally confined to one value of any other concept.`,
+        params: [...WINDOW_PARAMS, ...slotParams, ...flt.params],
+        meta: { kind: "slice", metric, by, filters: others },
         statement: [
-          windowCte,
+          cte([["cur_start", "cur_s"], ["cur_end", "cur_e"], ["base_start", "base_s"], ["base_end", "base_e"], ...f.slots.map((sl): [string, string] => [`s_${sl.name}`, `s_${sl.name}`]), ...flt.pairs]),
           `SELECT ${q(by)} AS node,`,
           ...windowSums,
           `FROM ${from}, p`,
-          `WHERE ${windowFilter}${filters.map((c) => ` AND ${q(c)} = ?`).join("")}`,
+          `WHERE ${windowFilter}${confine(others)}`,
           `GROUP BY ${q(by)} ORDER BY ${q(by)};`,
         ].join("\n"),
       });
@@ -137,52 +150,27 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
       statement: `SELECT COUNT(*) AS n_rows, MIN(${ts}) AS min_ts, MAX(${ts}) AS max_ts FROM ${from};`,
     });
 
-    // time: series of buckets over a range
-    for (const level of ont.time.levels) {
+    // time: one series tool; the time level is a value (`aggregation`), chosen by a CASE over the ontology's levels
+    {
+      const flt = filtersFor(allColumns);
+      const bucket = `CASE p.aggregation ${ont.time.levels.map((level) => `WHEN '${level}' THEN ${f.bucket(level)}`).join(" ")} END`;
       tools.push({
-        name: `${metric}_by_${level}`,
-        description: `${metric} numerator and denominator per ${level} bucket between start and end, with each bucket's first and last timestamp.`,
-        params: RANGE_PARAMS,
-        meta: { kind: "series", metric, level, filters: [] },
-        statement: [seriesSelect(f.bucket(level)), `FROM ${from} WHERE ${ts} BETWEEN ? AND ?`, `GROUP BY 1 ORDER BY bucket_start;`].join("\n"),
+        name: `${metric}_series`,
+        description: `${metric} numerator and denominator per time bucket between start and end, at the time level named by aggregation (${ont.time.levels.join(", ")}), with each bucket's first and last timestamp; optionally confined to one value of any concept.`,
+        params: [...RANGE_PARAMS, { name: "aggregation", description: `The time level to bucket by: one of ${ont.time.levels.join(", ")}.` }, ...flt.params],
+        meta: { kind: "series", metric, levels: ont.time.levels, filters: allColumns },
+        statement: [
+          cte([["start", "start_ts"], ["end", "end_ts"], ["aggregation", "aggregation"], ...flt.pairs]),
+          seriesSelect(bucket),
+          `FROM ${from}, p WHERE ${ts} BETWEEN p.start_ts AND p.end_ts${confine(allColumns)}`,
+          `GROUP BY 1 ORDER BY bucket_start;`,
+        ].join("\n"),
       });
     }
 
-    // hierarchies: children of one node (or the top level), current vs baseline
-    for (const [hier, levels] of hierarchies) {
-      levels.forEach((level, i) => {
-        const parent = i > 0 ? levels[i - 1] : undefined;
-        if (parent) {
-          slice(level, [parent], `${metric} components for each ${level} within one ${parent} (hierarchy ${hier}), current period vs baseline.`, [{ name: parent, description: `The ${parent} whose ${level} children to return.` }], `${metric}_by_${level}_in_${parent}`);
-          // deeper levels also get a global breakdown (no parent filter), so the runner can
-          // sweep a whole level for children that cancel out inside a flat-looking parent
-          slice(level, [], `${metric} components for every ${level} across the whole dataset (hierarchy ${hier}), current period vs baseline.`, [], `${metric}_by_${level}`);
-        } else {
-          slice(level, [], `${metric} components for each ${level} (top of hierarchy ${hier}), current period vs baseline.`, [], `${metric}_by_${level}`);
-        }
-      });
-    }
-
-    // flat dimensions, and inside one hierarchy node (the runner's `refine` step)
-    for (const dim of ont.dimensions) {
-      slice(dim, [], `${metric} components for each ${dim}, current period vs baseline.`, [], `${metric}_by_${dim}`);
-    }
-    for (const dim of ont.dimensions) {
-      for (const level of hierarchies.flatMap(([, levels]) => levels)) {
-        slice(dim, [level], `${metric} components for each ${dim} within one ${level}, current period vs baseline.`, [{ name: level, description: `The ${level} to restrict to.` }], `${metric}_by_${dim}_in_${level}`);
-      }
-    }
-
-    // persistence: the next-finer time level, confined to one node
-    for (const col of allColumns) {
-      tools.push({
-        name: `${metric}_by_${persistLevel}_for_${col}`,
-        description: `${metric} per ${persistLevel} bucket between start and end, only for rows where ${col} equals one value.`,
-        params: [...RANGE_PARAMS, { name: col, description: `The ${col} value to restrict to.` }],
-        meta: { kind: "series", metric, level: persistLevel, filters: [col] },
-        statement: [seriesSelect(f.bucket(persistLevel)), `FROM ${from} WHERE ${ts} BETWEEN ? AND ? AND ${q(col)} = ?`, `GROUP BY 1 ORDER BY bucket_start;`].join("\n"),
-      });
-    }
+    // places, products and people (every hierarchy level), then the flat dimensions
+    for (const [, levels] of hierarchies) for (const level of levels) slice(level);
+    for (const dim of ont.dimensions) slice(dim);
   }
 
   tools.push(...generateOnboardingTools(ont, data, dialect, factOf));

@@ -3,453 +3,216 @@ tools:
   service_level_extent:
     kind: extent
     metric: service_level
-  service_level_by_week:
+  service_level_series:
     kind: series
     metric: service_level
-    level: week
-    filters: []
-  service_level_by_day:
-    kind: series
-    metric: service_level
-    level: day
-    filters: []
-  service_level_by_interval_30m:
-    kind: series
-    metric: service_level
-    level: interval_30m
-    filters: []
+    levels: &a1
+      - week
+      - day
+      - interval_30m
+    filters: &a2
+      - centre
+      - site
+      - team
+      - agent
+      - queue
+      - call_reason
   service_level_by_centre:
     kind: slice
     metric: service_level
     by: centre
-    filters: []
-  service_level_by_site_in_centre:
-    kind: slice
-    metric: service_level
-    by: site
     filters:
-      - centre
+      - site
+      - team
+      - agent
+      - queue
+      - call_reason
   service_level_by_site:
     kind: slice
     metric: service_level
     by: site
-    filters: []
-  service_level_by_team_in_site:
-    kind: slice
-    metric: service_level
-    by: team
     filters:
-      - site
+      - centre
+      - team
+      - agent
+      - queue
+      - call_reason
   service_level_by_team:
     kind: slice
     metric: service_level
     by: team
-    filters: []
-  service_level_by_agent_in_team:
-    kind: slice
-    metric: service_level
-    by: agent
     filters:
-      - team
+      - centre
+      - site
+      - agent
+      - queue
+      - call_reason
   service_level_by_agent:
     kind: slice
     metric: service_level
     by: agent
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - queue
+      - call_reason
   service_level_by_queue:
     kind: slice
     metric: service_level
     by: queue
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - agent
+      - call_reason
   service_level_by_call_reason:
     kind: slice
     metric: service_level
     by: call_reason
-    filters: []
-  service_level_by_queue_in_centre:
-    kind: slice
-    metric: service_level
-    by: queue
     filters:
       - centre
-  service_level_by_queue_in_site:
-    kind: slice
-    metric: service_level
-    by: queue
-    filters:
       - site
-  service_level_by_queue_in_team:
-    kind: slice
-    metric: service_level
-    by: queue
-    filters:
       - team
-  service_level_by_queue_in_agent:
-    kind: slice
-    metric: service_level
-    by: queue
-    filters:
       - agent
-  service_level_by_call_reason_in_centre:
-    kind: slice
-    metric: service_level
-    by: call_reason
-    filters:
-      - centre
-  service_level_by_call_reason_in_site:
-    kind: slice
-    metric: service_level
-    by: call_reason
-    filters:
-      - site
-  service_level_by_call_reason_in_team:
-    kind: slice
-    metric: service_level
-    by: call_reason
-    filters:
-      - team
-  service_level_by_call_reason_in_agent:
-    kind: slice
-    metric: service_level
-    by: call_reason
-    filters:
-      - agent
-  service_level_by_day_for_centre:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
-      - centre
-  service_level_by_day_for_site:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
-      - site
-  service_level_by_day_for_team:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
-      - team
-  service_level_by_day_for_agent:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
-      - agent
-  service_level_by_day_for_queue:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
       - queue
-  service_level_by_day_for_call_reason:
-    kind: series
-    metric: service_level
-    level: day
-    filters:
-      - call_reason
   aht_extent:
     kind: extent
     metric: aht
-  aht_by_week:
+  aht_series:
     kind: series
     metric: aht
-    level: week
-    filters: []
-  aht_by_day:
-    kind: series
-    metric: aht
-    level: day
-    filters: []
-  aht_by_interval_30m:
-    kind: series
-    metric: aht
-    level: interval_30m
-    filters: []
+    levels: *a1
+    filters: *a2
   aht_by_centre:
     kind: slice
     metric: aht
     by: centre
-    filters: []
-  aht_by_site_in_centre:
-    kind: slice
-    metric: aht
-    by: site
     filters:
-      - centre
+      - site
+      - team
+      - agent
+      - queue
+      - call_reason
   aht_by_site:
     kind: slice
     metric: aht
     by: site
-    filters: []
-  aht_by_team_in_site:
-    kind: slice
-    metric: aht
-    by: team
     filters:
-      - site
+      - centre
+      - team
+      - agent
+      - queue
+      - call_reason
   aht_by_team:
     kind: slice
     metric: aht
     by: team
-    filters: []
-  aht_by_agent_in_team:
-    kind: slice
-    metric: aht
-    by: agent
     filters:
-      - team
+      - centre
+      - site
+      - agent
+      - queue
+      - call_reason
   aht_by_agent:
     kind: slice
     metric: aht
     by: agent
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - queue
+      - call_reason
   aht_by_queue:
     kind: slice
     metric: aht
     by: queue
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - agent
+      - call_reason
   aht_by_call_reason:
     kind: slice
     metric: aht
     by: call_reason
-    filters: []
-  aht_by_queue_in_centre:
-    kind: slice
-    metric: aht
-    by: queue
     filters:
       - centre
-  aht_by_queue_in_site:
-    kind: slice
-    metric: aht
-    by: queue
-    filters:
       - site
-  aht_by_queue_in_team:
-    kind: slice
-    metric: aht
-    by: queue
-    filters:
       - team
-  aht_by_queue_in_agent:
-    kind: slice
-    metric: aht
-    by: queue
-    filters:
       - agent
-  aht_by_call_reason_in_centre:
-    kind: slice
-    metric: aht
-    by: call_reason
-    filters:
-      - centre
-  aht_by_call_reason_in_site:
-    kind: slice
-    metric: aht
-    by: call_reason
-    filters:
-      - site
-  aht_by_call_reason_in_team:
-    kind: slice
-    metric: aht
-    by: call_reason
-    filters:
-      - team
-  aht_by_call_reason_in_agent:
-    kind: slice
-    metric: aht
-    by: call_reason
-    filters:
-      - agent
-  aht_by_day_for_centre:
-    kind: series
-    metric: aht
-    level: day
-    filters:
-      - centre
-  aht_by_day_for_site:
-    kind: series
-    metric: aht
-    level: day
-    filters:
-      - site
-  aht_by_day_for_team:
-    kind: series
-    metric: aht
-    level: day
-    filters:
-      - team
-  aht_by_day_for_agent:
-    kind: series
-    metric: aht
-    level: day
-    filters:
-      - agent
-  aht_by_day_for_queue:
-    kind: series
-    metric: aht
-    level: day
-    filters:
       - queue
-  aht_by_day_for_call_reason:
-    kind: series
-    metric: aht
-    level: day
-    filters:
-      - call_reason
   calls_offered_extent:
     kind: extent
     metric: calls_offered
-  calls_offered_by_week:
+  calls_offered_series:
     kind: series
     metric: calls_offered
-    level: week
-    filters: []
-  calls_offered_by_day:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters: []
-  calls_offered_by_interval_30m:
-    kind: series
-    metric: calls_offered
-    level: interval_30m
-    filters: []
+    levels: *a1
+    filters: *a2
   calls_offered_by_centre:
     kind: slice
     metric: calls_offered
     by: centre
-    filters: []
-  calls_offered_by_site_in_centre:
-    kind: slice
-    metric: calls_offered
-    by: site
     filters:
-      - centre
+      - site
+      - team
+      - agent
+      - queue
+      - call_reason
   calls_offered_by_site:
     kind: slice
     metric: calls_offered
     by: site
-    filters: []
-  calls_offered_by_team_in_site:
-    kind: slice
-    metric: calls_offered
-    by: team
     filters:
-      - site
+      - centre
+      - team
+      - agent
+      - queue
+      - call_reason
   calls_offered_by_team:
     kind: slice
     metric: calls_offered
     by: team
-    filters: []
-  calls_offered_by_agent_in_team:
-    kind: slice
-    metric: calls_offered
-    by: agent
     filters:
-      - team
+      - centre
+      - site
+      - agent
+      - queue
+      - call_reason
   calls_offered_by_agent:
     kind: slice
     metric: calls_offered
     by: agent
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - queue
+      - call_reason
   calls_offered_by_queue:
     kind: slice
     metric: calls_offered
     by: queue
-    filters: []
+    filters:
+      - centre
+      - site
+      - team
+      - agent
+      - call_reason
   calls_offered_by_call_reason:
     kind: slice
     metric: calls_offered
     by: call_reason
-    filters: []
-  calls_offered_by_queue_in_centre:
-    kind: slice
-    metric: calls_offered
-    by: queue
     filters:
       - centre
-  calls_offered_by_queue_in_site:
-    kind: slice
-    metric: calls_offered
-    by: queue
-    filters:
       - site
-  calls_offered_by_queue_in_team:
-    kind: slice
-    metric: calls_offered
-    by: queue
-    filters:
       - team
-  calls_offered_by_queue_in_agent:
-    kind: slice
-    metric: calls_offered
-    by: queue
-    filters:
       - agent
-  calls_offered_by_call_reason_in_centre:
-    kind: slice
-    metric: calls_offered
-    by: call_reason
-    filters:
-      - centre
-  calls_offered_by_call_reason_in_site:
-    kind: slice
-    metric: calls_offered
-    by: call_reason
-    filters:
-      - site
-  calls_offered_by_call_reason_in_team:
-    kind: slice
-    metric: calls_offered
-    by: call_reason
-    filters:
-      - team
-  calls_offered_by_call_reason_in_agent:
-    kind: slice
-    metric: calls_offered
-    by: call_reason
-    filters:
-      - agent
-  calls_offered_by_day_for_centre:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
-      - centre
-  calls_offered_by_day_for_site:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
-      - site
-  calls_offered_by_day_for_team:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
-      - team
-  calls_offered_by_day_for_agent:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
-      - agent
-  calls_offered_by_day_for_queue:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
       - queue
-  calls_offered_by_day_for_call_reason:
-    kind: series
-    metric: calls_offered
-    level: day
-    filters:
-      - call_reason
   service_level_seasonal_weekday:
     kind: seasonal_profile
     metric: service_level

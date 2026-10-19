@@ -8,10 +8,13 @@ import { z } from "zod";
 const base = { description: z.string().optional() };
 
 export const ToolMeta = z.discriminatedUnion("kind", [
-  /** A metric split by one concept, current vs baseline window; optional filters by other concepts. */
+  /** A metric split by one concept, current vs baseline window. `filters` are the other concepts it can optionally be confined to. */
   z.object({ kind: z.literal("slice"), metric: z.string(), by: z.string(), filters: z.array(z.string()).default([]), ...base }),
-  /** A metric by time bucket (optionally confined to one node), with each bucket's position in the cycles. */
-  z.object({ kind: z.literal("series"), metric: z.string(), level: z.string(), filters: z.array(z.string()).default([]), ...base }),
+  /**
+   * A metric by time bucket, with each bucket's position in the cycles. One tool serves every time level in `levels`
+   * (the level is a value passed as `aggregation`) and can optionally be confined to any of the concepts in `filters`.
+   */
+  z.object({ kind: z.literal("series"), metric: z.string(), levels: z.array(z.string()).min(1), filters: z.array(z.string()).default([]), ...base }),
   /** Row count and time extent of the metric's fact. */
   z.object({ kind: z.literal("extent"), metric: z.string(), ...base }),
   /** Onboarding: a metric by position in a candidate cycle or calendar flag. */
@@ -28,17 +31,45 @@ export type ToolsMeta = z.infer<typeof ToolsMeta>;
 
 // --- lookup: find a tool by what it answers -------------------------------------------------------
 
-const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+// --- tool references: a tool name, plus values that are always passed to it ---------------------------
+
+/**
+ * A tool reference names a tool and the fixed values every call to it carries (the time level a series tool
+ * is asked for). The text form is `name?key=value`, so the runner can treat it as the tool's name; whatever
+ * executes the tool splits it with `parseToolRef` and sends the bound values as parameters.
+ */
+export function toolRef(name: string, bound: Record<string, string> = {}): string {
+  const pairs = Object.entries(bound);
+  return pairs.length === 0 ? name : `${name}?${pairs.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&")}`;
+}
+
+export function parseToolRef(ref: string): { name: string; bound: Record<string, string> } {
+  const i = ref.indexOf("?");
+  if (i < 0) return { name: ref, bound: {} };
+  const bound: Record<string, string> = {};
+  for (const pair of ref.slice(i + 1).split("&")) {
+    const [k, v = ""] = pair.split("=");
+    bound[decodeURIComponent(k)] = decodeURIComponent(v);
+  }
+  return { name: ref.slice(0, i), bound };
+}
+
+// --- lookup: find a tool by what it answers -------------------------------------------------------
+
+const covers = (supported: string[], wanted: string[]) => wanted.every((w) => supported.includes(w));
 
 function find<K extends ToolMeta["kind"]>(meta: ToolsMeta, kind: K, pred: (m: Extract<ToolMeta, { kind: K }>) => boolean): string | undefined {
   for (const [name, m] of Object.entries(meta.tools)) if (m.kind === kind && pred(m as Extract<ToolMeta, { kind: K }>)) return name;
   return undefined;
 }
 
-/** The tool giving `metric` split by `by`, confined by exactly these filter concepts. */
-export const findSlice = (meta: ToolsMeta, metric: string, by: string, filters: string[] = []) => find(meta, "slice", (m) => m.metric === metric && m.by === by && sameSet(m.filters, filters));
-/** The tool giving `metric` by time bucket at `level`, confined by exactly these filter concepts. */
-export const findSeries = (meta: ToolsMeta, metric: string, level: string, filters: string[] = []) => find(meta, "series", (m) => m.metric === metric && m.level === level && sameSet(m.filters, filters));
+/** The tool giving `metric` split by `by`, able to confine the rows to each of these concepts. */
+export const findSlice = (meta: ToolsMeta, metric: string, by: string, filters: string[] = []) => find(meta, "slice", (m) => m.metric === metric && m.by === by && !filters.includes(by) && covers(m.filters, filters));
+/** A reference to the tool giving `metric` by time bucket at `level`, able to confine the rows to each of these concepts. */
+export function findSeries(meta: ToolsMeta, metric: string, level: string, filters: string[] = []): string | undefined {
+  const name = find(meta, "series", (m) => m.metric === metric && m.levels.includes(level) && covers(m.filters, filters));
+  return name === undefined ? undefined : toolRef(name, { aggregation: level });
+}
 export const findExtent = (meta: ToolsMeta, metric: string) => find(meta, "extent", (m) => m.metric === metric);
 export const findProfile = (meta: ToolsMeta, metric: string, cycle: string) => find(meta, "seasonal_profile", (m) => m.metric === metric && m.cycle === cycle);
 export const findEvidence = (meta: ToolsMeta, evidence: string) => find(meta, "evidence", (m) => m.evidence === evidence);

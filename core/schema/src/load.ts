@@ -29,14 +29,17 @@ function describe(file: string, issues: { path: (string | number)[]; message: st
 }
 
 /** Read and parse a pack's three definition files, with errors that name the file and the field. */
-export function loadPack(dir: string, opts: { requireMeta?: boolean } = {}): PackDefinition {
+/** `skipMeta`: do not read the generated sidecar (generating it, or checking whether it is stale, must work when it is unreadable). */
+export function loadPack(dir: string, opts: { requireMeta?: boolean; skipMeta?: boolean } = {}): PackDefinition {
   const ont = Ontology.safeParse(readYaml(join(dir, ONTOLOGY_FILE)));
   if (!ont.success) throw new Error(describe(join(dir, ONTOLOGY_FILE), ont.error.issues));
   const data = DataDefs.safeParse(readYaml(join(dir, DATA_FILE)));
   if (!data.success) throw new Error(describe(join(dir, DATA_FILE), data.error.issues));
   let meta: ToolsMeta | undefined;
   const metaPath = join(dir, META_FILE);
-  if (existsSync(metaPath)) {
+  if (opts.skipMeta) {
+    // the sidecar is about to be (re)written, or compared with what would be written
+  } else if (existsSync(metaPath)) {
     const m = ToolsMeta.safeParse(readYaml(metaPath));
     if (!m.success) throw new Error(describe(metaPath, m.error.issues));
     meta = m.data;

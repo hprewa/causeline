@@ -15,7 +15,7 @@ export interface PackGeneration {
 
 /** What the pack's generated files should contain, without writing anything. */
 export function renderForPack(packDir: string): { yaml: string; metaYaml: string; generated: Generated } {
-  const { ontology, data } = loadPack(packDir);
+  const { ontology, data } = loadPack(packDir, { skipMeta: true });
   const generated = generateTools(ontology, data);
   return { yaml: renderYaml(generated.tools, data.source), metaYaml: renderMeta(generated.meta), generated };
 }

@@ -51,8 +51,9 @@ test("a playbook without an evidence step returns no evidence", async () => {
 
 test("the tool index finds tools by meaning and explains what is missing", () => {
   const idx = new ToolIndex(meta);
-  assert.equal(idx.slice("m", "a2", ["a1"]), "m_by_a2_in_a1");
-  assert.equal(idx.series("m", "dy", ["a1"]), "m_by_dy_for_a1");
+  assert.equal(idx.slice("m", "a2", ["a1"]), "m_by_a2", "one tool per split; a parent is an optional filter");
+  assert.equal(idx.series("m", "dy", ["a1"]), "m_series?aggregation=dy", "one series tool; the time level is a bound value");
+  assert.throws(() => idx.slice("m", "a2", ["a2"]), /no tool provides/, "a split cannot be confined to itself");
   assert.equal(idx.extent("m"), "m_extent");
   assert.deepEqual(idx.evidenceAbout("incidents"), ["a2"]);
   assert.throws(() => idx.slice("m", "nope"), /no tool provides m split by nope; run `causeline generate`/);

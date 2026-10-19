@@ -12,6 +12,8 @@ export interface Dialect {
   /** Toolbox tool `type` for this source kind. */
   toolType: string;
   quote(identifier: string): string;
+  /** How a tool parameter is written in a statement: `?` (read in order of appearance) or a named placeholder. */
+  param(name: string): string;
   /** SQL expression bucketing the time column at a level: the pack's own SQL when given, else the built-in one. */
   timeBucket(level: string, custom: string | undefined, timeColumn: string): string;
   /** SQL for where a timestamp falls in a cycle (its slot), and for one occurrence of that slot (its instance). */

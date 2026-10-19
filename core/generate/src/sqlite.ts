@@ -5,6 +5,7 @@ export const sqlite: Dialect = {
   name: "sqlite",
   toolType: "sqlite-sql",
   quote: (id) => `"${id}"`,
+  param: () => "?",
   timeBucket(level, custom, timeColumn) {
     if (custom) return custom;
     const template = BUILTIN_TIME_LEVEL_SQL.sqlite[level as keyof (typeof BUILTIN_TIME_LEVEL_SQL)["sqlite"]];

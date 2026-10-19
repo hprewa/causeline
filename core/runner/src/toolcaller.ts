@@ -1,4 +1,4 @@
-import type { StepLog } from "@causeline/schema";
+import { parseToolRef, type StepLog } from "@causeline/schema";
 import type { Row, ToolCaller } from "./types.js";
 
 /** Wraps any ToolCaller so every call is logged with its name, params, row count and duration. */
@@ -61,8 +61,10 @@ export class SdkToolCaller implements ToolCaller {
 
   async call(tool: string, params: Record<string, string>): Promise<Row[]> {
     await this.load();
-    const fn = this.tools.get(tool);
-    if (!fn) throw new Error(`tool "${tool}" is not in toolset "${this.toolset}"; rerun causeline generate`);
-    return parseToolResult(tool, await fn(params));
+    // a tool reference carries values that are always sent with the call (a series tool's time level)
+    const { name, bound } = parseToolRef(tool);
+    const fn = this.tools.get(name);
+    if (!fn) throw new Error(`tool "${name}" is not in toolset "${this.toolset}"; rerun causeline generate`);
+    return parseToolResult(name, await fn({ ...bound, ...params }));
   }
 }

@@ -103,7 +103,7 @@ test("a playbook step is either compute or evidence, not both and not neither", 
 test("generated tools are checked against what the runner will ask for", () => {
   const meta = ToolsMeta.parse({
     tools: {
-      m_by_week: { kind: "series", metric: "m", level: "week" },
+      m_series: { kind: "series", metric: "m", levels: ["week"] },
       m_by_a1: { kind: "slice", metric: "m", by: "a1" },
       incidents: { kind: "evidence", evidence: "incidents", about: ["a1"] },
     },
@@ -118,14 +118,16 @@ test("generated tools are checked against what the runner will ask for", () => {
 test("tools are found by what they answer, not by name", () => {
   const meta = ToolsMeta.parse({
     tools: {
-      weird_name_1: { kind: "slice", metric: "m", by: "a2", filters: ["a1"] },
-      weird_name_2: { kind: "series", metric: "m", level: "day", filters: ["d1"] },
+      weird_name_1: { kind: "slice", metric: "m", by: "a2", filters: ["a1", "d1"] },
+      weird_name_2: { kind: "series", metric: "m", levels: ["day", "week"], filters: ["d1"] },
       weird_name_3: { kind: "evidence", evidence: "incidents", about: ["a1"] },
     },
   });
   assert.equal(findSlice(meta, "m", "a2", ["a1"]), "weird_name_1");
-  assert.equal(findSlice(meta, "m", "a2", []), undefined, "filters must match exactly");
-  assert.equal(findSeries(meta, "m", "day", ["d1"]), "weird_name_2");
+  assert.equal(findSlice(meta, "m", "a2", []), "weird_name_1", "filters are optional: asking for none is always possible");
+  assert.equal(findSlice(meta, "m", "a2", ["a3"]), undefined, "a filter the tool does not offer");
+  assert.equal(findSeries(meta, "m", "day", ["d1"]), "weird_name_2?aggregation=day");
+  assert.equal(findSeries(meta, "m", "year"), undefined);
   assert.equal(findEvidence(meta, "incidents"), "weird_name_3");
 });
 

@@ -1,5 +1,5 @@
 import { generateTools } from "@causeline/generate";
-import { DataDefs, Ontology, isRatioFormula } from "@causeline/schema";
+import { DataDefs, Ontology, isRatioFormula, parseToolRef } from "@causeline/schema";
 import type { Row, ToolCaller } from "../src/types.js";
 
 /**
@@ -134,7 +134,10 @@ export class FakeToolCaller implements ToolCaller {
     this.cycles = ont.time.seasonality === "none" ? [] : ont.time.seasonality.cycles;
   }
 
-  async call(tool: string, p: Record<string, string>): Promise<Row[]> {
+  async call(ref: string, given: Record<string, string>): Promise<Row[]> {
+    // a tool reference carries the values bound to it (a series tool's aggregation)
+    const { name: tool, bound } = parseToolRef(ref);
+    const p = { ...bound, ...given };
     if (!this.names.has(tool)) throw new Error(`fake: unknown tool "${tool}"`);
     if (tool === "incidents") {
       return this.incidents.filter((r) => String(r.ts) >= p.start && String(r.ts) <= p.end && (!p.a2 || r.a2 === p.a2));
@@ -151,7 +154,9 @@ export class FakeToolCaller implements ToolCaller {
     const base = (f: Fact) => inWindow(f, p.base_start, p.base_end) && (!allowed || allowed.includes(weekdayOf(f)));
 
     // which metric is this tool for, and how are its components built from a fact?
-    const [metric, def] = this.metrics.find(([name]) => tool.startsWith(`${name}_by_`))!;
+    const [metric, def] = this.metrics.find(([name]) => tool === `${name}_series` || tool.startsWith(`${name}_by_`))!;
+    // optional filters: any concept given a value confines the rows to it
+    const confined = this.facts.filter((f) => ["a1", "a2", "b1", "d1"].every((c) => !p[c] || f[c as keyof Fact] === p[c]));
     const val = (f: Fact, expr: string) => (expr === "1" ? 1 : Number((f as unknown as Record<string, unknown>)[expr]));
     const numExpr = isRatioFormula(def) ? def.numerator : def.value;
     const denExpr = isRatioFormula(def) ? def.denominator : "1";
@@ -194,15 +199,7 @@ export class FakeToolCaller implements ToolCaller {
         .sort((a, b) => a.bucket_start.localeCompare(b.bucket_start));
     };
 
-    const rest = tool.slice(`${metric}_by_`.length);
-    const persist = rest.match(/^dy_for_(.+)$/);
-    if (persist) return series(this.facts.filter((f) => f[persist[1] as keyof Fact] === p[persist[1]]), "dy");
-    if (rest === "wk" || rest === "dy") return series(this.facts, rest);
-    const inParent = rest.match(/^(.+)_in_(.+)$/);
-    if (inParent) {
-      const [, child, parent] = inParent;
-      return groupWindows(this.facts.filter((f) => f[parent as keyof Fact] === p[parent]), child as keyof Fact);
-    }
-    return groupWindows(this.facts, rest as keyof Fact);
+    if (tool === `${metric}_series`) return series(confined, p.aggregation as "wk" | "dy");
+    return groupWindows(confined, tool.slice(`${metric}_by_`.length) as keyof Fact);
   }
 }

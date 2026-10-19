@@ -51,3 +51,22 @@ statement: |
   SDK does).
 
 **Not shown:** generated SQL on BigQuery (step 3), cost accounting (step 4), eval parity (step 4).
+
+## Step 2: standard tool parameters (SQLite)
+
+**Change:** one slice tool per (metric, split concept) with an optional filter for every other concept (an empty
+value restricts nothing), and one series tool per metric whose time level is a *value* (`aggregation`). A tool
+reference (`m_series?aggregation=day`) carries the bound value, so runner steps keep calling `index.series(metric,
+level)` unchanged; whatever executes the tool splits the reference and sends the value. Tool metadata now says what a
+tool *supports* (`levels`, `filters`), and lookup matches by capability.
+
+**Measured (contact-centre pack):** generated tools 115 -> 57. The remainder are the onboarding profile and check
+tools and evidence lookups, which are unchanged; the per-metric analysis tools dropped by about 3x.
+
+**Behaviour unchanged:** 13/13 planted-fault cases with the same number of steps per case as before, routing 27/27,
+all unit tests, integration 5/5.
+
+**Fixed along the way:** `causeline generate` could not regenerate a pack whose old sidecar no longer parsed; it now
+ignores the old sidecar (`loadPack(..., { skipMeta: true })`).
+
+**Not shown:** the new SQL on BigQuery (step 3).

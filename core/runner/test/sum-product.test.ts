@@ -174,7 +174,7 @@ test("product: an unknown period stops like any other metric", async () => {
 
 test("product: every query is logged, those of the split and those of the drill", async () => {
   const r = await run("volume_x_avg", [{ where: inP2Week5, okOutOf10: 9, amountFactor: 2 }]);
-  assert.ok(r.steps.some((s) => s.id === "driver_split" && s.tool === "n_rows_by_wk"));
+  assert.ok(r.steps.some((s) => s.id === "driver_split" && s.tool === "n_rows_series?aggregation=wk"));
   assert.ok(r.steps.some((s) => s.id === "where" && s.tool.startsWith("avg_amount_by_")));
 });
 
