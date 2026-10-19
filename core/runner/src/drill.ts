@@ -92,8 +92,11 @@ export async function timeDrill(ctx: RunContext, stepId: string): Promise<void> 
   }
   const timeLevels = new Set(ctx.ontology.time.levels);
   let scale = 1; // current-volume share of the narrowed window within the period
+  // a run may ask to start looking at a finer level (a single day, by half hour); totals always start at the second level
+  const asked = ctx.ontology.time.levels.indexOf(String(ctx.inputs.aggregation ?? ""));
+  const startAt = ctx.kind === "ratio" && asked > 1 ? asked : 1;
 
-  for (const level of ctx.ontology.time.levels.slice(1)) {
+  for (const level of ctx.ontology.time.levels.slice(startAt)) {
     const window = ctx.window!;
     const rows = toBuckets(await ctx.tools.call(ctx.index.series(ctx.metric, level), { start: window.start, end: window.end }, stepId));
     // with declared seasonality every bucket is compared with the baseline buckets at the same place in each cycle

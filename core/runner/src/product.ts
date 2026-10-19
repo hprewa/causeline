@@ -1,9 +1,7 @@
 import { Result, type Driver, type Generator, type Ontology, type PathNode, type Playbook } from "@causeline/schema";
 import type { ResolvedThresholds } from "./masking.js";
 import { seasonalExpectation } from "./expectation.js";
-import { resolvePeriod } from "./period.js";
-import { slotNamesOf } from "./seasonal.js";
-import { toBuckets } from "./rows.js";
+import { resolveWindow } from "./window.js";
 import { rate, zScore, zSum } from "./stats.js";
 import { LoggingToolCaller } from "./toolcaller.js";
 import type { ToolIndex } from "./toolindex.js";
@@ -40,8 +38,6 @@ const STEP = "driver_split";
 export async function runProductMetric(a: ProductArgs): Promise<Result> {
   const { ontology, def, th } = a;
   const tools = new LoggingToolCaller(a.tools);
-  const period = String(a.inputs.period);
-  const baselineCount = Number(a.inputs.baseline);
 
   const base = { playbook: a.playbook.name, inputs: a.inputs, generator: a.generator, narrative: null };
   const stopped = (reason: string, detail: string) =>
@@ -51,15 +47,13 @@ export async function runProductMetric(a: ProductArgs): Promise<Result> {
   const counts = await tools.call(a.index.extent(firstDriver), {}, STEP);
   if (Number(counts[0]?.n_rows ?? 0) === 0) return stopped("empty_data", "the entity table has no rows");
   const extent = { start: String(counts[0].min_ts), end: String(counts[0].max_ts) };
-  const topLevel = ontology.time.levels[0];
 
   const drivers: Driver[] = [];
   let window: { start: string; end: string } | undefined;
   for (const name of def.drivers) {
     const driverDef = ontology.metrics[name];
     if (!driverDef || driverDef.type === "product") return stopped("bad_driver", `driver "${name}" is not a ratio or sum metric`);
-    const series = toBuckets(await tools.call(a.index.series(name, topLevel), extent, STEP));
-    const info = resolvePeriod(series, period, baselineCount, slotNamesOf(ontology).calendar);
+    const info = await resolveWindow({ tools, index: a.index, ontology, metric: name, inputs: a.inputs, extent, stepId: STEP });
     if ("error" in info) return stopped(info.error, `driver "${name}": ${info.detail}`);
     window ??= info.cur;
 

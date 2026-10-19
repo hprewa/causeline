@@ -6,7 +6,7 @@ import { loadPackForRun, loadPlaybook } from "./load.js";
 import { runPlaybook, type RunInputs } from "./runner.js";
 import { SdkToolCaller } from "./toolcaller.js";
 
-const USAGE = `usage: causeline run --pack <dir> --metric <name> --period <label> [options]
+const USAGE = `usage: causeline run --pack <dir> --metric <name> (--period <label> | --start <YYYY-MM-DD> --end <YYYY-MM-DD>) [--aggregation <level>] [options]
   --playbook <name>   playbook to run (default: metric_change)
   --baseline <n>      periods to compare against (default: 4)
   --url <url>         Toolbox server (default: http://127.0.0.1:5000)
@@ -59,12 +59,18 @@ export async function runCli(argv: string[]): Promise<void> {
   const { flags, sets } = parseArgs(argv);
   const pack = flags.get("pack");
   const metric = flags.get("metric");
-  const period = flags.get("period");
-  if (!pack || !metric || !period) {
+  const period = flags.get("period") ?? "";
+  const range = flags.has("start") && flags.has("end");
+  if (!pack || !metric || (!period && !range)) {
     console.error(USAGE);
     process.exit(2);
   }
   const inputs: RunInputs = { metric, period };
+  if (range) {
+    inputs.start_date = flags.get("start")!;
+    inputs.end_date = flags.get("end")!;
+  }
+  if (flags.has("aggregation")) inputs.aggregation = flags.get("aggregation")!;
   if (flags.has("baseline")) inputs.baseline = flags.get("baseline")!;
   for (const kv of sets) {
     const [k, ...rest] = kv.split("=");

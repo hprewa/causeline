@@ -2,7 +2,10 @@ name: metric_change
 description: Find where and when a metric changed, using the pack's ontology.
 inputs:
   metric:   { type: string }          # any ratio metric in ontology.yaml
-  period:   { type: string }          # a bucket at the top time level, e.g. 2026-W10
+  period:   { type: string, default: "" }   # a bucket at the top time level, e.g. 2026-W10 ...
+  start_date: { type: string, default: "" } # ... or a range of whole days (YYYY-MM-DD, both inclusive)
+  end_date:   { type: string, default: "" }
+  aggregation: { type: string, default: "" } # the time level to start looking at inside the range (default: the second level)
   baseline: { type: int, default: 4 } # periods to compare against
 steps:
   - id: data_check

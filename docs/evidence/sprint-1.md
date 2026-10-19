@@ -133,3 +133,35 @@ that estimate is reused, which is exact for an unpartitioned table and an upper 
 **Not shown:** a stale-credentials message from a live failure (the explanation is unit-tested against the error
 text only); cost on tables much larger than the example; the connection check wired into the MCP server (step 7).
 The plugin bundle grew from 2.3 MB to 3.5 MB with the BigQuery client.
+
+## Step 5: date-range windows in the runner
+
+**Change:** a run can be about a range of whole days (`start_date`, `end_date`, both inclusive) instead of a period
+label. `resolveWindow` (`core/runner/src/window.ts`) cuts equal-length windows from the day-level series, working
+backwards from the range, and hands them to the existing `resolvePeriod` as if they were periods. Everything after
+the data check (the headline, the like-for-like seasonal baseline, the drills over time and hierarchy, evidence,
+products) is unchanged, because it only ever sees a `PeriodInfo`. Details that matter for correctness:
+- With a weekly cycle declared, a range shorter than a week is compared with the **same weekdays** in earlier weeks
+  (windows a week apart), and the node queries restrict their baseline to those weekdays; longer ranges use
+  back-to-back windows. Calendar flags still pick the baseline like-for-like.
+- A range must lie wholly inside the data; the stop message says what the data does cover. Backwards, malformed,
+  half-given ranges and a missing period each stop with a sentence saying what to supply.
+- `aggregation` names the time level to start looking at; a finer level than the default is honoured for ratios
+  (one day, by half hour). Totals always start at the second level.
+- The day level is the level called `day`, else the second level; the data is checked to confirm its buckets stay
+  inside one day. Window and length are stated in the result's notes.
+- `compare` of two periods still takes labels, and says so if given a range; a comparison of two values of one concept
+  works within a range.
+
+**Property test:** a range that is exactly one period gives the same headline, findings, masking flags and drill
+path as that period's label, for a ratio, a total and a product (`range.test.ts`).
+
+**Eval:** five new cases on the contact-centre data (a fault in one week of a two-week range; Wednesday to Friday; one
+day by half hour; a clean four-week range reporting nothing; a range outside the data). **18/18 on SQLite and 18/18 on
+BigQuery, and the two are identical** (1.26 GB read in 302 queries on BigQuery, about $0.007 at list price).
+Routing 27/27, integration 5/5, all unit tests pass.
+
+**Not shown / limits:** sub-day ranges; a range whose length is over a week but not a multiple of one is compared with
+back-to-back windows, so the weekday mix of the node queries is slightly unbalanced (the headline is still
+seasonally adjusted); trend and compare over arbitrary ranges; natural-language dates (step 6 does that, outside the
+runner).

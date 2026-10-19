@@ -2,8 +2,7 @@ import type { PlaybookStep } from "@causeline/schema";
 import type { RunContext } from "./context.js";
 import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./drill.js";
 import { seasonalExpectation } from "./expectation.js";
-import { resolvePeriod } from "./period.js";
-import { toBuckets } from "./rows.js";
+import { resolveWindow } from "./window.js";
 import { rate, zScore, zSum } from "./stats.js";
 import { compareStep, trendStep } from "./tasks.js";
 
@@ -20,12 +19,9 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
   const total = Number(counts[0]?.n_rows ?? 0);
   if (total === 0) return stop(ctx, "empty_data", "the entity table has no rows");
 
-  const topLevel = ctx.ontology.time.levels[0];
-  const series = toBuckets(
-    await ctx.tools.call(ctx.index.series(ctx.metric, topLevel), { start: String(counts[0].min_ts), end: String(counts[0].max_ts) }, step.id),
-  );
-  const info = resolvePeriod(series, String(ctx.inputs.period), Number(ctx.inputs.baseline), ctx.slots.calendar);
+  const info = await resolveWindow({ tools: ctx.tools, index: ctx.index, ontology: ctx.ontology, metric: ctx.metric, inputs: ctx.inputs, extent: { start: String(counts[0].min_ts), end: String(counts[0].max_ts) }, stepId: step.id });
   if ("error" in info) return stop(ctx, info.error, info.detail);
+  const series = info.periodSeries ?? [];
   ctx.period = info;
   ctx.window = { ...info.cur };
   ctx.sumScale = 1 / info.baselineLabels.length;
@@ -37,8 +33,10 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
     const v = info.slots[c];
     ctx.slotFilter[c] = v !== null && v !== undefined ? v : "0";
   }
+  // a date range inside part of a cycle (a Wednesday) is compared with the same part of the cycle
+  Object.assign(ctx.slotFilter, info.cycleFilter ?? {});
 
-  const params = { cur_start: info.cur.start, cur_end: info.cur.end, base_start: info.base.start, base_end: info.base.end };
+  const params = { cur_start: info.cur.start, cur_end: info.cur.end, base_start: info.base.start, base_end: info.base.end, ...Object.fromEntries(Object.entries(info.cycleFilter ?? {}).map(([n, v]) => [`s_${n}`, v])) };
   // periods in the baseline window (a like-for-like baseline can skip periods that sit between its ends)
   const periods = series.filter((b) => b.bucket_start >= info.base.start && b.bucket_end <= info.base.end).length || info.baselineLabels.length;
   const gaps: string[] = [];

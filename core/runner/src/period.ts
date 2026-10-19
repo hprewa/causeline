@@ -22,6 +22,10 @@ export interface PeriodInfo {
   /** True when the baseline periods were chosen to share the period's calendar flags. */
   likeForLike: boolean;
   notes: string[];
+  /** The periods (or, for a date range, the windows) this was resolved from, oldest first. */
+  periodSeries?: Bucket[];
+  /** Slot restrictions the baseline rows of node queries need because the period sits in only some positions of a cycle (a range of a few weekdays). */
+  cycleFilter?: Record<string, string>;
 }
 
 type Failure = { error: "period_not_found" | "no_baseline"; detail: string };

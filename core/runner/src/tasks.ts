@@ -83,6 +83,7 @@ export const compareStep: StepFn = async (ctx, step) => {
     [a, b, kind, labels] = [ca, cb, "nodes", [la, lb]];
   } else {
     const against = String(ctx.inputs.against ?? "");
+    if (String(ctx.inputs.period ?? "") === "") return stop(ctx, "needs_inputs", "comparing two periods takes period labels (period and against); date ranges are supported for the change, value and trend questions");
     if (!against) return stop(ctx, "needs_inputs", "comparing two periods needs the second one (input against), or a concept with two of its values (inputs concept, a, b)");
     const series = await topSeries(ctx, step.id);
     const pa = series.find((x) => x.bucket === String(ctx.inputs.period));

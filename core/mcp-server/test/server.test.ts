@@ -83,7 +83,7 @@ test("list_playbooks returns the core playbook and a summary of the ontology", a
   assert.deepEqual(out.playbooks.map((p: any) => p.name).sort(), ["compare", "metric_change", "trend", "value"]);
   const change = out.playbooks.find((p: any) => p.name === "metric_change");
   assert.equal(change.source, "core");
-  assert.deepEqual(Object.keys(change.inputs), ["metric", "period", "baseline"]);
+  assert.deepEqual(Object.keys(change.inputs), ["metric", "period", "start_date", "end_date", "aggregation", "baseline"]);
   assert.equal(out.ontology.experts.length, 8, "a generic expert per KPI and task: 2 KPIs x 4 tasks");
   assert.ok(out.ontology.experts.every((e: any) => e.status === "draft"));
   assert.equal(out.ontology.period_level, "week");

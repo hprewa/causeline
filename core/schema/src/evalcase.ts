@@ -62,14 +62,17 @@ export const Expectation = z
 export type Expectation = z.infer<typeof Expectation>;
 
 /** What the runner is asked to do for a case (the agent is given only the question). */
-export const EvalInputs = z.object({
+export const EvalInputs = z
+  .object({
   metric: z.string().min(1),
-  period: z.string().min(1),
+  /** A period label; empty when the case gives a date range in `more` (start_date, end_date, aggregation). */
+  period: z.string().default(""),
   baseline: z.number().int().positive().optional(),
   playbook: z.string().min(1).default("metric_change"),
   /** Further playbook inputs (for compare: against, concept, a, b). */
   more: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
-});
+  })
+  .refine((i) => i.period !== "" || (!!i.more?.start_date && !!i.more?.end_date), { message: "a case needs a period label or a date range (more.start_date and more.end_date)" });
 export type EvalInputs = z.infer<typeof EvalInputs>;
 
 export const EvalCase = z.object({

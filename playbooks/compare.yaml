@@ -2,7 +2,10 @@ name: compare
 description: A against B. Two periods, or two values of one concept (two teams, two queues), side by side.
 inputs:
   metric:  { type: string }
-  period:  { type: string }           # the period (or the first period)
+  period:   { type: string, default: "" }   # a bucket at the top time level, e.g. 2026-W10 ...
+  start_date: { type: string, default: "" } # ... or a range of whole days (YYYY-MM-DD, both inclusive)
+  end_date:   { type: string, default: "" }
+  aggregation: { type: string, default: "" } # the time level to start looking at inside the range (default: the second level)
   against: { type: string, default: "" }   # the second period, to compare two periods
   concept: { type: string, default: "" }   # a hierarchy level or dimension, to compare two of its values
   a:       { type: string, default: "" }

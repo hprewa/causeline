@@ -106,7 +106,7 @@ function rankFindings(drafts: FindingDraft[], metric: string, hierarchies: Recor
 }
 
 function seasonalityNote(ctx: RunContext): SeasonalityNote {
-  if (ctx.slots.all.length === 0) return { status: "none_declared", cycles: [], calendar: [], baseline: "pooled", notes: [] };
+  if (ctx.slots.all.length === 0) return { status: "none_declared", cycles: [], calendar: [], baseline: "pooled", notes: [...new Set(ctx.seasonNotes)] };
   const fellBack = ctx.period?.notes.some((n) => n.startsWith("fewer than two")) ?? false;
   return {
     status: "applied",

@@ -2,7 +2,10 @@ name: trend
 description: How is a KPI moving? Every period against its own like-for-like baseline, with the change points.
 inputs:
   metric:   { type: string }
-  period:   { type: string }          # the period the question is about; the whole series is returned
+  period:   { type: string, default: "" }   # a bucket at the top time level, e.g. 2026-W10 ...
+  start_date: { type: string, default: "" } # ... or a range of whole days (YYYY-MM-DD, both inclusive)
+  end_date:   { type: string, default: "" }
+  aggregation: { type: string, default: "" } # the time level to start looking at inside the range (default: the second level)
   baseline: { type: int, default: 4 }
 steps:
   - id: data_check

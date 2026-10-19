@@ -161,7 +161,10 @@ test("a threshold can be overridden by a run input", async () => {
 });
 
 test("missing and mistyped inputs are rejected", async () => {
-  await assert.rejects(runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts()), inputs: { metric: "m" } }), /needs input "period"/);
+  await assert.rejects(runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts()), inputs: {} }), /needs input "metric"/);
+  const noPeriod = await runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts()), inputs: { metric: "m" } });
+  assert.equal(noPeriod.status, "stopped", "a question with no period stops and says what to supply");
+  assert.match(noPeriod.stopped_detail!, /say which period/);
   await assert.rejects(runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts()), inputs: { metric: "nope", period: "W5" } }), /not in the ontology/);
   await assert.rejects(runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts()), inputs: { metric: "m", period: "W5", baseline: "lots" } }), /must be a number/);
 });

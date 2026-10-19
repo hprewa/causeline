@@ -116,3 +116,46 @@
   inputs: { metric: service_level, period: 2026-W07, playbook: compare, more: { concept: team, a: team_06, b: team_05 } }
   expect:
     comparison_significant: true
+
+# --- DATE RANGES: the same analysis over a window that is not a period label -----------------------------------------
+# Weeks start on Mondays; week 1 is 2026-01-05, so week 7 is 16-22 February and week 8 is 23 February to 1 March.
+
+# 14. a fault in one week of a two-week range
+- id: range_two_weeks_with_fault
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Why did service level drop between 16 February and 1 March?"
+  inputs: { metric: service_level, period: "", more: { start_date: "2026-02-16", end_date: "2026-03-01" } }
+  expect:
+    top_finding: { dimension: team, value: team_05 }
+
+# 15. three weekdays inside a week, compared with the same three weekdays in earlier weeks
+- id: range_wednesday_to_friday
+  setup: "--fault understaffed:team_05:wk7"
+  question: "What happened to service level from Wednesday 18 to Friday 20 February?"
+  inputs: { metric: service_level, period: "", more: { start_date: "2026-02-18", end_date: "2026-02-20" } }
+  expect:
+    top_finding: { dimension: team, value: team_05 }
+
+# 16. one day, looked at by half hour
+- id: range_one_day_by_half_hour
+  setup: "--fault block_outage:wk6:wed:12-14:0.35"
+  question: "Service level on Wednesday 11 February looks off. When in the day was it bad?"
+  inputs: { metric: service_level, period: "", more: { start_date: "2026-02-11", end_date: "2026-02-11", aggregation: interval_30m } }
+  expect:
+    top_finding: { dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }
+
+# 17. a clean four-week range reports nothing
+- id: range_clean_four_weeks
+  setup: "--seed 42"
+  question: "Did anything unusual happen to service level between 2 February and 1 March?"
+  inputs: { metric: service_level, period: "", more: { start_date: "2026-02-02", end_date: "2026-03-01" } }
+  expect:
+    no_findings: true
+
+# 18. a range the data does not cover stops and says so
+- id: range_outside_the_data
+  setup: "--seed 42"
+  question: "Why did service level drop in December?"
+  inputs: { metric: service_level, period: "", more: { start_date: "2025-12-01", end_date: "2025-12-31" } }
+  expect:
+    stopped_reason: period_not_found
