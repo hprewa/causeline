@@ -16,10 +16,13 @@ case: your business words live in one folder (a *pack*), and nothing else in the
 ## Status
 
 Early and under active development. What works today: the runner (drill by place and time, rate vs mix,
-like-for-like seasonality, masking checks, evidence from other tables), the router, the Builder (CSV files to a
-checked pack by conversation), an MCP server and a Claude Code plugin, and an eval harness with planted faults. One
-worked example pack ships (a contact centre, synthetic data). Planned next: a BigQuery data source, multi-point
-sign-off of each KPI, branching playbooks, and more example packs. See `PROGRESS.md`.
+like-for-like seasonality, masking checks, evidence from other tables), questions about any date range, the router,
+a running **intent** (a question built over several messages, checked against the data and read back in plain words
+before anything runs), the Builder (CSV files to a checked pack by conversation), an MCP server and a Claude Code
+plugin, and an eval harness with planted faults. Data can live in a local database or in **BigQuery**, with a cost
+budget per question. One worked example pack ships (a contact centre, synthetic data) and gives identical answers on
+both. Planned next: multi-point sign-off of each KPI, the Builder on BigQuery, branching playbooks, and more example
+packs. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
 
 ## How it is built (and why it is not tied to one use case)
 
@@ -32,6 +35,7 @@ sign-off of each KPI, branching playbooks, and more example packs. See `PROGRESS
 | Experts | `agents/*.yaml` | which KPI an expert covers, and whether it is `verified` or a `draft` |
 | Runner | `core/runner` | all the maths, in plain TypeScript |
 | Router | `core/router` | picks KPI, task and period from a question, deterministically |
+| Intent | `core/intent` | the structure an agent fills in (KPI, task, period, filters); resolves "last 4 weeks" to dates, checks every value against the data, asks one question at a time |
 | Builder | `core/builder` | turns a folder of files into a checked pack, by conversation |
 
 `npm run check:purity` fails the build if a domain word appears in `core/`, the skills or the shared playbooks.
@@ -53,9 +57,45 @@ command line is needed. Point the plugin at an empty folder (`CAUSELINE_PACK`) a
 
 The `causeline-build` skill scripts this. Today it reads CSV only.
 
+## Using it with BigQuery
+
+A pack can read BigQuery instead of a local database. Causeline never stores your data and never writes to it; it
+sends read-only queries through Toolbox and reports how much each question read.
+
+1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and sign in for applications:
+   `gcloud auth application-default login` (a separate login from `gcloud auth login`). Signing in without
+   the CLI is planned.
+2. Tell Causeline which project to bill: set `CAUSELINE_BQ_PROJECT` to its id. Optional: `CAUSELINE_BQ_BUDGET_GB`
+   (the most one question may read; default 5, `0` for no limit).
+3. Use a pack whose `data.yaml` says `dialect: bigquery` (see `packs/contact-centre/data.bigquery.yaml` and its
+   `toolbox.bigquery/source.yaml`). The source must set `maxQueryResultRows`; without it Toolbox quietly returns
+   only 50 rows, and Causeline refuses to start.
+4. Ask the `check_connection` tool (or just ask a question): a missing sign-in, project or dataset is reported in a
+   sentence that says what to do.
+
+Every generated query is priced with BigQuery's free dry run before it runs. If a question would pass the budget it
+is stopped, and the result says how much was read and the estimated cost (an upper bound, at list price).
+
+To try the example pack on BigQuery (this creates small datasets named `causeline_eval_*` in your project):
+
+```powershell
+$env:CAUSELINE_TARGET = "bigquery"; $env:CAUSELINE_BQ_PROJECT = "<your project id>"
+npm run eval                                   # 18 cases, about 1.3 GB read in total
+node scripts/intent-demo.mjs                   # a scripted multi-message conversation
+```
+
+## Asking questions over several messages
+
+Under the hood, each question becomes an *intent*: KPI, task (value, compare, trend, deep dive), period,
+comparison, view (day, week, ...) and filters. The agent fills it in from what you say; code works out the dates
+(weeks run Monday to Sunday, periods never include today), looks every filter value up in your data (a near
+spelling is offered, never guessed), and reads it back before running, for example *"A deep dive into service level
+(team team_05) for 16–22 February 2026, by day: what changed, and why."* Follow-ups change one thing ("now by day",
+"and call volume?"); you can go back to an earlier answer or start over.
+
 ## Contributor setup
 
-- Node.js 18+ (developed against 20.12.2)
+- Node.js 20 or 22 (CI runs both)
 - Python 3.10+ (stdlib only): the synthetic data generators
 - [DuckDB CLI](https://duckdb.org/install/): loader for the shipped synthetic pack
 - [MCP Toolbox for Databases](https://github.com/googleapis/mcp-toolbox), **pinned to v1.14.0**
@@ -87,6 +127,7 @@ npm test                    # unit tests
 npm run check:purity        # the core stays domain-free
 npm run eval                # planted-fault cases for the example pack, runner level (about 2 minutes)
 node core/cli/dist/src/main.js eval --pack packs/contact-centre --routing   # question routing
+node core/cli/dist/src/main.js eval --pack packs/contact-centre --intents   # conversations to resolved intents
 npm run test:integration    # end to end over stdio against a real Toolbox (needs Python, DuckDB, Toolbox)
 npm run bundle:plugin       # assemble the Claude Code plugin
 ```
@@ -101,6 +142,8 @@ core/schema/     # Zod schemas: ontology, data, playbook, result, eval cases, pa
 core/generate/   # ontology + data definition -> Toolbox tools
 core/runner/     # the maths: drill, decomposition, masking checks, seasonality, evidence
 core/router/     # question -> KPI, task, period, expert
+core/intent/     # the question as a structure: natural periods to dates, checks, play-back, session
+core/connect-bigquery/  # BigQuery: dry-run pricing, cost budget, connection check
 core/onboard/    # data checks and seasonality analysis
 core/builder/    # files -> checked pack, by conversation
 core/eval/       # planted-fault scoring

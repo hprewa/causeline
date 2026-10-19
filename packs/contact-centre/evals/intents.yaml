@@ -37,10 +37,10 @@
 
 - id: since_a_date_and_year_to_date
   turns:
-    - say: "Service level since 1 February"
+    - say: "How has service level moved since 1 February?"
       set: { kpi: service_level, task: trend, period: { kind: since, date: "2026-02-01" } }
       expect: { status: ready, window: { start: "2026-02-01", end: "2026-03-15" } }
-    - say: "And year to date?"
+    - say: "And the same for the year to date?"
       set: { period: { kind: to_date, unit: year } }
       # the year began before the data did: it is cut at the first day the data holds, and says so
       expect: { status: ready, window: { start: "2026-01-05", end: "2026-03-15" } }
@@ -133,7 +133,7 @@
 
 - id: a_period_the_data_does_not_hold
   turns:
-    - say: "Service level in 2024"
+    - say: "What was the service level in 2024?"
       set: { kpi: service_level, task: value, period: { kind: calendar, unit: year, year: 2024 } }
       expect: { status: ask, slot: period, says: ["covers 2026-01-05 to 2026-03-15"] }
     - say: "Last week then"

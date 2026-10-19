@@ -97,3 +97,9 @@ Evidence for every step is in `docs/evidence/sprint-1.md`; the plan is the table
 - **`recall(n)` makes that answer the active intent again.** Why: "the same, for another value" is a refinement, not a new question.
 - **A pack that reads BigQuery is metered in the server as well as in evals.** Why: a person's question must be bounded
   by the same budget as a test.
+
+### Step 8: proof and docs (commit in `PROGRESS.md`)
+- **The live tier is one prompt per conversation, and scenario messages must say what the user wants.** Why: a real message does
+  not carry the fixture's hidden task, and an agent that asks is right; the first live BigQuery run missed twice for exactly this
+  and the eval wording was corrected (recorded in the evidence, not hidden).
+- **Test datasets in the cloud project are disposable.** Each eval recreates what it needs, so they are deleted after a sprint, not kept.

@@ -260,3 +260,35 @@ deep dive; 18 queries and 115 MB for the same scoped by day; 8 queries and 28 MB
 - State lives in the server process: a restart forgets the conversation (the answers' result files remain on disk).
 - A comparison needs whole periods of the data; "last 5 days against the 5 before" is refused with a reason, not run.
 - Sub-day periods, a configurable week start, and an intent for "A against B" of two values of one concept remain open (route still handles the latter).
+
+## Step 8: proof and docs
+
+**Live agent on BigQuery** (Claude Code, own login, `CAUSELINE_TARGET=bigquery`, the contact-centre pack in project `yukti-dev`): six
+conversations given to the agent as one prompt each, scored on where the question ended up.
+- First run: 4 of 6. The two misses were the eval's wording, not the system: the scripted messages ("Service level since 1 February",
+  "Service level in 2024") never said what the user wanted to know, the fixture patch assumed a task, and the agent correctly asked
+  what they wanted. The messages now say it ("How has service level moved since 1 February?", "What was the service level in 2024?").
+- Re-run of those two: 2/2. So the live BigQuery tier is **6/6** after the wording fix (stated plainly: the wording was changed after
+  seeing the misses, in the direction a real user's message goes; the system behaviour was not changed).
+- Cost of the model: $1.07 for the first six conversations and $0.35 for the re-run; each conversation $0.14 to $0.23, 7 to 11 turns.
+  BigQuery reads for the same conversations are in each result's `cost` (tens of MB per answer).
+- The same conversations on SQLite (step 7): 7 distinct conversations, all passing after the fixes recorded there.
+
+**Docs:** README has a BigQuery section (sign-in with gcloud, `CAUSELINE_BQ_PROJECT`, the budget, the `maxQueryResultRows` rule, how to
+try the example pack on BigQuery), a section on asking over several messages, and the updated layout and status; contributor setup now
+says Node 20 or 22 and lists the intent eval. `PROGRESS.md` and `decisions.md` are up to date for steps 1 to 8.
+
+**Sprint 1 done-when, checked:**
+1. The contact-centre pack runs on BigQuery and its 18 cases (13 original and 5 range cases) give identical findings to SQLite: yes (18 compared, identical).
+2. Every generated statement passes a BigQuery dry run, each run reports bytes scanned, and a per-run budget stops a runaway with a plain message: yes
+   (dry-run test; `cost` in every result; budget unit-tested). Not shown: a real budget stop on a large table (the example data is small).
+3. Standard parameters, tool count roughly halved, SQLite results unchanged: yes (step 2).
+4. Natural periods and multi-message questions pass the intent eval: yes, 16/16 fixture on both databases, live agent 7 of 16 conversations on SQLite and 6 of 16 on BigQuery.
+5. Existing evals, routing, unit tests, integration and CI stay green: yes locally; CI runs the offline checks.
+
+**Not shown / carried forward:** a live run of all 16 conversations on both databases; a real warehouse larger than the example data
+(cost behaviour at scale); sign-in without gcloud (sprint 5); conversation state surviving a server restart; comparison of arbitrary
+(non-whole) periods; sub-day periods; a configurable week start.
+
+**Housekeeping:** the test datasets in the BigQuery project (`causeline_eval_*`, `causeline_demo_cc`) are recreated by the evals on
+demand, so they are not needed between runs.

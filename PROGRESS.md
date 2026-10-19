@@ -28,7 +28,7 @@ is in `docs/evidence/`.
 | BigQuery: dialect, pack targets, dry-run checks, per-question cost budget | done |
 | Date-range questions (whole days) | done |
 | Intent: a fixed structure an agent fills in, natural periods resolved by code, one question at a time, plain-words play-back | done |
-| Running intent: a question built over messages, scoped runs, recall, topic switches, connection check | done (live-agent proof: step 8) |
+| Running intent: a question built over messages, scoped runs, recall, topic switches, connection check | done (live agent: 6/6 on BigQuery) |
 | Starter pack for a new use case (`packs/_template`) | done |
 
 Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
@@ -64,14 +64,14 @@ re-covered by new packs before they count again:
 | 5 | Date-range windows | done | 5186dd9 | Step 5 |
 | 6 | Intent core | done | c408240 | Step 6 |
 | 7 | Running intent and surfaces | done | efc35ce | Step 7 |
-| 8 | Proof and docs: live agent on BigQuery, setup guide | not started | | |
+| 8 | Proof and docs: live agent on BigQuery, setup guide | done | see `git log` (message starts "Sprint 1 step 8") | Step 8 |
 
 ## Next
 
 | # | Sprint | Done when |
 |---|---|---|
 | P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
-| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. Steps 1 to 7 done, step 8 left |
+| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
 | 2 | Multi-point sign-off, Builder on BigQuery, a public-data showcase pack, an alerts example pack | a pack built by conversation reaches `verified` through the status ladder |
 | 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery | branching playbooks with full branch coverage; new depth evals pass |
 | 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
