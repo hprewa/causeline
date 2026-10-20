@@ -132,7 +132,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
   Builder over MCP can therefore reach provisional only (recorded in the evidence).
 - **A version 1 `build.json` is read as version 2 (a matched number becomes one confirmed total without dates, so `run_checks` asks for it again).** Why: workspaces started earlier keep working without hiding that their number cannot be re-worked.
 
-### Step 3: sign-off tools and the screen (commit see `PROGRESS.md`)
+### Step 3: sign-off tools and the screen (commit aeca125)
 - **The screen and the chat tools call the same Builder functions; the screen can only suggest numbers, take a number, confirm or flag it, and re-run the stored checks.** Why: one code path means one set of rules; a screen that could edit the model would be a second, unreviewed way to change what is vouched for.
 - **The page is served from the MCP process on 127.0.0.1, with a secret in the path, a Host and Origin check, JSON-only writes, a nonce CSP and no external resources.** Why: it needs no install and no account, and a web page from elsewhere must not be able to read or sign off anything.
 - **`open_signoff` always returns the address as well as trying to open a browser.** Why: some clients and some machines cannot start one, and the user must never be stuck.
