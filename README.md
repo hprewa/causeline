@@ -76,6 +76,12 @@ sends read-only queries through Toolbox and reports how much each question read.
 Every generated query is priced with BigQuery's free dry run before it runs. If a question would pass the budget it
 is stopped, and the result says how much was read and the estimated cost (an upper bound, at list price).
 
+The Builder can start from a BigQuery table instead of files: say which table and which project to bill, and it connects, looks at the
+table (without reading free-text columns, and on a sample if the whole would be too much), and saves a pack with a per-pack limit on
+what one question may read. Each KPI is then signed off against numbers from your own reports, from at least two angles, in the chat or
+on a local sign-off page (`node scripts/signoff-demo.mjs --hands-on` shows it). `node scripts/bigquery-build-demo.mjs --example` plays
+the whole path on your own project.
+
 To try the example pack on BigQuery (this creates small datasets named `causeline_eval_*` in your project):
 
 ```powershell

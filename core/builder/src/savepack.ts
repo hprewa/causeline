@@ -40,7 +40,7 @@ async function save(opts: { workspace: string; ontology: unknown; data: unknown;
   // what the connection decides (which database, which source) is not the agent's to write
   const state = readState(opts.workspace);
   const draft = (opts.data !== null && typeof opts.data === "object" ? opts.data : {}) as Record<string, unknown>;
-  const rawData: Record<string, unknown> = state?.dialect === "bigquery" ? { ...draft, dialect: "bigquery", source: state.source } : { ...draft };
+  const rawData: Record<string, unknown> = state?.dialect === "bigquery" ? { ...draft, dialect: "bigquery", source: state.source } : { ...draft, ...(draft.source === undefined && state ? { source: state.source } : {}) };
   const errors: string[] = [];
   const warnings: string[] = [];
   const o = Ontology.safeParse(opts.ontology);

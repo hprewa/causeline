@@ -175,3 +175,31 @@ verify_expert (needs a verified KPI and the incident): verified=true
 - A sign-in that has expired mid-run surfaces as the raw Google error in the demo script's own setup; through the tools it is explained in a sentence (the explainer is from sprint 1), but this was not provoked live.
 - Dataset `causeline_build_demo` (about 10 MB) was created in the project by the demo's setup and is still there; delete it when you like (`bq rm -r -f -d yukti-dev:causeline_build_demo`).
 
+## Step 5: skill rewrite and scripted end-to-end on both databases
+
+**Question:** does the instruction the model follows teach the new ladder and BigQuery correctly, and does the whole Builder path (connect, look, describe, save, sign off, verify, change, restore) work through the MCP tools on both databases?
+
+**What changed**
+- `skills/causeline-build/SKILL.md` rewritten: the description and triggers cover BigQuery; rule 4 teaches the three states (draft, provisional, verified) and to call anything short of verified *unconfirmed numbers*; new rules that the model never
+  confirms a number the user did not give and never uses one KPI's figure for another, and that it says what reading costs (and never hides a budget stop). Step 1 has a BigQuery branch (their own billing project; a fresh folder; the user runs `gcloud auth application-default login`
+  themselves; connecting reads no data). Step 2 passes on the profile's notes in a sentence each and handles an almost-level column by making names unique. Step 3 adds `one_row_per`, the BigQuery SELECT rules (backticked full names, `TIMESTAMP(...)`, narrow columns,
+  no free text) and the cost sentence after a save. Step 5 is now the sign-off: propose, ask for their number and its source **before** showing ours, confirm with a source, flag, two angles for verified, the sign-off page, `run_checks` after any change. Step 7 needs a verified KPI.
+  `source`, `dialect` and the cost limit are no longer the model's to write.
+- `skills/causeline-investigate/SKILL.md` gains one rule: say, once, when a KPI is not yet verified (via `signoff_status`), and offer to confirm it.
+- `save_pack` fills in `data.source` from the connection when the draft leaves it out (it already did so for BigQuery), found when the scripted path used the new skill's draft shape.
+
+**Evidence**
+- `core/mcp-server/test/builder-flow.test.ts` (integration; Python and Toolbox): from raw CSV files through the MCP tools over stdio to a verified expert: connect, look, save (source left out), play back and confirm, propose (no number of ours in the questions), a wrong number refused,
+  one number gives provisional and `verify_expert` refuses, the **second number is given through the sign-off page's own HTTP calls** and the chat sees verified, the incident, `verify_expert` verified, then a rewritten formula drops the KPI to provisional and `run_checks` restores it.
+  The `build_status` next step names the next KPI that is not verified. 7/7 integration tests pass (this one, the Builder end-to-end, the MCP run, the multi-message intent conversation, and the bundled plugin from a copy).
+- `core/mcp-server/test/skills.test.ts`: the build skill names every sign-off tool and each exists in the server; it no longer teaches that one matched number is enough; it teaches asking before showing ours and the sign-in command.
+- **BigQuery, same path** (`scripts/bigquery-build-demo.mjs --example`, run again on the final code): connect (0 read), describe_data (0.02 GB), save_pack (0.01 GB, 57 tools), propose, two confirmed numbers, **verified**, 14 automatic checks pass on BigQuery, `verify_expert` verified; Builder steps 0.04 GB in all.
+- The Claude Code plugin was rebuilt with `npm run bundle:plugin` (3.6 MB) and the plugin-from-a-copy integration test passes (the plugin's server, skills and playbooks are build output and not committed).
+- Unchanged and green: every package's unit tests, purity, runner evals 18/18, routing 27/27, intents 16/16 (fixture tier).
+
+**Not shown**
+- **A language model following the new skill.** Only scripts played the model; the wording of the skill is checked by tests for what it names and teaches, not by an agent's behaviour. The live conversation on the complaints data is step 6.
+- The BigQuery end-to-end needs credentials and a project, so it is a script you run (it is not in `npm run test:integration` or CI).
+- The sign-off page was driven by HTTP calls, not clicked; no one has used it in a browser yet (the hands-on mode exists: `node scripts/signoff-demo.mjs --hands-on`).
+- The live agent tier of the intent eval (conversations to intents) was not re-run: nothing in the intent path changed.
+

@@ -44,7 +44,7 @@ Multi-point sign-off with a sign-off screen, the Builder on BigQuery, and the co
 | 2 | Checks and status ladder core (draft, provisional, verified; stored regression numbers) | done | 982232c | Step 2 |
 | 3 | Sign-off tools and the local sign-off screen | done | aeca125 | Step 3 |
 | 4 | Builder data layer and BigQuery (connect, profile, test, save) | done | 80c48e7 | Step 4 |
-| 5 | Skill rewrite and scripted end-to-end on both databases | not started | | |
+| 5 | Skill rewrite and scripted end-to-end on both databases | done | see `git log` (message starts "Sprint 2 step 5") | Step 5 |
 | 6 | Complaints pack built by conversation, real incident evals | not started | | |
 | 7 | Proof and docs | not started | | |
 

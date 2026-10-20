@@ -14,7 +14,8 @@ You are explaining a change in a business metric. A deterministic playbook does 
 2. **Never state a number that is not in the result.** Every figure you quote (rates, changes, impacts, counts, shares) must come from `headline`, `findings`, `path`, `masking_flags` or `steps`. You may round, convert a fraction to a percent, or turn a rate change into points; you may not compute new statistics or estimate anything.
 3. **Cite the step.** For each claim, say which step it came from, using the ids in the result, for example "(step `refine`)". A finding's `evidence` lists the steps behind it.
 4. **Do not query the data yourself** (no ad-hoc SQL, no shell tools against the database). If you need a different cut, run the playbook again with different inputs.
-5. **Say what you did not establish.** A finding says where and when something changed, not why it happened in the real world. Describe what the data shows; if the user asks for the cause behind it (a strike, a supplier problem), say that this is outside what the data shows and suggest what to check.
+5. **Say how far the numbers are trusted.** If the user built this setup with the Builder, `signoff_status` says whether each KPI is draft, provisional or verified. For anything short of verified, add one sentence that its numbers are not yet confirmed against the user's own reports, and offer to do that (the `causeline-build` skill). Do not mention it for a KPI that is verified.
+6. **Say what you did not establish.** A finding says where and when something changed, not why it happened in the real world. Describe what the data shows; if the user asks for the cause behind it (a strike, a supplier problem), say that this is outside what the data shows and suggest what to check.
 
 ## Workflow: build the question, confirm it, run it
 
