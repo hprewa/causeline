@@ -140,7 +140,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **`SqliteToolCaller` lives in `core/builder`, not in test code.** Why: tests of the checks and the screen then run the product's own generated statements, and a future offline check can use it.
 - **The plugin bundle and skill are updated with the skill rewrite (step 5), not here.** Why: one rewrite of the instructions to the model, after the Builder is on both databases, rather than two.
 
-### Step 4: the Builder on BigQuery (commit see `PROGRESS.md`)
+### Step 4: the Builder on BigQuery (commit 80c48e7)
 - **One `BuilderData` surface; the BigQuery implementation lives in `connect-bigquery`, which depends on the Builder, not the reverse.** Why: the Builder and its tests stay free of any cloud library, and a third database is one more implementation.
 - **The dialect, the Toolbox source and `budget_gb` are written by `save_pack` from the connection, never by the agent.** Why: an agent guessing a source name or a limit would be a silent way to break the pack or the budget.
 - **A statement is a read only if BigQuery's own dry run says SELECT; the textual guard is only the first check.** Why: text rules can be fooled, the database's own classification cannot.
