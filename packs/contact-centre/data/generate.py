@@ -21,6 +21,14 @@ Faults are planted by name, by name (repeat --fault to combine):
   surge:billing:wk7:0.5                    that queue gets 50% more calls
   surge_block:wk7:thu:14-17:0.6            a block of one day gets 60% more calls, on every queue
 
+  surge_all:wk7:0.12                       every call may be repeated: a thin rise across every node
+  star_agent:agent_007:0.99                a trait: that agent answers that share of calls in time
+  bad_week:agent_007:wk4:0.12              one agent answers fewer calls in time in that week
+  funnel:agent_007:wk7:0.45[:0.99]         that share of every other agent's calls go to that agent (answered at its own rate, or at the rate given)
+  noisy_volume:0.08[:queue|team]           each week's volume moves by a random factor (sd 8%), for everything or for each queue or team on its own
+  noisy_rate:0.02[:queue|team]             each week's service level moves by a random amount (sd 2 points), for everything or for each queue or team
+  ramp_down:wk10:0.35                      the newest weeks hold only that share of their calls (data still arriving)
+
 Pure mix = slow_queue + reroute. Simpson's paradox = slow_queue + improve + reroute.
 Order matters when combining: slow_queue first (reroute reuses its trait), then improve, then reroute.
 
@@ -180,13 +188,15 @@ def _matches(call: Call, spec: str) -> bool:
     """A node spec: `team=team_01`, `site=s_1`, `centre=cc_1` (a bare name means a team)."""
     col, _, value = spec.rpartition("=")
     col = col or "team"
+    if col == "agent":
+        return call.agent == value
     if col == "team":
         return AGENTS[call.agent] == value
     if col == "site":
         return site_of(call.agent) == value
     if col == "centre":
         return centre_of(call.agent) == value
-    raise ValueError(f"unknown node spec {spec!r}; use team=..., site=... or centre=...")
+    raise ValueError(f"unknown node spec {spec!r}; use agent=..., team=..., site=... or centre=...")
 
 
 Plant = Callable[[list[Call], list[str], random.Random], tuple[list[Call], dict]]
@@ -328,6 +338,120 @@ def plant_surge_block(calls, args, rng):
     return calls + extra, {"name": "surge_block", "args": {"weeks": [w0, w1], "weekday": weekday, "hours": [h0, h1], "share": share}, "rows_affected": len(extra)}
 
 
+# A trait set by star_agent and reused by funnel so that calls moved to that agent are answered at its own rate.
+AGENT_RATE: dict[str, float] = {}
+
+
+def plant_surge_all(calls, args, rng):
+    """surge_all:wkN:share -- every call is repeated with probability `share`: a thin rise across every node."""
+    week_spec, share_s = args
+    w0, w1 = _parse_week_range(week_spec)
+    share = float(share_s)
+    extra: list[Call] = []
+    for c in calls:
+        if w0 <= week_of(c.ts) <= w1 and rng.random() < share:
+            extra.append(Call(f"{c.call_id}A", c.ts + timedelta(seconds=rng.randrange(1, 600)), c.agent, c.queue, c.reason, c.answered, c.handle))
+    return calls + extra, {"name": "surge_all", "args": {"weeks": [w0, w1], "share": share}, "rows_affected": len(extra)}
+
+
+def plant_star_agent(calls, args, rng):
+    """star_agent:AGENT:rate -- a permanent trait: that agent's calls are answered in time with probability `rate`."""
+    agent, rate_s = args
+    rate = float(rate_s)
+    AGENT_RATE[agent] = rate
+    n = 0
+    for c in calls:
+        if c.agent == agent:
+            c.answered = rng.random() < rate
+            n += 1
+    return calls, {"name": "star_agent", "args": {"agent": agent, "answered_in_time": rate}, "rows_affected": n}
+
+
+def plant_bad_week(calls, args, rng):
+    """bad_week:AGENT:wkN:drop -- that agent answers `drop` fewer calls in time in those weeks."""
+    agent, week_spec, drop_s = args
+    w0, w1 = _parse_week_range(week_spec)
+    drop = float(drop_s)
+    n = 0
+    for c in calls:
+        if c.agent == agent and w0 <= week_of(c.ts) <= w1 and c.answered and rng.random() < drop:
+            c.answered = False
+            n += 1
+    return calls, {"name": "bad_week", "args": {"agent": agent, "weeks": [w0, w1], "drop": drop}, "rows_affected": n}
+
+
+def plant_funnel(calls, args, rng):
+    """funnel:AGENT:wkN:share[:rate] -- `share` of every other agent's calls go to AGENT and are answered at AGENT's own rate (see star_agent),
+    or at `rate` when given (the agent answers better, or worse, in those weeks than it usually does)."""
+    agent, week_spec, share_s, *rest = args
+    w0, w1 = _parse_week_range(week_spec)
+    share = float(share_s)
+    rate = float(rest[0]) if rest else AGENT_RATE.get(agent)
+    n = 0
+    for c in calls:
+        if c.agent != agent and w0 <= week_of(c.ts) <= w1 and rng.random() < share:
+            c.agent = agent
+            if rate is not None:
+                c.answered = rng.random() < rate
+            n += 1
+    return calls, {"name": "funnel", "args": {"agent": agent, "weeks": [w0, w1], "share": share, "rate": rate}, "rows_affected": n}
+
+
+def _noise_key(call: Call, by: str) -> str:
+    return call.queue if by == "queue" else AGENTS[call.agent] if by == "team" else ""
+
+
+def plant_noisy_volume(calls, args, rng):
+    """noisy_volume:sd[:queue|team] -- each week's volume moves by a random factor (a normal with this sd): week-to-week noise beyond
+    counting noise. With `queue` or `team`, each of those moves on its own, so children differ from each other as well as from last week."""
+    sd = float(args[0])
+    by = args[1] if len(args) > 1 else ""
+    keys = sorted({(week_of(c.ts), _noise_key(c, by)) for c in calls})
+    factor = {k: max(0.5, rng.gauss(1.0, sd)) for k in keys}
+    kept: list[Call] = []
+    extra: list[Call] = []
+    for c in calls:
+        f = factor[(week_of(c.ts), _noise_key(c, by))]
+        if f < 1.0 and rng.random() > f:
+            continue
+        kept.append(c)
+        if f > 1.0 and rng.random() < f - 1.0:
+            extra.append(Call(f"{c.call_id}N", c.ts + timedelta(seconds=rng.randrange(1, 600)), c.agent, c.queue, c.reason, c.answered, c.handle))
+    return kept + extra, {"name": "noisy_volume", "args": {"sd": sd, "by": by or "all", "factors": {f"{w}/{k}" if k else str(w): round(f, 3) for (w, k), f in factor.items()}}, "rows_affected": len(extra)}
+
+
+def plant_noisy_rate(calls, args, rng):
+    """noisy_rate:sd[:queue|team] -- each week's service level moves by a random amount (a normal with this sd, in points of service level)."""
+    sd = float(args[0])
+    by = args[1] if len(args) > 1 else ""
+    keys = sorted({(week_of(c.ts), _noise_key(c, by)) for c in calls})
+    shift = {k: rng.gauss(0.0, sd) for k in keys}
+    n = 0
+    for c in calls:
+        d = shift[(week_of(c.ts), _noise_key(c, by))]
+        if d < 0 and c.answered and rng.random() < -d / BASE_SERVICE_LEVEL:
+            c.answered = False
+            n += 1
+        elif d > 0 and not c.answered and rng.random() < d / (1.0 - BASE_SERVICE_LEVEL):
+            c.answered = True
+            n += 1
+    return calls, {"name": "noisy_rate", "args": {"sd": sd, "by": by or "all", "shifts": {f"{w}/{k}" if k else str(w): round(d, 4) for (w, k), d in shift.items()}}, "rows_affected": n}
+
+
+def plant_ramp_down(calls, args, rng):
+    """ramp_down:wkN:keep -- the newest weeks hold only `keep` of their calls: the data was still arriving when it was copied."""
+    week_spec, keep_s = args
+    w0, w1 = _parse_week_range(week_spec)
+    keep = float(keep_s)
+    kept, dropped = [], 0
+    for c in calls:
+        if w0 <= week_of(c.ts) <= w1 and rng.random() > keep:
+            dropped += 1
+            continue
+        kept.append(c)
+    return kept, {"name": "ramp_down", "args": {"weeks": [w0, w1], "keep": keep}, "rows_affected": dropped}
+
+
 FAULTS: dict[str, Plant] = {
     "understaffed": plant_understaffed,
     "missing_logs": plant_missing_logs,
@@ -339,6 +463,13 @@ FAULTS: dict[str, Plant] = {
     "long_calls": plant_long_calls,
     "surge": plant_surge,
     "surge_block": plant_surge_block,
+    "surge_all": plant_surge_all,
+    "star_agent": plant_star_agent,
+    "bad_week": plant_bad_week,
+    "funnel": plant_funnel,
+    "noisy_volume": plant_noisy_volume,
+    "noisy_rate": plant_noisy_rate,
+    "ramp_down": plant_ramp_down,
 }
 
 
@@ -380,6 +511,7 @@ def main() -> None:
     calls = generate_base(rng, args.calls, args.weeks)
 
     QUEUE_EXTRA_MISS.clear()
+    AGENT_RATE.clear()
     records = []
     for raw in args.fault:
         calls, record = apply_fault(calls, raw, rng)

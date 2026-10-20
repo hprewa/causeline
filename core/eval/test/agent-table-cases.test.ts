@@ -89,8 +89,9 @@ test("renderTable adds agent columns when an agent ran", () => {
 test("the contact-centre pack's eval cases load, and a case filter is validated", () => {
   const pack = resolve("..", "..", "packs", "contact-centre");
   const all = loadCases(pack);
-  assert.equal(all.length, 18);
-  assert.equal(new Set(all.map((c) => c.id)).size, 18);
+  assert.equal(all.length, 22, "18 that pass, 2 depth cases that pass today and must keep passing, and 2 marked as known gaps until fixed");
+  assert.equal(new Set(all.map((c) => c.id)).size, 22);
+  assert.equal(all.filter((c) => c.gap).length, 2);
   assert.ok(all.every((c) => c.inputs), "every case can be run at runner level");
   assert.deepEqual(loadCases(pack, ["clean_week"]).map((c) => c.id), ["clean_week"]);
   assert.throws(() => loadCases(pack, ["nope"]), /no such eval case/);

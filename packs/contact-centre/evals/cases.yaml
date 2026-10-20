@@ -159,3 +159,47 @@
   inputs: { metric: service_level, period: "", more: { start_date: "2025-12-01", end_date: "2025-12-31" } }
   expect:
     stopped_reason: period_not_found
+
+# --- DEPTH CASES (sprint 3) -------------------------------------------------------------------------------------------------
+# Each is a real shape that the analysis missed on real data (packs/complaints/evals/known-gaps.md), planted at synthetic scale.
+# A case with `gap` is expected to fail today; it is reported as a known gap, and the run fails if it starts to pass until the marker
+# is removed. The marker comes off in the step that fixes it.
+
+# 19. one queue explains about half of a rise in volume and the rest is spread thinly over every queue: no child reaches the drill share
+- id: contributor_below_the_drill_share
+  setup: "--fault surge:billing:wk7:0.3 --fault surge_all:wk7:0.12"
+  question: "Why did call volume rise in week 7?"
+  inputs: { metric: calls_offered, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: queue, value: billing }]
+  gap: "no child reaches the drill share (0.6), so the level is called broad and nothing is reported; the largest contributors are not reported"
+
+# 20. a quarter of a week's calls go to one agent whose rate is ordinary before and high now: found through the hierarchy. (Passes today and
+#     must keep passing. The same shape found only through a flat dimension of hundreds of values, where thin baselines make the rate and
+#     mix totals unstable, is the unit test in core/runner/test/mix-gate.test.ts and the real case in packs/complaints/evals/known-gaps.md.)
+- id: share_shift_to_one_agent
+  setup: "--fault star_agent:agent_007:0.82 --fault bad_week:agent_007:wk4:0.15 --fault noisy_rate:0.015 --fault funnel:agent_007:wk7:0.25:0.99"
+  question: "Service level went up in week 7. Did the agents get better?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: agent, value: agent_007 }]
+
+# 21. a quiet week in data where each queue's weekly volume moves more than counting noise (and on its own): the analysis must not invent a cause
+- id: quiet_week_with_noisy_volume
+  setup: "--seed 7 --fault noisy_volume:0.12:queue"
+  question: "Did anything unusual happen to call volume in week 6?"
+  inputs: { metric: calls_offered, period: 2026-W06 }
+  expect:
+    no_findings: true
+  gap: "children's z-scores assume counting noise only, so week-to-week movement that is normal for this data shows up as findings"
+
+# 22. the newest week holds 85% of its calls (the data was still arriving): well above the data-quality guard's half, but below what is usual.
+#     TODAY this "passes" for the wrong reason: one agent of sixty happens to fall under half its usual rows by chance, and the flat guard stops
+#     the run. Step 5 makes the guard statistical, after which this case fails until step 6 compares the newest periods with what the data
+#     usually holds; step 5 adds the gap marker then.
+- id: newest_week_still_arriving
+  setup: "--fault ramp_down:wk10:0.85"
+  question: "Why did call volume fall in week 10?"
+  inputs: { metric: calls_offered, period: 2026-W10 }
+  expect:
+    stopped_reason: data_quality

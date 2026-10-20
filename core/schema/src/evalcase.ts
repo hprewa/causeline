@@ -87,6 +87,12 @@ export const EvalCase = z.object({
   /** Inputs for a runner-level run; a case without them can only be scored at agent level. */
   inputs: EvalInputs.optional(),
   expect: Expectation,
+  /**
+   * Says why this case is expected to fail today (a real thing the analysis does not yet do). A failing gap case is reported as a known
+   * gap and does not fail the run; a gap case that PASSES fails the run until the marker is removed, so a gap cannot be forgotten
+   * once it is closed.
+   */
+  gap: z.string().min(1).optional(),
 });
 export type EvalCase = z.infer<typeof EvalCase>;
 

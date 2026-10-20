@@ -177,3 +177,17 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **The sprint is reported against its own five-point test, with two known gaps stated rather than dropped.** Why: the proof run succeeded after five rounds of fixes that each came from an earlier run, and two real incidents still fail; a sprint that says "done" without that would be a claim, not a result.
 - **Run counts, not a pass rate.** Why: six runs with a model for a user are six samples; they show what can go wrong and that it can work, not how often.
 
+## Sprint 3: analysis depth
+
+Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PROGRESS.md`.
+
+### Scope (set when the sprint was planned)
+- **Analysis depth first; the branching playbook language moves to the next sprint.** Why: the real data exposed analysis gaps that matter now (two incidents missed, findings in noise, a guard that stops ordinary weeks); the language is a large piece on its own.
+- **Proved with planted faults in the contact-centre generator plus the real complaints incidents; the alerts/AML pack stays out.** Why: planted faults are cheap and run on both databases, and the real incidents are the actual test; a second synthetic pack would double the sprint.
+
+### Step 1: reproduce (commit see `PROGRESS.md`)
+- **An eval case can carry `gap: "<why>"`: reported as a known gap while it fails, and failing the run once it passes.** Why: a known failure must be visible without turning the suite red, and must not be forgotten when it is fixed (a marker left on a passing case is a lie in the other direction).
+- **The real mix failure is a unit fixture plus the real data, not a planted-fault eval.** Why: the synthetic pack cannot produce it (no flat dimension of hundreds of values, and the agent hierarchy finds the shifted agent); the unit fixture reproduces the cause (thin baselines make the rate and mix split unstable) exactly.
+- **Step 4 targets the cause found (an unstable split), not the symptom first thought of (no mix attribution).** Why: tracing the real case showed rate +0.129 and mix -0.095 against a change of +0.033, from nodes with three baseline rows; adding per-node mix tests on top of that split would have inherited the instability.
+- **A note in `known-gaps.md` was wrong about the company's baseline and is corrected, not left.** Why: it said the company's rate "did not move"; its four-week baseline included one bad week.
+

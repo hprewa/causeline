@@ -4,7 +4,7 @@ import { basename, join, resolve } from "node:path";
 import { defaultWorkRoot, runEvals } from "./run.js";
 import { renderIntents, runIntentEval } from "./intents.js";
 import { renderRouting, runRoutingEval } from "./routing.js";
-import { renderTable } from "./table.js";
+import { renderTable, runnerOk } from "./table.js";
 
 const USAGE = `usage: causeline eval --pack <dir> [options]
   --case <id[,id...]>     run only these cases
@@ -102,7 +102,7 @@ export async function runEvalCli(argv: string[]): Promise<number> {
   writeFileSync(file, JSON.stringify(outcomes, null, 2) + "\n", "utf-8");
   console.log(`\nresults: ${file}`);
 
-  const runnerFailed = outcomes.some((o) => !("checks" in o.runner) || !o.runner.pass);
+  const runnerFailed = outcomes.some((o) => !runnerOk(o));
   return runnerFailed ? 1 : 0;
 }
 

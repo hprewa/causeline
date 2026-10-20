@@ -53,6 +53,20 @@ Multi-point sign-off with a sign-off screen, the Builder on BigQuery, and the co
 | 6 | Complaints pack built by conversation, real incident evals | done | a92f071 | Step 6 |
 | 7 | Proof and docs: live agent from an empty folder to verified KPIs and an investigated question | done | 5088714 | Step 7 |
 
+## Sprint 3: step by step
+
+Analysis depth: contributions judged against history, and the two real incidents the analysis misses (evidence: `docs/evidence/sprint-3.md`).
+
+| Step | What | State | Commit | Evidence |
+|---|---|---|---|---|
+| 1 | Reproduce: planted faults, a `gap` marker for cases expected to fail today, a unit fixture for the real mix failure | done | see `git log` (message starts "Sprint 3 step 1") | Step 1 |
+| 2 | Contributions core (rate and mix effect, share, explained share, history, verdict) with no change to findings | not started | | |
+| 3 | Report contributors when none dominates | not started | | |
+| 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | not started | | |
+| 5 | Overdispersion-aware tests and the data-quality guard | not started | | |
+| 6 | Incomplete tail of the data | not started | | |
+| 7 | Proof and docs | not started | | |
+
 ## Coverage debt
 
 An earlier example pack (a different domain) was retired from this repository. The trap types it covered must be
@@ -92,7 +106,7 @@ re-covered by new packs before they count again:
 | P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
 | 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
 | 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder. **All seven steps done**; see `docs/evidence/sprint-2.md` for what was and was not shown |
-| 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery. **Added by sprint 2's real data:** report the largest contributors when none passes the drill share (the Wells Fargo case); attribute a mix effect to the node that moved the share (the Equifax mix case); a statistical test in the data-quality guard; a firmer test for an incomplete tail of the data | branching playbooks with full branch coverage; new depth evals pass; the two known gaps pass |
+| 3 | Analysis depth (step table above): contributions vs history, contributors when none dominates, a stable rate and mix split, overdispersion-aware tests, an incomplete-tail check. *Branching playbooks, hand-offs, interactions and recovery moved to sprint 4.* Original wording: Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery. **Added by sprint 2's real data:** report the largest contributors when none passes the drill share (the Wells Fargo case); attribute a mix effect to the node that moved the share (the Equifax mix case); a statistical test in the data-quality guard; a firmer test for an incomplete tail of the data | branching playbooks with full branch coverage; new depth evals pass; the two known gaps pass |
 | 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
 | 5 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
 | 6 | Real non-coder test and fixes | one analyst, own question, timed, observed |

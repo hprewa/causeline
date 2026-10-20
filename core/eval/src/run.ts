@@ -47,7 +47,7 @@ async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
   const log = opts.log ?? (() => {});
   log(`[${c.id}] preparing`);
   const workDir = await prepareCase(opts.packDir, c, opts.workRoot, opts.reuse);
-  const outcome: CaseOutcome = { id: c.id, runner: { error: "case has no inputs, so it can only be scored at agent level" }, runnerMs: 0, steps: 0 };
+  const outcome: CaseOutcome = { id: c.id, ...(c.gap ? { gap: c.gap } : {}), runner: { error: "case has no inputs, so it can only be scored at agent level" }, runnerMs: 0, steps: 0 };
 
   if (c.inputs) {
     log(`[${c.id}] running ${c.inputs.playbook} on ${c.inputs.metric} ${c.inputs.period}`);
