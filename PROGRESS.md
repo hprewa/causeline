@@ -61,7 +61,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 |---|---|---|---|---|
 | 1 | Reproduce: planted faults, a `gap` marker for cases expected to fail today, a unit fixture for the real mix failure | done | 021e3d4 | Step 1 |
 | 2 | Contributions core (rate and mix effect, share, explained share, history, verdict) with no change to findings | done | d667c0f | Step 2 |
-| 3 | Report contributors when none dominates | done | see `git log` (message starts "Sprint 3 step 3") | Step 3 |
+| 3 | Report contributors when none dominates | done | 617bb18 | Step 3 |
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | not started | | |
 | 5 | Overdispersion-aware tests and the data-quality guard | not started | | |
 | 6 | Incomplete tail of the data | not started | | |
