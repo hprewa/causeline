@@ -118,3 +118,17 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
   (about $0.06), which the default 5 GB would stop; the table's size is a fact about the pack, not about the machine.
 - **The Builder will skip free-text columns when profiling BigQuery and filter columns before scanning.** Why: one narrative column costs more to profile than ten others together.
 
+### Step 2: checks and the status ladder (commit see `PROGRESS.md`)
+- **A KPI's level (draft, provisional, verified) is always worked out from what is stored (`levelOf`), never set.** Why: a status that can be written by hand can be claimed; this one needs the
+  automatic checks to pass and confirmed numbers of two different kinds with named sources, and it falls when any of that does.
+- **The tools' number is hidden until the person has given theirs.** Why: a number shown with the question anchors the answer, and agreement then means less.
+- **Confirming needs a match; flagging is always allowed; a flagged number blocks verified.** Why: confirming a mismatch would be signing off a number nobody believes.
+- **A changed formula or fact SQL keeps the confirmed numbers on record but drops the KPI to provisional and its expert to draft, until `run_checks` re-works them.** Why: the numbers were true of the old
+  meaning; restoring the status automatically when they still hold makes a safe edit cheap and an unsafe one visible.
+- **Only checks that make a number wrong gate a KPI** (parents, time column, value ranges, parts adding up, days adding up, repeated rows); gaps, thin days and empty columns are notes. Why: a short or gappy
+  history makes analysis weaker, not the numbers wrong, and would otherwise keep every small dataset from verifying.
+- **`one_row_per` on a fact is optional; without it the repeated-rows check says "not checked", neither pass nor fail.** Why: the system cannot know what one row stands for, and a silent pass would be a false claim.
+- **`reconcile_metric` stays as the one-number path and now yields provisional.** Why: existing flows keep working; a single number was never enough to call a KPI verified. Between steps 2 and 3 the
+  Builder over MCP can therefore reach provisional only (recorded in the evidence).
+- **A version 1 `build.json` is read as version 2 (a matched number becomes one confirmed total without dates, so `run_checks` asks for it again).** Why: workspaces started earlier keep working without hiding that their number cannot be re-worked.
+

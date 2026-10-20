@@ -35,3 +35,57 @@ Each run took 26 to 36 seconds.
 and any property of the sign-off ladder (steps 2 and 3).
 
 **Plan adjustments:** (1) add `budget_gb` to `data.yaml` (step 4). (2) The profile skips free-text columns and filters columns before scanning (step 4).
+
+## Step 2: checks and the status ladder (core, SQLite, no screen yet)
+
+**Question:** can a KPI be taken from draft to provisional to verified by stored, re-runnable numbers and automatic checks, with the status worked out from what is stored rather than set?
+
+**What was built** (`core/builder/src/checks.ts`, `state.ts`; `build.json` is now version 2, a version 1 file is read as 2):
+- **The ladder is derived, not stored by hand** (`levelOf`): *draft* (nothing confirmed, or an automatic check fails), *provisional* (one confirmed number), *verified* (automatic checks pass,
+  nothing flagged, at least two confirmed numbers of different kinds, each with a named source). A confirmed number with no source does not count towards the second angle; a flagged
+  number blocks verified; an automatic failure outranks matching numbers.
+- **Proposed checks** (`proposeChecks`): by rule: the whole data over the last complete period, the biggest part of the first hierarchy and of one flat concept, and one day (a different grain);
+  an odd period the person names. The tools' numbers are worked out and stored but **not offered with the question**: they are revealed only after the person's own number is in (`recordNumber`).
+- **Confirming**: a number is confirmed only if it matches the tools' within a tolerance (a percentage said as 93.1 is read as 0.931 for a rate); a mismatch returns both numbers and where to look
+  (which date decides the period, week start, where midnight falls for a single day, what is counted). Flagging is always allowed.
+- **Automatic checks** (`autoChecks`, never shown unless they fail): days add up to the top level; every split by a hierarchy level or flat concept adds up to the whole; no join repeats rows
+  (needs the new optional `one_row_per: {table, column}` on a fact; without it the check says it was not run, which is neither a pass nor a failure); and the existing shape and range checks
+  (`single_parent`, `time_column_complete`, `values:<kpi>` gate the KPI; gaps, thin days and empty columns are reported as notes, not held against it).
+- **A change drops a KPI**: saving a pack with a changed formula or fact SQL clears the automatic result and the unanswered proposals; confirmed numbers stay on record but no longer vouch for it,
+  so the KPI is at most provisional, and a verified expert on it goes back to draft. `runChecks` re-works every stored number and the automatic checks; a number that no longer matches goes back
+  to pending with the new figure beside it, and only when all match does the KPI get verified again.
+- **The one-number path still works**: `reconcileMetric` now stores its match as a confirmed `total` check (provisional). `verifyExpert` requires a *verified* KPI plus the incident cases.
+
+**Evidence**
+- 11 new unit tests in `core/builder/test/checks.test.ts` run the generated query statements on a SQLite file (no Toolbox) with the expected numbers worked out in the test from the raw rows:
+  the ladder rules table; version 1 to 2 upgrade; proposals hide numbers; draft to provisional to verified with a wrong number refused first; a flagged number blocks verified; a changed formula drops
+  the KPI and the expert, and `run_checks` restores it when the formula only changed in wording but does **not** when the meaning changed (every stored number reported "no longer matches" and the KPI is
+  back to draft); a join that repeats rows is caught (462 rows against 336 distinct ids); a split that loses a row fails `parts_add_up`; no `one_row_per` is reported as skipped; a sum KPI.
+- The Builder end-to-end test on the real Toolbox (`npm run test:integration`) now goes: one reconciled number gives *provisional* and `verify_expert` refuses ("service_level is not verified yet
+  (it is provisional)"); a second number of a different kind (one day, from the raw CSVs) gives *verified*; then the expert verifies. 6/6 integration tests pass.
+- A scripted run on the contact-centre example (real Toolbox, planted-fault data), recorded below. All other tiers unchanged: every package's unit tests pass, runner evals 18/18,
+  routing 27/27, intents 16/16, core purity OK.
+
+```
+[after save] level=draft -- no number has been confirmed yet
+proposals (no tool numbers shown):
+  total-1: What does your own report say for The whole business, 9-15 March 2026? ...
+  slice-1: ... Centre cc_1, 9-15 March 2026? ...   slice-2: ... Queue sales, 9-15 March 2026? ...
+  grain-1: ... The whole business, on 15 March 2026? ...
+user says 50 for the whole business: match=false, tools said 0.8099; hints: the tools give a number 62% above yours | check which date decides the period ...
+user gives 0.8099: confirmed=true, level=provisional
+automatic checks: ok days_add_up:day; ok parts_add_up:centre/site/team/agent/queue/call_reason; ok no_repeated_rows; ok single_parent:*; ok time_column_complete; ok values:service_level
+second number (Centre cc_1, 9-15 March 2026): confirmed=true, level=verified
+same meaning rewritten -> needs checking: service_level   [level=provisional: automatic checks not run since the change]
+run_checks: provisional -> verified, restored=true; re-worked 2 stored numbers, all match=true
+```
+
+**Not shown**
+- Any way to reach this from the MCP tools or a screen: `propose_checks`, `confirm_number`, `signoff_status`, `run_checks` and the page are step 3. **Until then the Builder over MCP can reach provisional
+  (`reconcile_metric`) but not verified**, so a live Builder run between steps 2 and 3 cannot produce a verified expert.
+- The "other system" here is the raw CSVs the data was loaded from, read by test code: it proves the arithmetic and the wiring, not that a real report agrees; that comes with the complaints pack (steps 6 and 7).
+- BigQuery: the automatic checks run one query per hierarchy level and flat concept, plus the shape checks, on each refresh; their cost on a large table is not measured yet (steps 4 and 5).
+- A change in the *data* (not the formula) is not noticed; only `run_checks` run by hand re-works the numbers. A start-up drift check is sprint 5.
+- `one_row_per` is declared on the contact-centre pack's SQLite fact only; counting the source table goes through the local database, and the BigQuery equivalent comes with the Builder's data layer (step 4).
+- `package-lock.json` also picked up two dependencies of the MCP server that had been missing from it since sprint 1 (`connect-bigquery`, `intent`).
+

@@ -7,4 +7,5 @@ export * from "./sqlguard.js";
 export * from "./testfact.js";
 export * from "./playback.js";
 export * from "./savepack.js";
+export * from "./checks.js";
 export * from "./verify.js";

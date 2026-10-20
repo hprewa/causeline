@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import { generateForPack } from "@causeline/generate";
 import { AgentDef, DataDefs, Ontology, isRatioFormula, loadAgents, loadPack, validatePack, type PackDefinition } from "@causeline/schema";
-import { readState, updateState } from "./state.js";
+import { dropForChange, updateState } from "./state.js";
 import { testFact, testFormula } from "./testfact.js";
 
 export interface SaveResult {
@@ -12,7 +12,7 @@ export interface SaveResult {
   errors: string[];
   warnings: string[];
   tools?: number;
-  /** KPIs whose formula is new or changed, so any earlier match with a known number no longer counts. */
+  /** KPIs whose formula is new or changed: they drop to provisional (or draft) until their stored numbers are checked again. */
   needs_reconciling: string[];
 }
 
@@ -99,7 +99,7 @@ export async function savePack(opts: { workspace: string; ontology: unknown; dat
 
   updateState(opts.workspace, (s) => {
     for (const k of Object.keys(s.kpis)) if (!d.data.metrics[k]) delete s.kpis[k];
-    for (const k of Object.keys(d.data.metrics)) if (changed.includes(k) || !s.kpis[k]) s.kpis[k] = { status: "tested" };
+    for (const k of Object.keys(d.data.metrics)) if (changed.includes(k) || !s.kpis[k]) s.kpis[k] = dropForChange(s.kpis[k]);
     // once the analysis has been run, what the description says about repeating patterns is a decision
     if (s.seasonalityAnalysed) s.seasonality = o.data.time.seasonality === "none" ? "none" : "confirmed";
   });

@@ -13,6 +13,7 @@
   "dependencies": {
     "@causeline/eval": "0.1.0",
     "@causeline/generate": "0.1.0",
+    "@causeline/onboard": "0.1.0",
     "@causeline/router": "0.1.0",
     "@causeline/runner": "0.1.0",
     "@causeline/schema": "0.1.0",

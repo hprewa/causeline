@@ -89,7 +89,7 @@ test("save_pack checks the draft against the data, writes the files and the tool
   assert.ok(existsSync(join(ws, "tools.meta.yaml")));
   assert.equal(loadPack(ws, { requireMeta: true }).ontology.metrics.on_time_rate.type, "ratio");
   assert.equal(loadAgents(ws)[0].status, "draft");
-  assert.equal(readState(ws)!.kpis.on_time_rate.status, "tested");
+  assert.equal(readState(ws)!.kpis.on_time_rate.level, "draft");
   assert.match(readFileSync(join(ws, "data.yaml"), "utf-8"), /requests:/);
 
   const again = await savePack({ workspace: ws, ...draft() });

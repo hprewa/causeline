@@ -14,6 +14,8 @@ facts:
       FROM calls c LEFT JOIN agents a USING (agent)
     time: ts
     concepts: [centre, site, team, agent, queue, call_reason]
+    # the join must not repeat a call: the sign-off compares this fact's rows with the calls table's distinct call ids
+    one_row_per: { table: calls, column: call_id }
     time_levels:
       # the label includes the date, so it is unique across the whole window (the runner narrows a
       # window by a bucket's first and last timestamp)

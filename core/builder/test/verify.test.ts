@@ -8,7 +8,8 @@ import { EvalCases, loadAgents } from "@causeline/schema";
 import { connectFiles } from "../src/connect.js";
 import { savePack } from "../src/savepack.js";
 import { readState, updateState } from "../src/state.js";
-import { addIncident, normaliseExpected, verifyExpert } from "../src/verify.js";
+import { normaliseExpected } from "../src/checks.js";
+import { addIncident, verifyExpert } from "../src/verify.js";
 
 test("a percentage said as 93.1 is the fraction 0.931 for a rate, and left alone otherwise", () => {
   assert.equal(normaliseExpected(93.1, true, 0.931), 0.931);
@@ -51,11 +52,12 @@ test("an expert cannot become verified without a matched number and a recorded i
   const ws = await savedWorkspace();
   const none = await verifyExpert({ workspace: ws, kpi: "ok_rate" });
   assert.equal(none.verified, false);
-  assert.match(none.reasons.join("; "), /has not been matched to a number you know/);
+  assert.match(none.reasons.join("; "), /is not verified yet \(it is draft\)/);
   assert.match(none.reasons.join("; "), /no past incident is recorded/);
 
   updateState(ws, (s) => {
-    s.kpis.ok_rate = { status: "reconciled" };
+    const check = (kind: "total" | "slice") => ({ id: `${kind}-1`, kind, scope: {}, window: { start: "2026-01-05", end: "2026-01-11" }, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" as const });
+    s.kpis.ok_rate = { level: "verified", checks: [check("total"), check("slice")], auto: { at: "now", pass: true, results: [] } };
   });
   const noIncident = await verifyExpert({ workspace: ws, kpi: "ok_rate" });
   assert.deepEqual(noIncident.reasons.length, 1);

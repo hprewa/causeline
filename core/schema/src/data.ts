@@ -35,6 +35,11 @@ export const Fact = z.object({
    * or SQL; a custom cycle is `{expr, instance, cycle_days}`. Built-in cycles (weekday, hour_of_day, ...) need no entry.
    */
   slots: z.record(Identifier, z.union([z.string().min(1), CustomSlot])).default({}),
+  /**
+   * What one row of the SELECT stands for, as a column of a source table (for example the key of the table the SELECT is built on). When given, the sign-off checks that the SELECT has as many rows as that column has
+   * distinct values, so a join that repeats rows cannot slip through. Optional: without it that check is skipped.
+   */
+  one_row_per: z.object({ table: z.string().min(1), column: z.string().min(1) }).optional(),
 });
 export type Fact = z.infer<typeof Fact>;
 

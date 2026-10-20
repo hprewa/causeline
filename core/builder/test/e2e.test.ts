@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { ToolboxProcess, SdkToolCaller } from "@causeline/runner";
 import { loadAgents } from "@causeline/schema";
-import { addIncident, buildStatus, confirmPlayBack, connectFiles, describeData, playBack, reconcileMetric, savePack, verifyExpert } from "../src/index.js";
+import { addIncident, buildStatus, confirmNumber, confirmPlayBack, connectFiles, describeData, playBack, proposeChecks, readState, reconcileMetric, savePack, verifyExpert } from "../src/index.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..", "..", "..");
@@ -66,9 +66,31 @@ test("from raw CSVs to a verified expert, step by step", { skip: !enabled && "se
     const known = Math.round((ok / total) * 1000) / 10;
     const right = await reconcileMetric({ workspace: ws, kpi: "service_level", period: "week 6", expected: known, tolerance: 0.002, tools });
     assert.equal(right.match, true, JSON.stringify(right));
-    assert.equal(buildStatus(ws).steps.find((s) => s.step.startsWith("KPI service_level"))!.done, true);
+    assert.equal(right.level, "provisional", "one confirmed number is the first rung, not the last");
+    assert.equal(buildStatus(ws).steps.find((s) => s.step.startsWith("KPI service_level"))!.done, false);
 
     addIncident({ workspace: ws, kpi: "service_level", period: "2026-W07", finding: { dimension: "team", value: "team_05" }, question: "Why did service level drop in week 7?" });
+    const early = await verifyExpert({ workspace: ws, kpi: "service_level" });
+    assert.equal(early.verified, false);
+    assert.match(early.reasons.join("; "), /service_level is not verified yet \(it is provisional\)/);
+
+    // a second number, of a different kind (one day), again from the CSVs and not from the system under test
+    const proposed = await proposeChecks({ workspace: ws, kpi: "service_level", tools });
+    assert.ok(proposed.proposals.some((p) => p.kind === "grain"), JSON.stringify(proposed.proposals));
+    const grain = readState(ws)!.kpis.service_level.checks.find((c) => c.kind === "grain")!;
+    let dayTotal = 0;
+    let dayOk = 0;
+    for (const l of readFileSync(join(dir, "raw", "calls.csv"), "utf-8").trim().split("\n").slice(1)) {
+      const c = l.split(",");
+      if (c[1].slice(0, 10) !== grain.window.start) continue;
+      dayTotal++;
+      dayOk += Number(c[5]);
+    }
+    const day = await confirmNumber({ workspace: ws, kpi: "service_level", check: grain.id, expected: dayOk / dayTotal, source: "the daily export", tolerance: 0.002, tools });
+    assert.equal(day.confirmed, true, JSON.stringify(day));
+    assert.equal(day.level, "verified", day.gap);
+    assert.equal(buildStatus(ws).steps.find((s) => s.step.startsWith("KPI service_level"))!.done, true);
+
     const verified = await verifyExpert({ workspace: ws, kpi: "service_level" });
     assert.equal(verified.verified, true, verified.reasons.join("; "));
     assert.equal(loadAgents(ws).find((a) => a.kpi === "service_level" && a.task === "deep_rca")!.status, "verified");
