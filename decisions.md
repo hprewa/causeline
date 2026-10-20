@@ -118,7 +118,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
   (about $0.06), which the default 5 GB would stop; the table's size is a fact about the pack, not about the machine.
 - **The Builder will skip free-text columns when profiling BigQuery and filter columns before scanning.** Why: one narrative column costs more to profile than ten others together.
 
-### Step 2: checks and the status ladder (commit see `PROGRESS.md`)
+### Step 2: checks and the status ladder (commit 982232c)
 - **A KPI's level (draft, provisional, verified) is always worked out from what is stored (`levelOf`), never set.** Why: a status that can be written by hand can be claimed; this one needs the
   automatic checks to pass and confirmed numbers of two different kinds with named sources, and it falls when any of that does.
 - **The tools' number is hidden until the person has given theirs.** Why: a number shown with the question anchors the answer, and agreement then means less.
