@@ -191,7 +191,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Step 4 targets the cause found (an unstable split), not the symptom first thought of (no mix attribution).** Why: tracing the real case showed rate +0.129 and mix -0.095 against a change of +0.033, from nodes with three baseline rows; adding per-node mix tests on top of that split would have inherited the instability.
 - **A note in `known-gaps.md` was wrong about the company's baseline and is corrected, not left.** Why: it said the company's rate "did not move"; its four-week baseline included one bad week.
 
-### Step 2: contributions core (commit see `PROGRESS.md`)
+### Step 2: contributions core (commit d667c0f)
 - **Contributions are computed from the node's own series for the period and for eight earlier ones, not read off the drill's decompositions.** Why: the drill's splits are over the narrowed window and its baseline; history needs the same measure in every period, and a node's contribution to a whole is cheap to recompute from one day-level series.
 - **A node is `unusual` only if it is outside everything seen before AND at least three robust standard deviations from the median; with under four earlier periods the verdict is `unknown`.** Why: with eight points a plain "outside the range" is wrong about one time in nine; the second condition keeps ordinary excursions `usual`. A guess would be worse than "unknown".
 - **`new` means under min_volume rows a period in the baseline.** Why: a node that was not a regular part of the data has no history to be compared with.
