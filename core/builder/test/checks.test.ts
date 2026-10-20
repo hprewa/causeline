@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import { loadAgents } from "@causeline/schema";
 import type { Row, ToolCaller } from "@causeline/runner";
-import { autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, signoffStatus } from "../src/checks.js";
+import { autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, settledEnd, signoffStatus } from "../src/checks.js";
 import { connectFiles } from "../src/connect.js";
 import { savePack } from "../src/savepack.js";
 import { levelGap, levelOf, readState, writeState, type KpiRecord } from "../src/state.js";
@@ -245,5 +245,44 @@ test("a window the person has a report for counts as the kind its shape says, so
   assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18" }), "total");
   assert.equal(await kindOf({ start: "2026-01-13", end: "2026-01-13" }), "grain");
   assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18", scope: { channel: "web" } }), "slice");
-  assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18", name: "the audited week" }), "odd_period");
+  assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18", name: "the audited week" }), "total", "a name is a label, not a different kind of angle");
+});
+
+test("a number far off for one KPI puts those days in doubt for the others on the same data, and a match brings them back", async () => {
+  const { ws, tools } = await workspace();
+  const week = { from: LAST_WEEK.from, to: LAST_WEEK.to };
+  // ok_rate is verified from two angles in the last week
+  const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
+  const [total, slice] = ["total", "slice"].map((k) => p.proposals.find((x) => x.kind === k)!);
+  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: total.id, expected: truth(week.from, week.to).rate, source: "a report", tolerance: 0.002, tools });
+  const sc = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === slice.id)!;
+  const [c, v] = Object.entries(sc.scope)[0];
+  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: slice.id, expected: truth(week.from, week.to, (x) => (x as unknown as Record<string, string>)[c] === v).rate, source: "a report", tolerance: 0.002, tools });
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "verified");
+
+  // the person's count for the same week is far from ours: that week's data is in doubt, so ok_rate's numbers for it are set aside
+  const h = await proposeChecks({ workspace: ws, kpi: "handled", tools });
+  const handledTotal = h.proposals.find((x) => x.kind === "total")!;
+  const real = Math.round(truth(week.from, week.to).rate * truth(week.from, week.to).count);
+  const off = await confirmNumber({ workspace: ws, kpi: "handled", check: handledTotal.id, expected: Math.round(real * 1.6), source: "the live site", tools });
+  assert.equal(off.confirmed, false);
+  const after = readState(ws)!.kpis.ok_rate;
+  assert.equal(levelOf(after), "draft", "its only numbers are for the days in doubt");
+  assert.match(levelGap(after), /2 confirmed numbers are set aside because handled does not match the user's number for the same days/);
+  assert.equal(signoffStatus(ws, "ok_rate")[0].level, "draft");
+  assert.equal((await runChecks({ workspace: ws, kpi: "ok_rate", tools })).after, "draft", "re-running the stored numbers does not bring them back");
+
+  // the person's number turns out to be for a week the data holds in full: the doubt is lifted
+  const fixed = await confirmNumber({ workspace: ws, kpi: "handled", check: handledTotal.id, expected: real, source: "the live site", tolerance: 0.002, tools });
+  assert.equal(fixed.confirmed, true);
+  assert.equal(readState(ws)!.kpis.ok_rate.suspect, undefined);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "verified");
+});
+
+test("the newest periods are set aside when they hold far less than usual, as when the data was still arriving", () => {
+  assert.equal(settledEnd([100, 102, 98, 101, 99, 100, 103]), 6, "an ordinary run is all settled");
+  assert.equal(settledEnd([100, 102, 98, 101, 99, 100, 70]), 5, "the newest at 70% is still filling in");
+  assert.equal(settledEnd([240, 220, 224, 211, 218, 241, 218, 178, 78]), 7, "the newest, at 35% of a normal one, is the tail; 178 is 81% of the median 220, so it stays");
+  assert.equal(settledEnd([100, 100, 100]), 2, "too few periods to judge");
+  assert.equal(settledEnd([100, 100, 100, 100, 100, 90, 60, 30]), 5, "a falling tail");
 });

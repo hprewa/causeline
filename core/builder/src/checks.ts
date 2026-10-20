@@ -95,6 +95,26 @@ const within = (got: number, expected: number, tolerance: number) => Number.isFi
 
 // --- proposing checks ----------------------------------------------------------------------------
 
+const medianOf = (xs: number[]) => {
+  const sorted = [...xs].sort((a, b) => a - b);
+  return sorted.length === 0 ? 0 : sorted[Math.floor(sorted.length / 2)];
+};
+
+/**
+ * The index of the newest period that looks settled: not far below what the periods before it held. A period under 80% of the median of the
+ * (up to eight) before it is taken as still filling in, and so is any newer one; at most eight are set aside, and at least four periods must
+ * come before one for the comparison to mean anything.
+ */
+export function settledEnd(volumes: number[]): number {
+  let end = volumes.length - 1;
+  for (let dropped = 0; dropped < 8 && end >= 4; dropped++) {
+    const before = volumes.slice(Math.max(0, end - 8), end);
+    if (before.length >= 4 && volumes[end] < 0.8 * medianOf(before)) end--;
+    else break;
+  }
+  return end;
+}
+
 export interface Proposal {
   id: string;
   kind: CheckKind;
@@ -106,6 +126,8 @@ export interface Proposal {
 export interface ProposeResult {
   kpi: string;
   proposals: Proposal[];
+  /** Things to tell the user before they give numbers (for example that the newest periods look incomplete). */
+  notes: string[];
   level: Level;
   next: string;
 }
@@ -120,8 +142,17 @@ export interface ProposeResult {
 export async function proposeChecks(opts: { workspace: string; kpi: string; tools: ToolCaller; odd?: { start: string; end: string; name?: string; scope?: Record<string, string> } }): Promise<ProposeResult> {
   const ctx = await open(opts.workspace, opts.kpi, opts.tools);
   const periods = await completeBuckets(opts.tools, ctx.index, opts.kpi, ctx.top);
-  const last = periods[periods.length - 1];
-  if (!last) throw new Error(`${opts.kpi} has no complete period of data to check`);
+  if (periods.length === 0) throw new Error(`${opts.kpi} has no complete period of data to check`);
+  // the newest periods can hold far less than usual because the data was still arriving when it was copied; suggest the last one that is settled
+  const end = settledEnd(periods.map((b) => (ctx.isRate ? b.den : b.num)));
+  const last = periods[end];
+  const notes: string[] = [];
+  if (end < periods.length - 1) {
+    const newest = periods[periods.length - 1];
+    const median = medianOf(periods.slice(Math.max(0, end - 7), end + 1).map((b) => (ctx.isRate ? b.den : b.num)));
+    const share = Math.round(((ctx.isRate ? newest.den : newest.num) / median) * 100);
+    notes.push(`The newest ${periods.length - 1 - end} period${periods.length - 1 - end === 1 ? "" : "s"} (${dayWords(dayOf(periods[end + 1]), dayOf(newest, "bucket_end"))}) hold much less than usual (the newest about ${share}% of a normal one). The data may still have been arriving when it was copied, so the numbers to check are for ${dayWords(dayOf(last), dayOf(last, "bucket_end"))} instead. If the user's report shows more for the newest periods than the data does, that is the reason, and those periods are not to be trusted for any KPI.`);
+  }
   const window = { start: dayOf(last), end: dayOf(last, "bucket_end") };
   const candidates: { kind: CheckKind; scope: Record<string, string>; window: { start: string; end: string }; name?: string }[] = [{ kind: "total", scope: {}, window }];
 
@@ -145,9 +176,9 @@ export async function proposeChecks(opts: { workspace: string; kpi: string; tool
   if (lastDay && window.start !== window.end) candidates.push({ kind: "grain", scope: {}, window: { start: dayOf(lastDay), end: dayOf(lastDay, "bucket_end") } });
   if (opts.odd) {
     // a window the person has a report for is the same kind of check as the suggested ones when it has the same shape: the whole data over
-    // a period, one part of it, or one day. Only a period they name as unusual is its own kind.
+    // a period, one part of it, or one day. The name is only a label for it; naming a window does not make it a different angle.
     const scope = opts.odd.scope ?? {};
-    const kind: CheckKind = opts.odd.name ? "odd_period" : Object.keys(scope).length > 0 ? "slice" : opts.odd.start === opts.odd.end ? "grain" : "total";
+    const kind: CheckKind = Object.keys(scope).length > 0 ? "slice" : opts.odd.start === opts.odd.end ? "grain" : "total";
     candidates.push({ kind, scope, window: { start: opts.odd.start, end: opts.odd.end }, name: opts.odd.name });
   }
 
@@ -173,7 +204,7 @@ export async function proposeChecks(opts: { workspace: string; kpi: string; tool
     rec.checks = [...rec.checks.filter((c) => c.state !== "pending" || c.expected !== undefined), ...fresh];
   });
   const rec = state.kpis[opts.kpi];
-  return { kpi: opts.kpi, proposals, level: levelOf(rec), next: proposals.length > 0 ? "Ask the user for these numbers from their own reports, from different angles, and record each with confirm_number." : "Everything proposed is already checked; see signoff_status." };
+  return { kpi: opts.kpi, proposals, notes, level: levelOf(rec), next: proposals.length > 0 ? "Ask the user for these numbers from their own reports, from different angles, and record each with confirm_number." : "Everything proposed is already checked; see signoff_status." };
 }
 
 // --- the user's number ---------------------------------------------------------------------------
@@ -224,9 +255,21 @@ export async function recordNumber(opts: { workspace: string; kpi: string; check
   const tolerance = opts.tolerance ?? target.tolerance;
   const match = within(now.value, expected, tolerance);
   const difference = expected === 0 ? (now.value === 0 ? 0 : Infinity) : (now.value - expected) / Math.abs(expected);
+  const fact = (k: string) => ctx.pack.data.metrics[k]?.fact;
+  // a whole-data number far from the person's own puts those days in doubt for every KPI on the same data; a match clears it again
+  const far = !match && Math.abs(difference) >= 0.1 && Object.keys(target.scope).length === 0 && target.window.start !== "";
   const after = updateState(opts.workspace, (s) => {
     const c = find(s.kpis[opts.kpi], opts.kpi, opts.check);
     Object.assign(c, { got: now.value, expected, source: opts.source.trim(), tolerance, state: "pending" as const, note: undefined });
+    if (Object.keys(c.scope).length === 0 && c.window.start !== "") {
+      for (const [k, other] of Object.entries(s.kpis)) {
+        if (k === opts.kpi || fact(k) !== fact(opts.kpi)) continue;
+        other.suspect = (other.suspect ?? []).filter((x) => !(x.from_kpi === opts.kpi && x.start <= c.window.end && x.end >= c.window.start));
+        if (far) other.suspect.push({ start: c.window.start, end: c.window.end, from_kpi: opts.kpi, detail: `yours ${expected}, ours ${now.value} for ${dayWords(c.window.start, c.window.end)}` });
+        if (other.suspect.length === 0) delete other.suspect;
+        other.level = levelOf(other);
+      }
+    }
   });
   return {
     kpi: opts.kpi,

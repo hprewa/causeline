@@ -43,7 +43,17 @@ export interface KpiRecord {
   checks: SignoffCheck[];
   /** The last run of the automatic checks; cleared whenever the KPI's formula or fact changes. */
   auto?: { at: string; pass: boolean; results: AutoResult[] };
+  /**
+   * Windows in which another KPI built on the same data was found far from the person's own number. The data for those days is
+   * in doubt for every KPI on it, so this KPI's confirmed numbers for them are set aside (a rate can agree while the counts under it
+   * are short). They come back when that other KPI's number for the window matches.
+   */
+  suspect?: { start: string; end: string; from_kpi: string; detail: string }[];
 }
+
+const overlaps = (c: { window: { start: string; end: string } }, s: { start: string; end: string }) => c.window.start !== "" && c.window.start <= s.end && c.window.end >= s.start;
+/** The confirmed numbers that count: those for days nobody has found to be in doubt. */
+const counted = (rec: KpiRecord) => rec.checks.filter((c) => c.state === "confirmed" && !(rec.suspect ?? []).some((s) => overlaps(c, s)));
 
 /**
  * build.json: what has been done to a workspace so far, so a conversation can stop and a new one pick up
@@ -79,7 +89,7 @@ export interface BuildState {
  */
 export function levelOf(rec: KpiRecord | undefined): Level {
   if (!rec) return "draft";
-  const confirmed = rec.checks.filter((c) => c.state === "confirmed");
+  const confirmed = counted(rec);
   if (confirmed.length === 0) return "draft";
   if (!rec.auto) return "provisional";
   if (!rec.auto.pass) return "draft";
@@ -103,13 +113,15 @@ export function dropForChange(rec: KpiRecord | undefined): KpiRecord {
 export function levelGap(rec: KpiRecord | undefined): string {
   const level = levelOf(rec);
   if (level === "verified") return "";
-  const confirmed = (rec?.checks ?? []).filter((c) => c.state === "confirmed");
+  const confirmed = rec ? counted(rec) : [];
+  const setAside = rec ? rec.checks.filter((c) => c.state === "confirmed" && !confirmed.includes(c)) : [];
+  const why = setAside.length > 0 ? ` (${setAside.length} confirmed number${setAside.length === 1 ? " is" : "s are"} set aside because ${rec!.suspect![0].from_kpi} does not match the user's number for the same days: ${rec!.suspect![0].detail})` : "";
   if (rec?.auto && !rec.auto.pass) return `an automatic check fails: ${rec.auto.results.filter((r) => !r.ok && !r.skipped).map((r) => r.detail).join("; ")}`;
-  if (confirmed.length === 0) return "no number has been confirmed yet";
+  if (confirmed.length === 0) return `no number has been confirmed yet${why}`;
   if (!rec?.auto) return "the automatic checks have not been run since the last change (run the checks)";
   if (rec.checks.some((c) => c.state === "flagged")) return `a number is flagged (${rec.checks.filter((c) => c.state === "flagged").map((c) => c.label).join("; ")}); sort it out or leave it out`;
   const kinds = new Set(confirmed.map((c) => c.kind));
-  return kinds.size < 2 ? `needs one more confirmed number of a different kind from ${[...kinds].join(", ")}, from a named source` : "each confirmed number needs a named source";
+  return kinds.size < 2 ? `needs one more confirmed number of a different kind from ${[...kinds].join(", ")}, from a named source${why}` : "each confirmed number needs a named source";
 }
 
 const FILE = "build.json";

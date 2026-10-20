@@ -18,11 +18,14 @@ case: your business words live in one folder (a *pack*), and nothing else in the
 Early and under active development. What works today: the runner (drill by place and time, rate vs mix,
 like-for-like seasonality, masking checks, evidence from other tables), questions about any date range, the router,
 a running **intent** (a question built over several messages, checked against the data and read back in plain words
-before anything runs), the Builder (CSV files to a checked pack by conversation), an MCP server and a Claude Code
-plugin, and an eval harness with planted faults. Data can live in a local database or in **BigQuery**, with a cost
-budget per question. Two example packs ship: a contact centre (synthetic data, identical answers on both databases) and consumer complaints (the CFPB's
-public data, built by conversation and signed off against the CFPB's own published counts). Planned next: multi-point sign-off of each KPI, the Builder on BigQuery, branching playbooks, and more example
-packs. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
+before anything runs), the Builder (your own CSV files or a BigQuery table to a checked pack by conversation), a
+**sign-off** of each KPI against numbers from your own reports (draft, provisional, verified; in the chat or on a local
+page), an MCP server and a Claude Code plugin, and an eval harness. Data can live in a local database or in **BigQuery**,
+with a cost budget per question. Two example packs ship: a contact centre (synthetic data, identical answers on both
+databases) and consumer complaints (the CFPB's public data, built by conversation and signed off against the CFPB's own
+published counts). Two real incidents in the complaints data are not yet found by the analysis; they are listed in
+`packs/complaints/evals/known-gaps.md`. Planned next: branching playbooks and deeper analysis, a minimal explorer, and
+easier setup. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
 
 ## How it is built (and why it is not tied to one use case)
 
@@ -47,15 +50,18 @@ You need Node.js, the pinned [MCP Toolbox](https://github.com/googleapis/mcp-too
 with this repo's plugin (`clients/claude-code`, assembled by `npm run bundle:plugin`). After that no Python, YAML or
 command line is needed. Point the plugin at an empty folder (`CAUSELINE_PACK`) and talk:
 
-1. **Connect:** "I have these CSV files." The Builder loads them locally and says in plain words what it found.
+1. **Connect:** "I have these CSV files" (or a BigQuery table). The Builder loads them locally and says in plain words what it found.
 2. **Describe the business:** you say what you watch and how it is worked out; the agent writes it down, tests that it
    runs on your data, and reads it back as sentences until you say each one is right.
-3. **Check it:** you give one number you know from your own report (it must match) and one past problem whose cause
-   you know (the analysis must find it). Only then is the expert called *verified*; until then answers say they are drafts.
+3. **Check it:** for each KPI you give numbers you know from your own reports, from at least two angles (the whole
+   business for a week, one part of it, one day), and say which report each comes from; your number comes first and ours is
+   shown after. In the chat, or on a local page (`open_signoff`), you confirm or flag each. A KPI is *verified* only when
+   the automatic checks pass and two angles match; if the numbers for some days disagree with another KPI's, they are set aside.
+   You also give one past problem whose cause you know (the analysis must find it). Only then is the expert *verified*.
 4. **Ask:** "Why did the service level drop last Tuesday?" The router picks the KPI and the steps, says what it chose,
    and the answer separates what the data shows from what is only consistent with it.
 
-The `causeline-build` skill scripts this. Today it reads CSV only.
+The `causeline-build` skill scripts this, for CSV files or a BigQuery table (see below).
 
 ## Using it with BigQuery
 
@@ -159,6 +165,7 @@ playbooks/       # shared playbooks: metric_change, value, trend, compare
 skills/          # causeline-investigate, causeline-onboard, causeline-build
 packs/_template  # the starting point for a new use case
 packs/contact-centre  # worked example, with synthetic data and planted faults
+packs/complaints      # the CFPB's public complaints: built by conversation, signed off against published counts, real incidents
 clients/claude-code   # the plugin
 ```
 

@@ -170,3 +170,10 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **The first level of the time hierarchy is the period questions are asked about; the skill says so.** Why: the live agent listed year, quarter and month above week, which would have made years the unit of analysis.
 - **The MCP server carries instructions that name the skills.** Why: in the first live run the agent chose the developer path and showed the user YAML; the skill alone did not win the choice.
 
+### Step 7: proof and the close of sprint 2 (commit see `PROGRESS.md`)
+- **A number far from the user's own for one KPI sets aside every other KPI's confirmed numbers for those days, until a number for them matches.** Why: in two live runs a rate was verified on days the counts showed to be short, because a rate can agree while the counts under it are wrong; one KPI's evidence about the data is evidence about all KPIs on it. Applies to whole-data numbers only (a mismatch for one product says little about the others), and from 10% apart.
+- **A name on a user's own window is a label, not a different kind of check.** Why: in a live run every window the agent named became its own kind, so a KPI could never have two angles.
+- **Suggested checks use the last settled period, and say so when the newest periods hold under 80% of the median of the eight before.** Why: the default suggestion was the part-filled week of a copy that stopped in March 2023. It is a note and a better default, not a gate: a real drop is not a reason to refuse a KPI.
+- **The sprint is reported against its own five-point test, with two known gaps stated rather than dropped.** Why: the proof run succeeded after five rounds of fixes that each came from an earlier run, and two real incidents still fail; a sprint that says "done" without that would be a claim, not a result.
+- **Run counts, not a pass rate.** Why: six runs with a model for a user are six samples; they show what can go wrong and that it can work, not how often.
+

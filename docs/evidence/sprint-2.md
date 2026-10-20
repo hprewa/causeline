@@ -244,3 +244,45 @@ verify_expert (needs a verified KPI and the incident): verified=true
 - The Wells Fargo and Equifax-mix incidents do not pass (above). The monetary-relief and timely-rate experts have no incident.
 - The sign-off numbers are the CFPB's counts for a week in November 2022; they say nothing about the older history of the table.
 
+## Step 7: proof, and Sprint 2 against its own test
+
+**Question:** from an empty folder, can a live agent take the public complaints table to verified KPIs and then answer a real question about it correctly, with every number from the tools and the user's numbers from another system?
+
+**What was run:** the build conversation again (`scripts/build-conversation.mjs`, persona in `packs/complaints/evals/build-persona.md`), from an empty folder each time, with the plugin as built from the repository. **Six runs in all**, because each of the first five found something that had to be fixed before the next could succeed:
+
+| Run | What happened | What it found |
+|---|---|---|
+| 1 (step 6) | The agent used the developer skill, invented a file format and showed the user YAML | The server now names the skill to follow; the other skill's trigger is narrower |
+| 2 (step 6) | 27 turns, ended honestly (one KPI verified, two provisional) but the timely rate was verified on a part-filled week | Rules for exact windows; the user's own windows classed by shape; incidents as dates and "among the findings"; seasonality cycles longer than 28 days no longer recommended; a larger budget |
+| 3 | The usage limit hit mid-run, and **a named window was classed as a single angle**, so complaint volume could never reach verified | A name on a user's window is a label, not a kind (fixed) |
+| 4 | All three KPIs verified, the volume expert verified and the Equifax question answered correctly, but the timely rate was again verified on the part-filled week | **A number far from the user's own for one KPI now sets aside every other KPI's numbers for those days** (`suspect` windows) |
+| 5 | Same outcome: the relief mismatch for the part-filled week was explained away when the agent, at the user's choice, redefined the relief share over closed complaints only (which match the site's figure for that week), so nothing was ever far off and the timely rate stayed verified on it | Suggestions now use the last settled period and say when the newest periods look incomplete |
+| 6 | The proof run, below | The mismatch was caught and the part-filled days were set aside for the other KPIs |
+
+**The proof run (run 6; 25 turns; the agent's session $1.99, the simulated user $0.85; 51 tool calls, 36 of them Causeline tools; about 18 minutes of agent time):** full transcript `docs/evidence/sprint-2/proof-conversation.md`.
+- It connected and profiled the table, asked the two questions the profile raised, proposed the three KPIs, saved a pack that ran, and read it back in sentences.
+- Asked for the user's number first for the last complete week (13-19 March 2023), it got 26,270 from the CFPB's site against 17,860 in the table, said so, and worked out that the copy was probably still filling in. **The mismatch put those days in doubt for the other two KPIs**: in the final state both carry `suspect: 13-19 March 2023, from complaint_volume (yours 26270, ours 17860)`. It then asked for an older week and confirmed all three KPIs against the CFPB's counts for 7-13 November 2022 (volume 18,778 against 18,783; timely rate 99.46% against 99.43%; relief share 1.44% against 1.42%, within a 1.5% tolerance the agent set), each from two different angles (the whole data for a week and one product or state), with the source named.
+- It ran the seasonality analysis, explained it in words, and applied the weekday pattern only; asked for a past problem, was told about the Equifax breach, recorded it, and `verify_expert` made the volume expert **verified**; the other two stay draft (no incident recorded for them).
+- **Asked "Why did complaint volume jump in the week of 4 September 2017?", it answered through `get_intent`, `set_intent` and `run_intent`:** 9,379 complaints against a seasonally expected 4,596 (+4,783, +104%); concentrated on Friday and Saturday 8-9 September (110% of the week's change); 99% in credit reporting, 85% of that in the issue "Improper use of your report", 96% of that in the sub-issue "Reporting company used your report improperly" (about 6 a day before, 4,288 on those two days); **Equifax explains 94% of the change** (about 114 a day to 5,049); 99% of it via the web channel; no state dominates; "the reason, the breach announcement on 7 September 2017, is outside what the data contains, but the pattern is consistent with that event". It said the question read 24.5 GB, about 14 cents. Each claim cited its step.
+
+**Sprint 2 against its own test**
+
+| "Done when" | Result |
+|---|---|
+| 1. A pack is built by conversation against a BigQuery table (the public complaints table) with no CSV and no YAML shown | **Met in runs 2 to 6**; run 1 showed YAML (fixed). The agent still showed table and column names in chat in places (see below) |
+| 2. KPIs climb draft, provisional, verified through the ladder, using the sign-off screen to confirm numbers from different angles | **Met for the ladder and the angles** (all three KPIs, two angles each, named sources, in the proof run). **The screen** was driven by scripts and HTTP calls and looked at in headless renders; the agent in the live runs gave numbers in chat, as the persona preferred, and nobody has clicked it |
+| 3. Changing a KPI's SQL drops it to provisional, and re-running the stored numbers can restore it | **Met** (unit tests, the Builder end-to-end through the MCP tools, the example on BigQuery; in the live runs the agent changed the model and ran the checks repeatedly) |
+| 4. The complaints pack ships with real, data-verified incident evals that pass | **Met in part**: five cases pass on BigQuery (Equifax; three quiet weeks as "within normal variation"; a week the data does not hold). **Two real incidents do not pass** (Wells Fargo 2016, and the Equifax week's timely rate as a mix effect), recorded with what was expected in `packs/complaints/evals/known-gaps.md`; one candidate (mortgage forbearance 2020) was dropped as not verifiable in the data |
+| 5. All earlier evals, routing, intents, unit tests, integration and CI stay green | **Met on this machine**: every package's unit tests, purity, integration 7/7, runner evals 18/18, routing 27/27, intents 16/16. CI on GitHub was not looked at in this session |
+
+**What the real data taught that synthetic data could not** (all recorded in the steps above): the frozen copy's newest weeks are part-filled; names repeat under several parents; some cycles are real but unusable for a baseline; the data-quality guard is too eager for categories of a few dozen complaints; a surge week needs 20 to 30 queries (12 to 24 GB here); a rate can agree while the counts under it are short; and ranking by impact can put a channel ahead of a company that describes the same complaints.
+
+**Not shown**
+- **A real person.** The user is a model told a persona. Six runs are six samples, not a rate: the proof run succeeded after fixes that each came from an earlier run's failure.
+- **That the agent follows the skill every time.** In the proof run it still showed table and column names in chat in places and, in run 2, a made-up check window ("close enough"), which the skill now forbids and the tools now make harder (the user's number must match the check it was given for). Not measured over many runs.
+- **The "newest periods look incomplete" note did not fire** in the proof run: the newest settled-looking week held 81% of a normal one against a threshold of 80%, so the suggestion kept it. The mismatch against the user's number caught it instead. The note is checked by unit tests and has not been tuned on this data.
+- **The sign-off screen with a person at it** (open item since step 3), and the Claude Code plugin installed from a marketplace rather than from the repository directory.
+- Whole-pack cost of the proof run on BigQuery: the answer read 24.5 GB (about $0.14); the rest of the run's reads (profile, tests, automatic checks, the seasonality analysis) were not summed.
+- Two real incidents the analysis misses (above), and the data-quality guard's statistical test; both are sprint 3 depth work.
+- The complaints eval cases were last run on BigQuery before the final fixes to the Builder (none touch the analysis); the contact-centre cases, routing and intents were re-run at the end.
+

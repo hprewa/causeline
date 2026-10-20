@@ -156,8 +156,8 @@ test("a KPI is signed off from the page's own calls, and the chat tools see the 
 test("the chat tools do the same things the page does", async () => {
   // a fresh KPI state: start again from the proposals
   const proposed = await proposeChecksTool(cfg(), callers(), { kpi: "ok_rate", odd_period: { start: "2026-01-12", end: "2026-01-18", name: "the audited week" } });
-  assert.ok(proposed.proposals.some((p) => p.kind === "odd_period" && /audited week/.test(p.label)));
-  const odd = proposed.proposals.find((p) => p.kind === "odd_period")!;
+  assert.ok(proposed.proposals.some((p) => p.kind === "total" && /audited week/.test(p.label)), "their own window, classed by its shape");
+  const odd = proposed.proposals.find((p) => /audited week/.test(p.label))!;
   const flagged = await confirmNumberTool(cfg(), callers(), { kpi: "ok_rate", check: odd.id, expected: 0.5, source: "audit file", flag: true, note: "does not look right" });
   assert.equal(flagged.confirmed, false);
   assert.equal(flagged.state, "flagged");

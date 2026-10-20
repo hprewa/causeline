@@ -59,12 +59,18 @@ you are surprised and say so. You know that the CFPB publishes complaints only a
 you wonder aloud whether the newest weeks in the table were still filling in when it was copied. You then offer to check an older
 week instead: the week 7 to 13 November 2022 and Wednesday 9 November 2022, and you give those numbers when asked. You do not say
 the assistant's definition is wrong unless it is. If the numbers for the older windows match, you are pleased.
+If the assistant tells you the newest weeks of the data look incomplete, you are not surprised, and you offer the November 2022 windows (the week and the Wednesday) for the numbers it needs.
 If the assistant says it will leave the newest weeks out of the data, you agree, as long as it tells you where the data now ends.
 
 ## A past problem you know the cause of
 When asked for a time something went wrong that you know the cause of: the **Equifax data breach**, announced on 7 September 2017.
 In the week 4 to 10 September 2017 complaints about **Equifax** (the company name in the data is "EQUIFAX, INC.") surged, all in
-credit reporting. You would ask: "Why did complaint volume jump in the week of 4 September 2017?" Give that when asked.
+credit reporting.
+
+## When the setup is finished
+When the assistant tells you the setup is finished and checked (or tells you where it stands and that you can ask questions), ask,
+once, in your own words: "Why did complaint volume jump in the week of 4 September 2017?" Do not say what the answer is. When the
+assistant answers, you may ask one short follow-up if something is unclear; otherwise thank it and reply exactly [END].
 
 ## Anything else
 If the assistant offers a page on your computer where you can type the numbers, say you would rather just tell it in the chat.

@@ -30,9 +30,14 @@ is in `docs/evidence/`.
 | Intent: a fixed structure an agent fills in, natural periods resolved by code, one question at a time, plain-words play-back | done |
 | Running intent: a question built over messages, scoped runs, recall, topic switches, connection check | done (live agent: 6/6 on BigQuery) |
 | Starter pack for a new use case (`packs/_template`) | done |
+| Sign-off ladder: draft, provisional, verified from automatic checks and the user's numbers from different angles with named sources; suspect windows; re-run after a change | done |
+| Sign-off screen (a local page served by the MCP server) | done (not yet used by a person) |
+| Builder on BigQuery: connect, metered profile, test and save, per-pack budget | done |
+| Example pack: complaints (the CFPB's public table), built by conversation, signed off against the CFPB's published counts | done (5 of 7 real incidents pass; 2 recorded as known gaps) |
 
 Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
-BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 6/6, core purity check OK.
+BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 7/7, core purity check OK; complaints eval
+on BigQuery 5/5 (two further real incidents in `packs/complaints/evals/known-gaps.md`).
 
 ## Sprint 2: step by step
 
@@ -46,7 +51,7 @@ Multi-point sign-off with a sign-off screen, the Builder on BigQuery, and the co
 | 4 | Builder data layer and BigQuery (connect, profile, test, save) | done | 80c48e7 | Step 4 |
 | 5 | Skill rewrite and scripted end-to-end on both databases | done | 74f2950 | Step 5 |
 | 6 | Complaints pack built by conversation, real incident evals | done | a92f071 | Step 6 |
-| 7 | Proof and docs | not started | | |
+| 7 | Proof and docs: live agent from an empty folder to verified KPIs and an investigated question | done | see `git log` (message starts "Sprint 2 step 7") | Step 7 |
 
 ## Coverage debt
 
@@ -86,8 +91,8 @@ re-covered by new packs before they count again:
 |---|---|---|
 | P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
 | 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
-| 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder |
-| 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery | branching playbooks with full branch coverage; new depth evals pass |
+| 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder. **All seven steps done**; see `docs/evidence/sprint-2.md` for what was and was not shown |
+| 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery. **Added by sprint 2's real data:** report the largest contributors when none passes the drill share (the Wells Fargo case); attribute a mix effect to the node that moved the share (the Equifax mix case); a statistical test in the data-quality guard; a firmer test for an incomplete tail of the data | branching playbooks with full branch coverage; new depth evals pass; the two known gaps pass |
 | 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
 | 5 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
 | 6 | Real non-coder test and fixes | one analyst, own question, timed, observed |
