@@ -157,7 +157,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **The BigQuery end-to-end is a script you run, not part of the integration tests.** Why: it needs a signed-in account and a project and spends a few cents; the same path on SQLite is in the integration tests and shares every code path above the database.
 - **The skill is tested for what it names and teaches, not for how an agent behaves.** Why: agent behaviour is measured by live runs (step 6), and a unit test cannot say anything true about it.
 
-### Step 6: the complaints pack (commit see `PROGRESS.md`)
+### Step 6: the complaints pack (commit a92f071)
 - **The pack ends on 2023-02-12, not at the end of the table.** Why: compared with the CFPB's own counts, the copy is complete to 99.8-100% until the week of 6 February 2023 and then holds 92%, 68% and 32% of the newest weeks (and its timely flag reads 100% there). A pack must not answer from weeks it knows are part-filled; asking about them stops and says what the data covers.
 - **Sign-off numbers come from the CFPB's published counts, fetched at run time, for weeks inside that window.** Why: it is a different system from the copy being checked, and the copy's own end is exactly the thing a sign-off against another system catches.
 - **A seasonality cycle longer than 28 days is never recommended; it is reported and not applied.** Why: the like-for-like comparison needs an earlier day at the same position in every declared cycle, which no baseline of a few weeks holds for day of the month or month of the year, so every analysis stops.
