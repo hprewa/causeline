@@ -34,6 +34,20 @@ is in `docs/evidence/`.
 Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
 BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 6/6, core purity check OK.
 
+## Sprint 2: step by step
+
+Multi-point sign-off with a sign-off screen, the Builder on BigQuery, and the complaints showcase pack (evidence: `docs/evidence/sprint-2.md`).
+
+| Step | What | State | Commit | Evidence |
+|---|---|---|---|---|
+| 1 | Spike and measure (cost of a deep dive on the public table, BigQuery dry-run behaviour) | done | see `git log` (message starts "Sprint 2 step 1") | Step 1 |
+| 2 | Checks and status ladder core (draft, provisional, verified; stored regression numbers) | not started | | |
+| 3 | Sign-off tools and the local sign-off screen | not started | | |
+| 4 | Builder data layer and BigQuery (connect, profile, test, save) | not started | | |
+| 5 | Skill rewrite and scripted end-to-end on both databases | not started | | |
+| 6 | Complaints pack built by conversation, real incident evals | not started | | |
+| 7 | Proof and docs | not started | | |
+
 ## Coverage debt
 
 An earlier example pack (a different domain) was retired from this repository. The trap types it covered must be
@@ -72,7 +86,7 @@ re-covered by new packs before they count again:
 |---|---|---|
 | P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
 | 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
-| 2 | Multi-point sign-off, Builder on BigQuery, a public-data showcase pack, an alerts example pack | a pack built by conversation reaches `verified` through the status ladder |
+| 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder |
 | 3 | Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery | branching playbooks with full branch coverage; new depth evals pass |
 | 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
 | 5 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
