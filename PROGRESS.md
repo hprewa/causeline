@@ -51,7 +51,7 @@ Multi-point sign-off with a sign-off screen, the Builder on BigQuery, and the co
 | 4 | Builder data layer and BigQuery (connect, profile, test, save) | done | 80c48e7 | Step 4 |
 | 5 | Skill rewrite and scripted end-to-end on both databases | done | 74f2950 | Step 5 |
 | 6 | Complaints pack built by conversation, real incident evals | done | a92f071 | Step 6 |
-| 7 | Proof and docs: live agent from an empty folder to verified KPIs and an investigated question | done | see `git log` (message starts "Sprint 2 step 7") | Step 7 |
+| 7 | Proof and docs: live agent from an empty folder to verified KPIs and an investigated question | done | 5088714 | Step 7 |
 
 ## Coverage debt
 
