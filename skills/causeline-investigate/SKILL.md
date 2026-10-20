@@ -56,7 +56,13 @@ If a run cannot connect to the data (a cloud warehouse sign-in, a missing projec
 - **`findings`**, in rank order. Rank 1 is the most specific explanation. Each has `dimension` and `value`, an `impact` (change in the metric attributed to it, in that metric's units), the `metric` it is about (the driver, for a product), and optionally:
   - `scope`: the finding holds only inside that node (for example a queue that is bad only at one location). Always include the scope when you name it.
   - `effect: "mix"`: the metric moved because **volume shifted between groups**, not because any group got worse. Say that plainly.
+  - `role: "contributor"`: no single node explained the change, but this one carries an unusual part of it. Say "carries X% of the rise", not that it caused it.
   - `persistence`: `persistent` means bad across the whole window; `single_slot` means bad in only part of it, so treat it as less certain.
+- **`contributions`** (a table, not findings): who contributed how much to the change, in the metric's own units, with `share` of the change, the part from `rate_effect` (the node itself changed) and `mix_effect` (volume moved toward or away from it), and `history` (what it contributed in up to eight earlier periods) with a `verdict`:
+  - `new` or `unusual`: lead with these; this is more than that node usually contributes.
+  - `usual`: context only; it often contributes this much, so say it is not out of the ordinary.
+  - `unknown`: too little history to judge; say that, and do not call it either.
+  - `explained` gives the share of the change that one level's reported contributors account for, and `unexplained` what is left; state it, and never claim to have explained more.
 - A `path` entry at a time level whose `node` is `(not applied)` means the metric is a total, and the run does not compare slots inside the period for totals (a quiet weekend would otherwise look like a problem). Say where the change is (by group) and that the data does not say when within the period.
 - **`path`**: every node the drill visited, with the decision at each: `drill` (one child explains most of the change), `broad` (no single child explains it, so it is systemic), `masked` (a masking pattern was found and followed), `insufficient_volume` (too little data to conclude). Use it to show how you got to the answer.
 - **`masking_flags`**: patterns that can hide a problem. Explain each in plain words:

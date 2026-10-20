@@ -23,9 +23,9 @@ before anything runs), the Builder (your own CSV files or a BigQuery table to a 
 page), an MCP server and a Claude Code plugin, and an eval harness. Data can live in a local database or in **BigQuery**,
 with a cost budget per question. Two example packs ship: a contact centre (synthetic data, identical answers on both
 databases) and consumer complaints (the CFPB's public data, built by conversation and signed off against the CFPB's own
-published counts). Two real incidents in the complaints data are not yet found by the analysis; they are listed in
-`packs/complaints/evals/known-gaps.md`. Planned next: branching playbooks and deeper analysis, a minimal explorer, and
-easier setup. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
+published counts). Every deep dive carries a table of who contributed how much, judged against their own history (new, unusual or usual), and
+the two real incidents the analysis once missed (a bank's sales-practices week; a data-breach week) are now found. Planned next:
+branching playbooks and hand-offs between KPIs, a minimal explorer, and easier setup. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
 
 ## How it is built (and why it is not tied to one use case)
 

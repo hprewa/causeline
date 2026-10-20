@@ -177,3 +177,14 @@ added in step 5, not step 1.
 - Only the period itself is checked. A baseline that sits inside a tail cannot occur (the baseline precedes the period).
 - `week_after_the_data_ends` and the other complaints cases were not re-run on BigQuery (credentials expired).
 
+## Step 7: proof and docs (partly done)
+
+**Done**
+- The `causeline-investigate` skill reads the new result fields: contributions (lead with `new` / `unusual`, `usual` is context, `unknown` is said as such, state the explained share), `role: contributor`, and the stop `data_still_arriving`. README and `PROGRESS.md` (later sprints renumbered: 4 branching playbooks and hand-offs, 5 Explorer, 6 easy setup, 7 non-coder test) updated.
+- All local gates at the end of step 6: runner and every package's tests, contact-centre eval 22/22 with no known gaps, routing 27/27, intents 16/16, integration 7/7, purity OK.
+
+**Not shown (pending Google re-authentication: `gcloud auth application-default login`)**
+- The complaints eval was last complete at step 3 (6/6). After step 4 its first three cases passed (Equifax volume, Wells Fargo, Equifax timely rate); the three quiet-week cases and `week_after_the_data_ends` have **not been run since steps 4 to 6**. So it is not shown that steps 5 and 6 leave them passing, nor whether the quiet-week cases can be tightened to "no findings".
+- Contact-centre parity between SQLite and BigQuery after the depth changes, and cost per case, were not re-measured.
+- A live agent answering both incident weeks with the contributions table was not run.
+

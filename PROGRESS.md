@@ -65,7 +65,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | done | see `git log` (message starts "Sprint 3 step 4") | Step 4 |
 | 5 | Overdispersion-aware tests and the data-quality guard | done | see `git log` (message starts "Sprint 3 step 5") | Step 5 |
 | 6 | Incomplete tail of the data | done | see `git log` (message starts "Sprint 3 step 6") | Step 6 |
-| 7 | Proof and docs | not started | | |
+| 7 | Proof and docs | partly done | docs and skill in the commit starting "Sprint 3 step 7"; the BigQuery proof is pending re-authentication | Step 7 |
 
 ## Coverage debt
 
@@ -107,6 +107,7 @@ re-covered by new packs before they count again:
 | 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
 | 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder. **All seven steps done**; see `docs/evidence/sprint-2.md` for what was and was not shown |
 | 3 | Analysis depth (step table above): contributions vs history, contributors when none dominates, a stable rate and mix split, overdispersion-aware tests, an incomplete-tail check. *Branching playbooks, hand-offs, interactions and recovery moved to sprint 4.* Original wording: Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery. **Added by sprint 2's real data:** report the largest contributors when none passes the drill share (the Wells Fargo case); attribute a mix effect to the node that moved the share (the Equifax mix case); a statistical test in the data-quality guard; a firmer test for an incomplete tail of the data | branching playbooks with full branch coverage; new depth evals pass; the two known gaps pass |
-| 4 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
-| 5 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
-| 6 | Real non-coder test and fixes | one analyst, own question, timed, observed |
+| 4 | Branching playbooks, hand-offs between KPIs (a KPI made of parts), interactions, recovery | branching playbooks with full branch coverage; the alerts pack's cross-table and two-cause cases pass |
+| 5 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
+| 6 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
+| 7 | Real non-coder test and fixes | one analyst, own question, timed, observed |
