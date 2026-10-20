@@ -64,12 +64,17 @@ export async function reconcileMetric(opts: { workspace: string; kpi: string; pe
 export interface IncidentInput {
   workspace: string;
   kpi: string;
-  /** The period label (or words like "week 10"; the agent resolves it with route first). */
+  /** The period label (or words like "week 10"; the agent resolves it with route first). Leave empty when the incident is given as dates. */
   period: string;
+  /** The incident as whole days, both inclusive (YYYY-MM-DD), for data whose periods are not labelled the way people say them. */
+  start_date?: string;
+  end_date?: string;
   /** Where the user knows it was: the concept and value, and where inside what (a value of a concept, optionally inside a value of another). */
   finding: { dimension: string; value: string; scope?: Record<string, string> };
   /** The question as the user would ask it. */
   question: string;
+  /** The analysis must report it among its findings, not necessarily first (when another finding describes the same records another way and can tie for first). Default: it must be first. */
+  anywhere?: boolean;
   /** Words the cause records or the answer should contain (for example "hub outage"). */
   mention?: string[];
 }
@@ -89,13 +94,14 @@ export function addIncident(opts: IncidentInput): { id: string; file: string } {
   mkdirSync(folder, { recursive: true });
   const file = join(folder, "cases.yaml");
   const existing = existsSync(file) ? (parse(readFileSync(file, "utf-8")) as unknown[]) : [];
+  if (!opts.period && !(opts.start_date && opts.end_date)) throw new Error("say when it happened: a period, or a start and end date");
   const id = `incident_${state.incidents.length + 1}_${opts.kpi}`;
   const playbook = loadAgents(opts.workspace).find((a) => a.kpi === opts.kpi && a.task === "deep_rca")?.playbook ?? "metric_change";
   const c = {
     id,
     question: opts.question,
-    inputs: { metric: opts.kpi, period: opts.period, playbook },
-    expect: { top_finding: opts.finding, ...(opts.mention?.length ? { must_mention: opts.mention } : {}) },
+    inputs: { metric: opts.kpi, period: opts.period, playbook, ...(opts.start_date && opts.end_date ? { more: { start_date: opts.start_date, end_date: opts.end_date } } : {}) },
+    expect: { ...(opts.anywhere ? { findings_include: [opts.finding] } : { top_finding: opts.finding }), ...(opts.mention?.length ? { must_mention: opts.mention } : {}) },
   };
   const cases = EvalCases.parse([...existing, c]);
   writeFileSync(file, stringify(cases, { lineWidth: 0 }), "utf-8");

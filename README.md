@@ -20,8 +20,8 @@ like-for-like seasonality, masking checks, evidence from other tables), question
 a running **intent** (a question built over several messages, checked against the data and read back in plain words
 before anything runs), the Builder (CSV files to a checked pack by conversation), an MCP server and a Claude Code
 plugin, and an eval harness with planted faults. Data can live in a local database or in **BigQuery**, with a cost
-budget per question. One worked example pack ships (a contact centre, synthetic data) and gives identical answers on
-both. Planned next: multi-point sign-off of each KPI, the Builder on BigQuery, branching playbooks, and more example
+budget per question. Two example packs ship: a contact centre (synthetic data, identical answers on both databases) and consumer complaints (the CFPB's
+public data, built by conversation and signed off against the CFPB's own published counts). Planned next: multi-point sign-off of each KPI, the Builder on BigQuery, branching playbooks, and more example
 packs. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
 
 ## How it is built (and why it is not tied to one use case)

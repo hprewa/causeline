@@ -26,6 +26,8 @@ export type EvidenceExpectation = z.infer<typeof EvidenceExpectation>;
 export const Expectation = z
   .object({
     top_finding: TopFindingExpectation.optional(),
+    /** Each of these must be among the reported findings, in any position (the culprit and a finding that describes the same records another way can tie for first). */
+    findings_include: z.array(TopFindingExpectation).optional(),
     must_mention: z.array(z.string().min(1)).optional(),
     must_not_claim: z.array(z.string().min(1)).optional(),
     stopped_reason: z.string().min(1).optional(),
@@ -47,6 +49,7 @@ export const Expectation = z
   .refine(
     (e) =>
       e.top_finding !== undefined ||
+      (e.findings_include?.length ?? 0) > 0 ||
       (e.must_mention?.length ?? 0) > 0 ||
       (e.must_not_claim?.length ?? 0) > 0 ||
       e.stopped_reason !== undefined ||
@@ -57,7 +60,7 @@ export const Expectation = z
       (e.change_points_include?.length ?? 0) > 0 ||
       e.no_change_points === true ||
       e.comparison_significant !== undefined,
-    { message: "expect must assert at least one of top_finding, must_mention, must_not_claim, stopped_reason, no_findings, masking_flags" },
+    { message: "expect must assert at least one of top_finding, findings_include, must_mention, must_not_claim, stopped_reason, no_findings, masking_flags" },
   );
 export type Expectation = z.infer<typeof Expectation>;
 

@@ -62,8 +62,8 @@ const playBackInput = fromJsonSchema<{ confirm?: boolean }>(obj({ confirm: { typ
 const reconcileInput = fromJsonSchema<{ kpi: string; period: string; expected: number; tolerance?: number }>(
   obj({ kpi: { type: "string" }, period: { type: "string", description: "A period label, or words like 'week 10'." }, expected: { type: "number", description: "The number the user already knows from their own report (93.1 means 93.1% for a rate)." }, tolerance: { type: "number", description: "Relative difference allowed (default 0.01)." } }, ["kpi", "period", "expected"]),
 );
-const proposeInput = fromJsonSchema<{ kpi: string; odd_period?: { start: string; end: string; name?: string } }>(
-  obj({ kpi: { type: "string" }, odd_period: { type: "object", description: "A period the user knows was unusual and would like checked: {start, end} as YYYY-MM-DD, name optional.", properties: { start: { type: "string" }, end: { type: "string" }, name: { type: "string" } }, required: ["start", "end"] } }, ["kpi"]),
+const proposeInput = fromJsonSchema<{ kpi: string; odd_period?: { start: string; end: string; name?: string; scope?: Record<string, string> } }>(
+  obj({ kpi: { type: "string" }, odd_period: { type: "object", description: "A window the user has a report for, when none of the suggested ones is: {start, end} as YYYY-MM-DD, scope optional ({concept: value} for one part of the data, for example one product), name optional. Use it instead of confirming their number against a check for a different window or part.", properties: { start: { type: "string" }, end: { type: "string" }, name: { type: "string" }, scope: { type: "object", additionalProperties: { type: "string" } } }, required: ["start", "end"] } }, ["kpi"]),
 );
 const confirmNumberInput = fromJsonSchema<{ kpi: string; check: string; expected: number; source: string; tolerance?: number; flag?: boolean; note?: string }>(
   obj({
@@ -81,11 +81,14 @@ const openSignoffInput = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "st
 const incidentInput = fromJsonSchema<Record<string, unknown>>(
   obj({
     kpi: { type: "string" },
-    period: { type: "string", description: "The period label where it happened." },
+    period: { type: "string", description: "The period label where it happened. Leave out when you give dates." },
+    start_date: { type: "string", description: "Or the first day, YYYY-MM-DD (with end_date)." },
+    end_date: { type: "string", description: "Or the last day, YYYY-MM-DD, included." },
     finding: { type: "object", description: "Where the user knows it was: {dimension, value, scope?} for example {dimension: 'kind', value: 'K3', scope: {place: 'P2'}}." },
     question: { type: "string", description: "The question as the user would ask it." },
     mention: { type: "array", items: { type: "string" }, description: "Words the answer should contain." },
-  }, ["kpi", "period", "finding", "question"]),
+    anywhere: { type: "boolean", description: "Set when the analysis may report what the user said among several findings (for example both one value and another that describes the same records), not only first. Say so to the user; the default is that it must be first." },
+  }, ["kpi", "finding", "question"]),
 );
 const verifyInput = fromJsonSchema<{ kpi: string }>(obj({ kpi: { type: "string" } }, ["kpi"]));
 
@@ -140,11 +143,21 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
   required: ["name"],
 });
 
+/**
+ * What a model should know before it picks a tool: which of the plugin's skills to follow. Without this a model that is asked to
+ * "set up" someone's data can reach for the developer path (hand-written pack files) and show the user YAML.
+ */
+const INSTRUCTIONS = [
+  "Causeline answers 'why did this number change?' with a deterministic analysis, and builds that setup from the user's own data.",
+  "If the user has data (files, or a BigQuery table) and no working setup yet, or wants to add a KPI or sign one off: follow the causeline-build skill from the start. It is a conversation in plain words; never show the user YAML, SQL or file paths, never write pack files yourself, and use the build tools (connect_files or connect_bigquery, describe_data, test_fact, save_pack, play_back, propose_checks, confirm_number, verify_expert).",
+  "If a setup already exists and the user asks why a KPI moved: follow the causeline-investigate skill. The causeline-onboard skill is only for checking data and seasonality of an existing pack.",
+].join("\n");
+
 /** The causeline-mcp tools: analysis, onboarding and the Builder. `callers` supplies the data connection (Toolbox, or a fake in tests). */
 registerBigQuery();
 
 export function createServer(cfg: ServerConfig, callers: Callers, screen: SignoffScreen = new SignoffScreen(cfg, callers)): McpServer {
-  const server = new McpServer({ name: "causeline-mcp", version: "0.1.0" });
+  const server = new McpServer({ name: "causeline-mcp", version: "0.1.0" }, { instructions: INSTRUCTIONS });
 
   server.registerTool(
     "list_playbooks",

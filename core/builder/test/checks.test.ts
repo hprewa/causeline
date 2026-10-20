@@ -238,3 +238,12 @@ test("a changed pack has its unanswered proposals dropped", async () => {
   await savePack({ workspace: ws, ontology, data: data("ok * 1") });
   assert.equal(readState(ws)!.kpis.ok_rate.checks.length, 0, "their numbers were for the old formula");
 });
+
+test("a window the person has a report for counts as the kind its shape says, so their own windows can verify a KPI", async () => {
+  const { ws, tools } = await workspace();
+  const kindOf = async (odd: { start: string; end: string; name?: string; scope?: Record<string, string> }) => (await proposeChecks({ workspace: ws, kpi: "ok_rate", tools, odd })).proposals.find((p) => /2026-01-1[2-8]|12–18 January|13 January/.test(p.label))?.kind;
+  assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18" }), "total");
+  assert.equal(await kindOf({ start: "2026-01-13", end: "2026-01-13" }), "grain");
+  assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18", scope: { channel: "web" } }), "slice");
+  assert.equal(await kindOf({ start: "2026-01-12", end: "2026-01-18", name: "the audited week" }), "odd_period");
+});

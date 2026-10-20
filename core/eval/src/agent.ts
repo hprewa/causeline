@@ -10,6 +10,8 @@ export interface AgentRun {
   /** What each intent tool answered, in order (the full bodies), for scoring the question the agent built. */
   intents: { tool: string; body: any }[];
   metrics: AgentMetrics;
+  /** The Claude Code session, so a conversation can be continued with `resume`. */
+  sessionId?: string;
   /** Set when the run failed to start or finished with an error. */
   error?: string;
   /** Servers/plugins as the session reported them, to diagnose a plugin that did not load. */
@@ -43,6 +45,7 @@ export function parseStream(lines: string[]): AgentRun {
   const metrics: AgentMetrics = { turns: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, ms: 0 };
   let error: string | undefined;
   let session: AgentRun["session"];
+  let sessionId: string | undefined;
 
   for (const line of lines) {
     let msg: Record<string, unknown>;
@@ -51,6 +54,7 @@ export function parseStream(lines: string[]): AgentRun {
     } catch {
       continue;
     }
+    if (typeof msg.session_id === "string") sessionId = msg.session_id;
     if (msg.type === "system" && msg.subtype === "init") {
       session = { mcpServers: msg.mcp_servers, pluginErrors: msg.plugin_errors };
     } else if (msg.type === "assistant") {
@@ -90,7 +94,7 @@ export function parseStream(lines: string[]): AgentRun {
       if (msg.is_error === true || (typeof msg.subtype === "string" && msg.subtype !== "success")) error = `claude finished with ${String(msg.subtype)}: ${narrative.slice(0, 300)}`;
     }
   }
-  return { narrative, toolCalls, result, intents, metrics, ...(error ? { error } : {}), ...(session ? { session } : {}) };
+  return { narrative, toolCalls, result, intents, metrics, ...(sessionId ? { sessionId } : {}), ...(error ? { error } : {}), ...(session ? { session } : {}) };
 }
 
 function safeJson(text: string): unknown {
@@ -112,12 +116,16 @@ export interface AgentOptions {
   /** Run with --bare: reproducible, but needs ANTHROPIC_API_KEY and ignores your own plugins and settings. */
   bare: boolean;
   model?: string;
+  /** Continue this earlier session (a conversation over several messages). */
+  resume?: string;
+  /** Extra environment for causeline-mcp. */
+  env?: Record<string, string>;
   maxTurns: number;
   timeoutMs: number;
 }
 
 /** MCP tools of the plugin's server, as Claude Code names them: mcp__plugin_<plugin>_<server>__<tool>. */
-export const PLUGIN_TOOLS = ["get_intent", "set_intent", "run_intent", "recall", "start_over", "check_connection", "list_playbooks", "run_playbook", "validate_pack", "generate_tools", "check_data", "analyze_seasonality", "route", "scan_kpis", "build_status", "connect_files", "describe_data", "test_fact", "save_pack", "play_back", "reconcile_metric", "add_incident", "verify_expert"].map((t) => `mcp__plugin_causeline_causeline-mcp__${t}`);
+export const PLUGIN_TOOLS = ["get_intent", "set_intent", "run_intent", "recall", "start_over", "check_connection", "list_playbooks", "run_playbook", "validate_pack", "generate_tools", "check_data", "analyze_seasonality", "route", "scan_kpis", "build_status", "connect_files", "connect_bigquery", "describe_data", "test_fact", "save_pack", "play_back", "reconcile_metric", "add_incident", "verify_expert", "propose_checks", "confirm_number", "signoff_status", "run_checks", "open_signoff"].map((t) => `mcp__plugin_causeline_causeline-mcp__${t}`);
 
 const quote = (arg: string) => (/^[\w./:=@%+-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '\\"')}"`);
 
@@ -132,8 +140,9 @@ export async function runClaudeCode(o: AgentOptions): Promise<AgentRun> {
   ];
   if (o.bare) args.unshift("--bare");
   if (o.model) args.push("--model", o.model);
+  if (o.resume) args.push("--resume", o.resume);
 
-  const env = { ...process.env, CAUSELINE_PACK: o.packDir, ...(o.toolbox ? { CAUSELINE_TOOLBOX: o.toolbox } : {}) };
+  const env = { ...process.env, CAUSELINE_PACK: o.packDir, ...(o.toolbox ? { CAUSELINE_TOOLBOX: o.toolbox } : {}), ...(o.env ?? {}) };
   // on Windows `claude` is an npm .cmd shim, which can only be spawned through a shell
   const win = process.platform === "win32";
   const child = win ? spawn(["claude", ...args.map(quote)].join(" "), { env, shell: true, cwd: o.packDir, stdio: ["pipe", "pipe", "pipe"] }) : spawn("claude", args, { env, cwd: o.packDir, stdio: ["pipe", "pipe", "pipe"] });

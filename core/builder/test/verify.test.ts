@@ -64,3 +64,19 @@ test("an expert cannot become verified without a matched number and a recorded i
   assert.match(noIncident.reasons[0], /no past incident/);
   assert.equal(existsSync(join(ws, "agents")) && loadAgents(ws).some((a) => a.status === "verified"), false, "nothing was marked verified");
 });
+
+test("an incident can be given as dates, and is run as a date range", async () => {
+  const ws = await savedWorkspace();
+  const r = addIncident({ workspace: ws, kpi: "ok_rate", period: "", start_date: "2026-01-12", end_date: "2026-01-18", finding: { dimension: "site", value: "north" }, question: "Why did the ok rate drop in the week of 12 January?" });
+  const cases = EvalCases.parse(parse(readFileSync(join(ws, "evals", "cases.yaml"), "utf-8")));
+  assert.deepEqual(cases.find((c) => c.id === r.id)!.inputs, { metric: "ok_rate", period: "", playbook: "metric_change", more: { start_date: "2026-01-12", end_date: "2026-01-18" } });
+  assert.throws(() => addIncident({ workspace: ws, kpi: "ok_rate", period: "", finding: { dimension: "site", value: "north" }, question: "q" }), /say when it happened/);
+});
+
+test("an incident can ask only that the culprit is among the findings", async () => {
+  const ws = await savedWorkspace();
+  const r = addIncident({ workspace: ws, kpi: "ok_rate", period: "2026-W03", finding: { dimension: "site", value: "north" }, question: "Why?", anywhere: true });
+  const c = EvalCases.parse(parse(readFileSync(join(ws, "evals", "cases.yaml"), "utf-8"))).find((x) => x.id === r.id)!;
+  assert.equal(c.expect.top_finding, undefined);
+  assert.deepEqual(c.expect.findings_include, [{ dimension: "site", value: "north" }]);
+});

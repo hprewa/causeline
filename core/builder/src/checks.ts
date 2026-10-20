@@ -114,10 +114,10 @@ export interface ProposeResult {
  * The numbers worth setting against another report, chosen by rule: the whole data over the last complete period;
  * the biggest part of the first hierarchy and of one flat concept over the same period; one day (a different grain,
  * which catches a week that starts on another day and a date taken from the wrong column); and, when the person
- * names it, a period they know was odd. The tools' numbers are worked out and stored, but not handed out: they are
+ * names it, a period they know was odd (or any window, and part of the data, they have a report for). The tools' numbers are worked out and stored, but not handed out: they are
  * shown only after the person has given theirs, so theirs is not shaped by ours.
  */
-export async function proposeChecks(opts: { workspace: string; kpi: string; tools: ToolCaller; odd?: { start: string; end: string; name?: string } }): Promise<ProposeResult> {
+export async function proposeChecks(opts: { workspace: string; kpi: string; tools: ToolCaller; odd?: { start: string; end: string; name?: string; scope?: Record<string, string> } }): Promise<ProposeResult> {
   const ctx = await open(opts.workspace, opts.kpi, opts.tools);
   const periods = await completeBuckets(opts.tools, ctx.index, opts.kpi, ctx.top);
   const last = periods[periods.length - 1];
@@ -143,7 +143,13 @@ export async function proposeChecks(opts: { workspace: string; kpi: string; tool
   // one day: the last one with data, so the number is checked at a different grain from the period
   const lastDay = [...days].reverse().find((b) => b.den > 0 || b.num > 0);
   if (lastDay && window.start !== window.end) candidates.push({ kind: "grain", scope: {}, window: { start: dayOf(lastDay), end: dayOf(lastDay, "bucket_end") } });
-  if (opts.odd) candidates.push({ kind: "odd_period", scope: {}, window: { start: opts.odd.start, end: opts.odd.end }, name: opts.odd.name });
+  if (opts.odd) {
+    // a window the person has a report for is the same kind of check as the suggested ones when it has the same shape: the whole data over
+    // a period, one part of it, or one day. Only a period they name as unusual is its own kind.
+    const scope = opts.odd.scope ?? {};
+    const kind: CheckKind = opts.odd.name ? "odd_period" : Object.keys(scope).length > 0 ? "slice" : opts.odd.start === opts.odd.end ? "grain" : "total";
+    candidates.push({ kind, scope, window: { start: opts.odd.start, end: opts.odd.end }, name: opts.odd.name });
+  }
 
   const proposals: Proposal[] = [];
   const existing = readState(opts.workspace)?.kpis[opts.kpi]?.checks ?? [];

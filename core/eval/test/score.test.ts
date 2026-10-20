@@ -148,3 +148,18 @@ test("offering the neighbouring periods is not an untraced number, but other fig
   // only the period gives neighbours: the baseline length of 4 does not make 5 acceptable
   assert.deepEqual(untracedNumbers("It was 5 weeks.", r, "Why did workload rise in week 7?"), ["5"]);
 });
+
+test("runner: findings_include accepts the culprit in any position, and fails when it is missing", () => {
+  const two = result({
+    findings: [
+      { rank: 1, dimension: "d2", value: "Web", impact: -0.011, evidence: ["flat"], effect: "rate" },
+      { rank: 2, dimension: "d1", value: "Y", impact: -0.009, evidence: ["refine"], scope: { a2: "P2" }, effect: "rate" },
+    ],
+  });
+  assert.equal(scoreRunner(two, expectation({ top_finding: { dimension: "d1", value: "Y" } })).pass, false, "it is not first");
+  assert.equal(scoreRunner(two, expectation({ findings_include: [{ dimension: "d1", value: "Y", scope: { a2: "P2" } }, { dimension: "d2", value: "Web" }] })).pass, true);
+  const missing = scoreRunner(two, expectation({ findings_include: [{ dimension: "d1", value: "Z" }] }));
+  assert.equal(missing.pass, false);
+  assert.match(JSON.stringify(missing.checks), /findings: d2=Web; d1=Y/);
+  assert.equal(scoreRunner(two, expectation({ findings_include: [{ dimension: "d1", value: "Y", effect: "mix" }] })).pass, false, "the effect must match too");
+});

@@ -59,6 +59,12 @@ export function scoreRunner(result: Result, expect: Expectation): Score {
       checks.push({ name: "top_finding.metric", ok: top?.metric === want.metric, detail: `expected ${want.metric}, got ${top?.metric ?? "none"}` });
     }
   }
+  for (const want of expect.findings_include ?? []) {
+    const hit = result.findings.some(
+      (f) => f.dimension === want.dimension && f.value === want.value && Object.entries(want.scope ?? {}).every(([k, v]) => f.scope?.[k] === v) && (want.effect === undefined || f.effect === want.effect) && (want.metric === undefined || f.metric === want.metric),
+    );
+    checks.push({ name: `finding_included:${want.dimension}=${want.value}`, ok: hit, detail: `findings: ${result.findings.map((f) => `${f.dimension}=${f.value}`).join("; ") || "none"}` });
+  }
   if (expect.stopped_reason) {
     checks.push({ name: "stopped_reason", ok: result.stopped_reason === expect.stopped_reason, detail: `expected ${expect.stopped_reason}, got ${result.stopped_reason ?? "none"}` });
   }

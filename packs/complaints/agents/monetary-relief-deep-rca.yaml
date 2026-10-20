@@ -1,0 +1,7 @@
+name: monetary-relief-deep-rca
+kpi: monetary_relief_rate
+task: deep_rca
+examples:
+  - Why did the share closed with monetary relief change last week?
+  - Which product or company moved the monetary relief rate?
+status: draft # the KPI is verified, but no past incident with a known cause is recorded for it (see evals/known-gaps.md)

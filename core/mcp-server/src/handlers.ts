@@ -214,7 +214,7 @@ export const verifyExpertTool = (cfg: ServerConfig, args: { kpi: string }) => ve
 
 // --- sign-off: numbers from the user's own reports, and where each KPI stands -----------------------------------------
 
-export async function proposeChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; odd_period?: { start: string; end: string; name?: string } }) {
+export async function proposeChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; odd_period?: { start: string; end: string; name?: string; scope?: Record<string, string> } }) {
   return proposeChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller(), odd: args.odd_period });
 }
 

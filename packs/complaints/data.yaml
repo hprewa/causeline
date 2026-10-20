@@ -1,0 +1,57 @@
+# Complaints pack: where the numbers come from. This is the only file that knows about tables and SQL.
+# The data is the CFPB's public complaint database as published in BigQuery (bigquery-public-data.cfpb_complaints). It is a frozen copy:
+# the last complaint in it was received on 2023-03-23.
+source: complaints-bq
+dialect: bigquery
+# The data stopped in the past: "last week" means the last week it holds.
+as_of: data_end
+# A deep dive reads 12 to 19 GB (about $0.07 to $0.11 at list price): the table is not partitioned, so every query reads the columns it
+# names from the whole table, whatever the window, and a week with a big surge is drilled through more levels. 0.62 GB a pass, up to
+# about forty passes.
+budget_gb: 30
+
+facts:
+  complaints:
+    # One row per complaint. Two things are done to the table on the way in:
+    #  - the data ends on Sunday 2023-02-12. The copy was taken in March 2023, and the CFPB publishes a complaint only after the company
+    #    responds or after 15 days, so the newest weeks were still filling in: from the week of 13 February the copy holds 99.8%,
+    #    101%, 102%, 92%, 68% and 32% of what the CFPB's own counts later showed (and the "timely" flag reads 100% on the newest rows).
+    #    Up to that week the copy agrees with the published counts to within 0.2%.
+    #  - a sub-product (or sub-issue) name is joined to its product (or issue), because names such as "Other" repeat under several
+    #    products, and a level needs each value to sit under exactly one parent.
+    sql: |
+      SELECT TIMESTAMP(date_received) AS ts,
+             product,
+             CONCAT(product, ' / ', COALESCE(subproduct, 'not given')) AS subproduct,
+             issue,
+             CONCAT(issue, ' / ', COALESCE(subissue, 'not given')) AS subissue,
+             company_name,
+             state,
+             submitted_via,
+             CAST(timely_response AS INT64) AS timely_response,
+             IF(company_response_to_consumer = 'Closed with monetary relief', 1, 0) AS closed_with_monetary_relief
+      FROM `bigquery-public-data.cfpb_complaints.complaint_database`
+      WHERE date_received <= DATE '2023-02-12'
+    time: ts
+    concepts: [product, subproduct, issue, subissue, company_name, state, submitted_via]
+
+metrics:
+  timely_response_rate: { fact: complaints, numerator: timely_response }
+  monetary_relief_rate: { fact: complaints, numerator: closed_with_monetary_relief }
+  complaint_volume: { fact: complaints, value: "1" }
+
+evidence:
+  # The table's own fields, nothing written anywhere: what a company said publicly about complaints, and the tags the CFPB adds.
+  company_statements:
+    description: What the company publicly said about the complaint, and the CFPB's tags (older American, servicemember), for the company and product concerned.
+    sql: |
+      SELECT TIMESTAMP(date_received) AS ts,
+             product,
+             company_name,
+             company_public_response,
+             tags
+      FROM `bigquery-public-data.cfpb_complaints.complaint_database`
+      WHERE date_received <= DATE '2023-02-12'
+        AND (company_public_response IS NOT NULL OR tags IS NOT NULL)
+    time: ts
+    about: [company_name, product]

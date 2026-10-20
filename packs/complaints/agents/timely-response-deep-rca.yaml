@@ -1,0 +1,7 @@
+name: timely-response-deep-rca
+kpi: timely_response_rate
+task: deep_rca
+examples:
+  - Why did the timely response rate change last week?
+  - Which company or product moved the timely response rate?
+status: draft # the KPI is verified, but no past incident with a known cause is recorded for it (see evals/known-gaps.md)

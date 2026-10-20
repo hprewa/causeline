@@ -1,4 +1,4 @@
-import { BUILTIN_SLOTS, type DataDefs, type Ontology } from "@causeline/schema";
+import { BUILTIN_SLOTS, BUILTIN_SLOT_SQL, type DataDefs, type Ontology } from "@causeline/schema";
 import { candidateCycles } from "@causeline/generate";
 import { type ResolvedThresholds, type ToolCaller, type ToolIndex } from "@causeline/runner";
 import { chi2Survival } from "./chi2.js";
@@ -162,6 +162,9 @@ export async function analyseSeasonality(opts: AnalyseOptions): Promise<Seasonal
   return summarise(ontology, results);
 }
 
+/** The longest cycle a baseline of a few earlier periods can still hold a comparable day for, in days. */
+const MAX_USABLE_CYCLE_DAYS = 28;
+
 /** Roll the per-metric verdicts up into a recommendation. A cycle is recommended if any metric is seasonal in it. */
 export function summarise(ontology: Ontology, results: CycleResult[]): SeasonalityAnalysis {
   const notes: string[] = [];
@@ -172,6 +175,15 @@ export function summarise(ontology: Ontology, results: CycleResult[]): Seasonali
   if (seasonal.has("hour_of_day") && seasonal.has("half_hour_of_day") && eta("half_hour_of_day") < 1.25 * eta("hour_of_day")) {
     seasonal.delete("half_hour_of_day");
     notes.push("half_hour_of_day is seasonal but explains no more than hour_of_day, so it is left out as redundant");
+  }
+
+  // a cycle longer than the baseline can span is real but cannot be used: the like-for-like comparison wants an earlier day at the same
+  // position in every declared cycle, and four earlier periods hold no day in the same month of the year (or the same day of the month)
+  for (const b of BUILTIN_SLOTS) {
+    if (seasonal.has(b) && BUILTIN_SLOT_SQL.sqlite[b].cycleDays > MAX_USABLE_CYCLE_DAYS) {
+      seasonal.delete(b);
+      notes.push(`${b} is a real pattern in this data, but it repeats only every ${Math.round(BUILTIN_SLOT_SQL.sqlite[b].cycleDays)} days, longer than the few earlier periods a comparison draws on, so no earlier day would be comparable and every analysis would stop. It is reported, not applied`);
+    }
   }
 
   const long = results.filter((r) => r.kind === "cycle" && r.status === "cannot_assess" && (r.cycle === "month_of_year" || r.cycle === "day_of_month"));

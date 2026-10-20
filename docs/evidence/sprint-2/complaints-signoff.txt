@@ -1,0 +1,27 @@
+connect: Connected to 1 BigQuery table (2.3 GB in all); queries are billed to yukti-dev. Nothing was read yet: only the tables' descriptions.
+save_pack: 54 tools; budget 30 GB; a deep dive on this data reads about 14.8 GB (about $0.08 at list price); the limit for one question is set to 30 GB
+published, the whole data, a week (2022-11-07..2022-11-13): {"total":18778,"timely":18677,"relief":270}
+published, one day (2022-11-09..2022-11-09): {"total":3150,"timely":3134,"relief":50}
+published, one product, a week (2022-11-07..2022-11-13): {"total":15311,"timely":15281,"relief":9}
+published, one state, a week (2022-11-07..2022-11-13): {"total":2513,"timely":2499,"relief":27}
+  complaint_volume / the whole data, a week: theirs 18778, ours 18783, match true, confirmed true, level provisional
+  complaint_volume / one day: theirs 3150, ours 3152, match true, confirmed true, level verified
+  complaint_volume / one product, a week: theirs 15311, ours 15311, match true, confirmed true, level verified
+  complaint_volume / one state, a week: theirs 2513, ours 2515, match true, confirmed true, level verified
+complaint_volume: verified; automatic checks pass
+  timely_response_rate / the whole data, a week: theirs 0.994621365427628, ours 0.9942501197891711, match true, confirmed true, level provisional
+  timely_response_rate / one day: theirs 0.9949206349206349, ours 0.9939720812182741, match true, confirmed true, level verified
+  timely_response_rate / one product, a week: theirs 0.9980406243876951, ours 0.9979099993468747, match true, confirmed true, level verified
+  timely_response_rate / one state, a week: theirs 0.9944289693593314, ours 0.9936381709741551, match true, confirmed true, level verified
+timely_response_rate: verified; automatic checks pass
+  monetary_relief_rate / the whole data, a week: theirs 0.01437852806475663, ours 0.014214981632327104, match true, confirmed true, level provisional
+  monetary_relief_rate / one day: theirs 0.015873015873015872, ours 0.015545685279187817, match true, confirmed true, level verified
+  monetary_relief_rate / one product, a week: theirs 0.0005878126836914636, ours 0.0005878126836914636, match true, confirmed true, level verified
+  monetary_relief_rate / one state, a week: theirs 0.010744130521289296, ours 0.01073558648111332, match true, confirmed true, level verified
+monetary_relief_rate: verified; automatic checks pass
+
+(expert verification, second run of the script with --only-verify --verify)
+verify_expert complaint_volume: verified=true 
+verify_expert timely_response_rate: verified=false no past incident is recorded for timely_response_rate; record one you know the cause of
+verify_expert monetary_relief_rate: verified=false no past incident is recorded for monetary_relief_rate; record one you know the cause of
+report: C:\Users\hprew\AppData\Local\Temp\complaints-signoff-RGyG3N\signoff-report.json

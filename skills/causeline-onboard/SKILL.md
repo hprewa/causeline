@@ -1,7 +1,7 @@
 ---
 name: causeline-onboard
-description: Onboards a dataset to the RCA harness: checks the data against the ontology and works out which repeating patterns (weekday, time of day, holidays, peak periods) the metrics follow, so root-cause analysis never mistakes a normal pattern for a problem. Use when the user is setting up a new pack, editing ontology.yaml, asks whether their data is seasonal or ready for analysis, or asks why weekends or lunchtimes look worse.
-when_to_use: Also for "is my data OK to use", "does this metric have seasonality", "set up the ontology", "validate my pack", "why does Saturday always look bad", and before the first investigation on a new dataset.
+description: Onboards a dataset to the RCA harness: checks the data against the ontology and works out which repeating patterns (weekday, time of day, holidays, peak periods) the metrics follow, so root-cause analysis never mistakes a normal pattern for a problem. Use when a pack already exists (or is being edited by hand) and the user asks whether their data is seasonal or ready for analysis, or why weekends or lunchtimes look worse. Not for someone who has data and no setup yet: that is the causeline-build skill, which includes this step.
+when_to_use: Also for "is my data OK to use", "does this metric have seasonality", "validate my pack", "why does Saturday always look bad", and before the first investigation on a pack that was written by hand.
 ---
 
 # Onboarding a dataset

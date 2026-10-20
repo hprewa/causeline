@@ -1,0 +1,48 @@
+# Complaints pack: consumer complaints about financial products and companies, from the CFPB's public complaint database.
+# This file is vocabulary only: what the levels, dimensions and KPIs are called. Where the numbers come from is in data.yaml.
+#
+# Read these numbers with care. Complaints are not a statistical sample of customers' experience: they count who chose to complain,
+# so volumes move with publicity, with a company's size and with how easy it is to complain. A higher count is not a worse company,
+# and a lower one is not a better company. Wording in answers should say "complaints about", never "caused by".
+
+time:
+  # the analysis is by week, and a single day can be looked at inside one
+  levels: [week, day]
+  # From the seasonality analysis on this data (run in the live build conversation, 11 years of history): complaint volume has a strong
+  # weekday pattern (Tuesdays and Wednesdays about three times a Sunday) and the monetary relief share a weekday one too; timely
+  # response rate showed none that matters. The analysis also found day-of-month and month-of-year effects on the relief share, but they
+  # repeat too rarely for a comparison with a few earlier weeks to use (no earlier day would match), so they are reported, not applied.
+  seasonality:
+    cycles: [weekday]
+    calendar: []
+
+# Thresholds for this data. A category (a sub-issue, a sub-product) can legitimately lose half its usual complaints in an ordinary
+# week, so only a node far below its usual rows counts as missing data (the default would stop ordinary weeks as "data quality").
+thresholds:
+  coverage_ratio: 0.3
+
+hierarchies:
+  product_line: [product, subproduct]
+  issue_type: [issue, subissue]
+
+dimensions: [company_name, state, submitted_via]
+
+metrics:
+  timely_response_rate:
+    type: ratio
+    direction: higher_is_better
+    min_volume: 30
+    description: Share of complaints where the company responded to the consumer on time.
+    synonyms: [timely response, on-time response rate, timely rate, responded on time]
+  monetary_relief_rate:
+    type: ratio
+    direction: lower_is_better
+    min_volume: 30
+    description: Share of complaints that were closed with monetary relief for the consumer. A signal, not a score of a company.
+    synonyms: [monetary relief, relief rate, share closed with monetary relief, closed with monetary relief]
+  complaint_volume:
+    type: sum
+    direction: lower_is_better
+    min_volume: 30
+    description: Complaints received, by the date the CFPB received them. Not a statistical sample of customer experience.
+    synonyms: [complaints, volume, complaint count, number of complaints, how many complaints]

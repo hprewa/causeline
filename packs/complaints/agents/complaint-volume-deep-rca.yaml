@@ -1,0 +1,7 @@
+name: complaint-volume-deep-rca
+kpi: complaint_volume
+task: deep_rca
+examples:
+  - Why did complaint volume jump in the week of 4 September 2017?
+  - Which company or product is behind the rise in complaints?
+status: verified # the KPI matches the CFPB's published counts from four angles, and the Equifax incident is among its findings (scripts/complaints-signoff.mjs)
