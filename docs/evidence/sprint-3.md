@@ -119,3 +119,23 @@ added in step 5, not step 1.
 - A contributor is a node that carries an unusual part of a real change; it is not a cause. The answer still has to say so (the investigate skill does; step 7 adds the table to it).
 - The Equifax mix case still fails (step 4), and the quiet-week noise remains (step 5).
 
+## Step 4: stabilise the rate/mix split
+
+**Question:** why does the analysis miss that one company that answers on time absorbed most of a week's volume (Equifax, timely response rate), and can the fix leave every other case alone?
+
+**Cause (traced):** a company with a few baseline rows has a baseline rate of 0% or 100% by chance. Taken at face value its rate effect and its mix effect are each large and opposite; added over hundreds of such companies the rate total (+0.129) and mix total (-0.095) dwarf the change (+0.033), and the mix gate fired on the opposed-sign total and named the company with the largest mix effect, a thin one.
+
+**What was changed**
+- `decomposeRatio` and the contributions take the whole's baseline rate for a node whose baseline holds fewer than `min_volume` rows, **in the rate/mix split only**; a node's contribution still uses its real baseline rate, so contributions add up exactly to the change.
+- The mix gate fires only when the mix total points the same way as the change.
+- The culprit is still chosen by mix effect once the gate fires; with thin baselines stabilised the right node has it.
+
+**Evidence**
+- Unit fixture `core/runner/test/mix-gate.test.ts` (the shape of the incident: one node carrying the change among 60 thin ones): the todo became a passing test; totals are of the order of the change; contributions sum exactly; an opposed mix is not called mix.
+- Runner tests, contact-centre eval 21/21 (1 known gap), routing 27/27, intents 16/16, integration 7/7, purity OK.
+- Real data (BigQuery): `equifax_week_timely_rate` passes (Equifax is the first finding, 32 queries); `equifax_breach_volume` and `wells_fargo_sales_practices_volume` still pass. The case moves from `known-gaps.md` to `cases.yaml`.
+
+**Not shown**
+- The other four complaints cases (three quiet weeks, the week after the data ends) were **not re-run after this change**: Google credentials expired (`invalid_rapt`) during the run. They are unaffected in the unit and contact-centre evals, but this is unverified on BigQuery until re-authentication.
+- The synthetic generator cannot reproduce the real failure (it needs hundreds of thin companies); the unit fixture and the real data carry the evidence.
+

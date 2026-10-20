@@ -155,8 +155,8 @@ export function decideLevel(d: Decomposition | null, opts: DecideOptions): Level
 
   const result = (r: Omit<LevelDecision, "flags" | "informative">): LevelDecision => ({ ...r, flags, informative });
 
-  // mix: volume moved between children
-  if (parentSig && Math.abs(d.mixTotal) > th.mix_share * Math.abs(change)) {
+  // mix: volume moved between children, in the direction of the change (a mix total that opposes it is the other side of a rate effect, not what moved the whole)
+  if (parentSig && Math.sign(d.mixTotal) === Math.sign(change) && Math.abs(d.mixTotal) > th.mix_share * Math.abs(change)) {
     const dir = Math.sign(change);
     // Simpson's paradox needs the children to have moved materially the other way, not just
     // noise with the opposite sign on top of a pure mix change.

@@ -27,8 +27,26 @@ test("the fixture has the incident's shape: rate and mix totals far larger than 
   assert.ok((top.share ?? 0) > 1, "it carries more than all of the change");
 });
 
-test("a node carrying the change is the culprit even when thin nodes inflate the rate and mix totals", { todo: "the mix gate fires on a mix total that opposes the change and picks its culprit by mix effect (names a thin node); fixed in sprint 3 step 4" }, () => {
-  const d = decomposeRatio(incident());
+test("a node carrying the change is the culprit even when thin nodes would inflate the rate and mix totals", () => {
+  const d = decomposeRatio(incident(), { thinBelow: 30 });
   const decision = decideLevel(d, { minVolume: 30, direction: "higher_is_better", th: DEFAULT_THRESHOLDS });
+  assert.equal(decision.decision, "drill");
   assert.equal(decision.culprit, "big_mover");
+});
+
+test("thin baselines no longer inflate the split: the totals are of the order of the change, and contributions still add up", () => {
+  const d = decomposeRatio(incident(), { thinBelow: 30 })!;
+  assert.ok(Math.abs(d.rateTotal) < 3 * Math.abs(d.parent.change) && Math.abs(d.mixTotal) < 3 * Math.abs(d.parent.change), `rate ${d.rateTotal}, mix ${d.mixTotal}, change ${d.parent.change}`);
+  assert.ok(Math.abs(d.children.reduce((a, c) => a + c.contribution, 0) - d.parent.change) < 1e-12);
+  const thin = d.children.find((c) => c.node === "thin_1")!;
+  assert.equal(thin.mixEffect, 0, "a thin node takes the whole's baseline rate, so it has no mix effect");
+});
+
+test("a change in the mix that points against the change is not called mix", () => {
+  // both children improved a lot and volume moved toward the worse one: the whole rose, the mix total is negative
+  const rows = [row("a", 380, 400, 640, 800), row("b", 540, 600, 100, 200)];
+  const d = decomposeRatio(rows)!;
+  assert.ok(d.parent.change > 0 && d.mixTotal < 0, `change ${d.parent.change}, mix ${d.mixTotal}`);
+  const decision = decideLevel(d, { minVolume: 30, direction: "higher_is_better", th: DEFAULT_THRESHOLDS });
+  assert.notEqual(decision.effect, "mix");
 });

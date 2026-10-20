@@ -25,6 +25,16 @@
   expect:
     findings_include: [{ dimension: company_name, value: "WELLS FARGO & COMPANY" }]
 
+# 1c. the overall timely response rate went UP in the week of 4 September 2017, from about 98.1% to 99.4%, because 61% of the week's complaints
+#     were about one company, Equifax, which answered all of them on time (its four-week baseline, 97.5%, includes one bad week). The analysis
+#     must name Equifax. (It once named the product, a day and an unrelated company, because hundreds of companies with a handful of
+#     baseline rows made the rate and mix totals large and opposite, and the mix gate chose a thin node.)
+- id: equifax_week_timely_rate
+  question: "The timely response rate went up in the week of 4 September 2017. Did companies get better at responding?"
+  inputs: { metric: timely_response_rate, period: "", more: { start_date: "2017-09-04", end_date: "2017-09-10" } }
+  expect:
+    findings_include: [{ dimension: company_name, value: "EQUIFAX, INC." }]
+
 # 2. quiet weeks: three weeks picked before running the analysis, from different years, where nothing is known to have happened and the
 #    CFPB's published counts and the table agree. The headline must be within normal variation. (The analysis may still report
 #    changes inside a week that cancel out: that is its job and is not asserted either way; see evals/known-gaps.md.)

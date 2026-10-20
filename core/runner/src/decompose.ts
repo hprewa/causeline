@@ -11,7 +11,7 @@ export interface ChildContribution {
   rateEffect: number;
   /** (w1 - w0) * (r0 - R0): volume moved toward or away from a worse/better child. */
   mixEffect: number;
-  /** rateEffect + mixEffect; contributions sum exactly to the parent's change. */
+  /** The node's part of the change; contributions sum exactly to the parent's change. It equals rateEffect + mixEffect except for a node with a thin baseline, whose split uses the whole's baseline rate. */
   contribution: number;
   /** contribution / parent change, or null when the parent did not change. */
   share: number | null;
@@ -33,9 +33,11 @@ export interface Decomposition {
  * With shares w and rates r, and parent baseline rate R0:
  *   change = sum_i [ w1_i (r1_i - r0_i) + (w1_i - w0_i)(r0_i - R0) ]
  * A child missing from the baseline uses R0 as its baseline rate, so a new
- * child shows up as pure rate effect. Returns null if either window is empty.
+ * child shows up as pure rate effect. So does a child whose baseline holds fewer than `thinBelow` rows: its baseline rate
+ * is a handful of outcomes (0% or 100% by chance), and taking it at face value makes its rate effect and its mix effect each
+ * large and opposite, which swamps the split when hundreds of such children are added up. Returns null if either window is empty.
  */
-export function decomposeRatio(rows: ChildRow[]): Decomposition | null {
+export function decomposeRatio(rows: ChildRow[], opts: { thinBelow?: number } = {}): Decomposition | null {
   const cur = sum(rows.map((r) => r.cur));
   const base = sum(rows.map((r) => r.base));
   if (cur.den <= 0 || base.den <= 0) return null;
@@ -50,11 +52,13 @@ export function decomposeRatio(rows: ChildRow[]): Decomposition | null {
     const w0 = row.base.den / base.den;
     const r1 = rate(row.cur);
     const r0 = rate(row.base) ?? R0;
-    const rateEffect = r1 === null ? 0 : w1 * (r1 - r0);
-    const mixEffect = (w1 - w0) * (r0 - R0);
+    // the split into rate and mix uses a stable baseline rate; the contribution itself always uses the real one, so contributions add up exactly
+    const r0Split = (row.base.den < (opts.thinBelow ?? 0) ? null : rate(row.base)) ?? R0;
+    const rateEffect = r1 === null ? 0 : w1 * (r1 - r0Split);
+    const mixEffect = (w1 - w0) * (r0Split - R0);
     rateTotal += rateEffect;
     mixTotal += mixEffect;
-    const contribution = rateEffect + mixEffect;
+    const contribution = (r1 === null ? 0 : w1 * (r1 - r0)) + (w1 - w0) * (r0 - R0);
     return {
       node: row.node,
       cur: row.cur,

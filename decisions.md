@@ -208,3 +208,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **`contributor_share` is a pack-tunable threshold (default 0.25).** Why: like the other decision thresholds, how concentrated is "worth reporting" depends on the data.
 - **The Wells Fargo case moved from the known gaps into the cases.** Why: it passes on the real data for the reason the sprint set out to fix; the planted gap case lost its marker the same way.
 
+### Step 4: stabilise the rate/mix split (commit see `PROGRESS.md`)
+- **A node with a baseline under `min_volume` rows takes the whole's baseline rate in the rate/mix split.** Why: its own baseline rate is a few outcomes (0% or 100% by chance); taking it at face value inflates both effects with opposite signs.
+- **Contributions keep the node's real baseline rate.** Why: they must add up exactly to the change; only the explanation (rate versus mix) is stabilised.
+- **The mix gate needs the mix total to point the same way as the change.** Why: an opposed mix is the other side of a rate effect, not what moved the whole.
+- **The culprit is still the largest mix effect.** Why: once the thin nodes are stabilised the right node has it; choosing by contribution was not needed and would change other cases.
+- **The Equifax timely-rate case moved from the known gaps into the cases.**
+

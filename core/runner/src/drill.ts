@@ -41,7 +41,7 @@ function noteUnjudged(ctx: RunContext, level: string, items: BucketItem[]): void
 /** Split a child breakdown the way this metric's kind requires. */
 function decomposeChildren(ctx: RunContext, rows: Row[]): Decomposition | null {
   const children = toChildRows(rows);
-  return ctx.kind === "sum" ? decomposeSum(children, ctx.sumScale) : decomposeRatio(children);
+  return ctx.kind === "sum" ? decomposeSum(children, ctx.sumScale) : decomposeRatio(children, { thinBelow: ctx.minVolume });
 }
 
 function decide(ctx: RunContext, d: Decomposition | null): LevelDecision {
