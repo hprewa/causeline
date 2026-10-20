@@ -132,3 +132,46 @@ verify_expert (needs a verified KPI and the incident): verified=true
 - Mobile layout was designed for (16px gutter, stacking fields) but not looked at on a phone.
 - The Claude Code plugin bundle and the `causeline-build` skill are not updated yet (step 5): the plugin still carries the previous server and skill.
 
+## Step 4: the Builder on BigQuery (data layer, connect, profile, test, save)
+
+**Question:** can a pack be built by the Builder's tools from a BigQuery table, with every read priced first and nothing written, and reach `verified` through the ladder?
+
+**What was built**
+- `core/builder/src/data.ts`: `BuilderData` (query, check, tables, quote/ref, usage, close) with the local database and BigQuery behind it. `connect-bigquery` (which now depends on the Builder, not the other way round)
+  provides `BigQueryData` and registers itself; the Builder stays free of any cloud library. Profiling, `test_fact`, `save_pack` and the sign-off's repeated-rows check all go through it.
+- **`connect_bigquery {table | dataset, project?, location?}`**: checks the sign-in and project with a free dry run, reads table descriptions only (rows, bytes, columns), writes `toolbox/source.yaml` (with
+  `maxQueryResultRows`, no `writeMode: blocked`) and records the connection in `build.json`. The project is remembered for the folder; the environment variable still wins. Refuses a folder that already holds the
+  user's own files, and says in words what to do when the account cannot reach a table.
+- **Every statement on BigQuery is dry-run first (free).** It must be a SELECT by BigQuery's own statement type (the textual guard, now dialect-aware and blind to backticked names, is the first check), and it is refused
+  before it is sent when it would take what one step has read past the budget (default 5 GB, `CAUSELINE_BQ_BUDGET_GB`). Results report what was read.
+- **Profile (`describe_data`) on BigQuery** reads as little as it can: metadata is free; one small `TABLESAMPLE` gives example values and finds free-text columns (which are then never read); one aggregate pass over the rest
+  gives empty counts, approximate distinct counts and ranges; one pass finds which columns sit under which. A pass that would pass the budget is run on a sample instead and says so. It points out a data set that stopped long
+  ago (`as_of: data_end`), a DATE time column (the generator needs a TIMESTAMP), columns it could not profile, and columns that are *almost* a level.
+- **`save_pack` on BigQuery**: the dialect and source are written from the connection, never by the agent; a DATE time column is an error with the exact fix (`TIMESTAMP(col)`); all KPIs of a fact are tried in one pass;
+  and `budget_gb` is set in `data.yaml` from the dry-run size of one pass over the fact (25 passes, at least 5 GB) with a plain warning of what a deep dive is expected to read. `data.yaml` takes `budget_gb`, and
+  `withCostControl` now uses: the environment, else the pack's figure, else the default.
+
+**Evidence**
+- Unit tests with fake databases (6 new in `builder`, 7 in `connect-bigquery`): the dialect guard (writes, `MERGE`, `EXPORT`, `CALL`, hidden `UPDATE` after `WITH`; a table called `update_log` and a word in a string are not verbs); BigQuery
+  statement types other than SELECT refused before anything is sent; cumulative budget refused before the query that would pass it; value normalisation and quoting that cannot be closed early; connect writes a source that
+  `sourceProblem` accepts and remembers the project; mixed folders, missing project, a missing table, views and large datasets answered in words and nothing written on failure; profile skips free text and list columns, finds
+  roles, nulls, hierarchy and the as_of note, falls back to a sample with scaled counts; a DATE time column refused; the budget set from a dry-run size even when a cache answered the query; budget precedence.
+- All suites, purity, integration 6/6, runner evals 18/18, intents 16/16 unchanged-green.
+- **Live, through the real stdio MCP server and Toolbox** (`scripts/bigquery-build-demo.mjs`, billed to the project from `CAUSELINE_BQ_PROJECT`):
+  - `--example` (the contact-centre data loaded to a small dataset of the user's own): connect (read 0), describe_data (0.02 GB, 7 queries: tables, hierarchy centre > site > team > agent, the join, the as_of note), save_pack (0.01 GB, 57 tools),
+    propose_checks, two numbers (from the raw files) confirmed through `confirm_number` -> **verified**, all 14 automatic checks pass on BigQuery (including repeated rows, counted with `COUNT(DISTINCT call_id)`), incident recorded,
+    `verify_expert` -> **verified**. Builder steps read 0.04 GB in all (about $0.0002).
+  - `--public` (CFPB complaints, 3,458,906 rows, 2.3 GB): connect read nothing; **describe_data read 1.71 GB in 3 queries (about $0.01)** on its first run (repeat runs are answered from BigQuery's cache and read 0.13 GB); it left out
+    `consumer_complaint_narrative` as free text (profiling it would have added about 1.3 GB), found `date_received` 2011-12-01 to 2023-03-23 and said to set `as_of: data_end`, flagged DATE, and found **no hierarchy**: it reported that
+    `subproduct` is close to a level under `product` but **19 of its 76 values appear under more than one product** (names like "Other"), and said how to fix it. `test_fact` with the DATE left as it is warned (and `save_pack` would refuse);
+    with `TIMESTAMP(date_received)` it counted 3,458,906 rows at 0.74 GB a pass; `save_pack` saved 38 tools and set **`budget_gb: 19`** (25 passes of 0.74 GB) with the warning that a deep dive reads about 14.8 GB (about $0.08);
+    `propose_checks` ran the generated tools through Toolbox metered: the last complete week 13-19 March 2023, the biggest product, the biggest state, and one day.
+
+**Not shown**
+- **A language model driving the Builder on BigQuery** (steps 5 and 6). Everything here was driven by a script that plays the model.
+- **A deep dive on the complaints pack** under the 19 GB budget (step 6), and the Builder's automatic checks on the complaints table (step 6): their cost on 3.4 M rows has not been measured; the example's were tiny.
+- **The hierarchy pass at scale beyond this table**, and join detection beyond one pair of small tables. The hierarchy pass looks only at the 8 text columns with the fewest values and says when a table was only sampled.
+- Approximate distinct counts are used (about 1% error), so "every value different" is read with 3% of room; a key could be missed or a near-key accepted. The checks that matter are exact (`single_parent`, `no_repeated_rows`).
+- A sign-in that has expired mid-run surfaces as the raw Google error in the demo script's own setup; through the tools it is explained in a sentence (the explainer is from sprint 1), but this was not provoked live.
+- Dataset `causeline_build_demo` (about 10 MB) was created in the project by the demo's setup and is still there; delete it when you like (`bq rm -r -f -d yukti-dev:causeline_build_demo`).
+

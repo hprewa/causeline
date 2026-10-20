@@ -1,8 +1,9 @@
 import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import type { ServerConfig } from "./config.js";
 import { IntentService } from "./intent.js";
+import { registerBigQuery } from "@causeline/connect-bigquery";
 import { SignoffScreen } from "./signoff.js";
-import { addIncidentTool, buildStatusTool, confirmNumberTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import { addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -39,6 +40,14 @@ const scanInput = fromJsonSchema<{ period: string }>({
 
 const obj = (properties: Record<string, unknown>, required: string[] = []): never => ({ type: "object" as const, properties, required }) as never;
 const connectInput = fromJsonSchema<{ files: string[] }>(obj({ files: { type: "array", items: { type: "string" }, description: "Full paths of the user's CSV files." } }, ["files"]));
+const connectBigQueryInput = fromJsonSchema<{ table?: string; dataset?: string; project?: string; location?: string }>(
+  obj({
+    table: { type: "string", description: "One table, as project.dataset.table (or dataset.table when the data is in the billing project). Give this or dataset." },
+    dataset: { type: "string", description: "A whole dataset, as project.dataset or dataset: its tables are connected (up to 20)." },
+    project: { type: "string", description: "The Google Cloud project the queries are billed to (the user's own). Ask for it; it is remembered for this folder. Not the project that holds the data, which may be a public one." },
+    location: { type: "string", description: "Where the data is held (default US)." },
+  }),
+);
 const testFactInput = fromJsonSchema<{ sql: string; time?: string; concepts?: string[] }>(
   obj({ sql: { type: "string", description: "One SELECT over the connected tables: one row per event, every column named." }, time: { type: "string", description: "The column that holds when the event happened." }, concepts: { type: "array", items: { type: "string" }, description: "Columns that must be present (places, products, people)." } }, ["sql"]),
 );
@@ -132,6 +141,8 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
 });
 
 /** The causeline-mcp tools: analysis, onboarding and the Builder. `callers` supplies the data connection (Toolbox, or a fake in tests). */
+registerBigQuery();
+
 export function createServer(cfg: ServerConfig, callers: Callers, screen: SignoffScreen = new SignoffScreen(cfg, callers)): McpServer {
   const server = new McpServer({ name: "causeline-mcp", version: "0.1.0" });
 
@@ -221,6 +232,7 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
 
   builder("build_status", "Where the build stands", "Building a pack from the user's files: what is done, what is not, and the one next step, in plain words. Call it first in any session that is setting up data; it lets a conversation stop and resume.", null, () => buildStatusTool(cfg), true);
   builder("connect_files", "Connect the user's files", "Load the user's CSV files into a local database (one table per file; types come from the data; dates become ISO text). Nothing leaves this machine. Report what it did and any note it returns (renamed columns, dates it could not read) to the user in plain words.", connectInput, (a) => connectFilesTool(cfg, a));
+  builder("connect_bigquery", "Connect a BigQuery table", "Connect this folder to a BigQuery table or dataset instead of files. Checks the user is signed in (a sign-in the user has to do themselves is explained in the result) and that the project accepts queries, and reads only the tables' descriptions: no data is read and nothing is billed. Every later step is metered: each statement is priced with a free dry run first, and what each step read is in its result. Never writes to BigQuery. Use a fresh folder; it cannot be mixed with the user's own files.", connectBigQueryInput, (a) => connectBigQueryTool(cfg, a));
   builder("describe_data", "Look at the data", "Profile every table: columns, types, empty and distinct counts, samples, and suggestions (time columns, flags, measures, places and products, tables that join, columns that nest, one belonging to exactly one of another). Suggestions only: ask the user about anything in 'ask' instead of guessing.", null, () => describeDataTool(cfg), true);
   builder("test_fact", "Try a draft SELECT", "Run a draft fact SELECT (one row per event, every column named, joins allowed) against the user's data and see its columns, a sample and the row count. Read-only: anything but a single SELECT is refused. Use it before save_pack.", testFactInput, (a) => testFactTool(cfg, a), true);
   builder("save_pack", "Save the business description", "Check the draft ontology and data definition (shape, how the parts fit, that every SELECT and formula runs on the user's data) and only then write the pack files and generate the query tools. Returns plain-words errors and nothing is written while there are any. Experts are saved as drafts. Never show the user YAML or SQL; use play_back.", saveInput, (a) => savePackTool(cfg, a));

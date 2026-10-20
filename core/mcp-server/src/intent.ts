@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { checkConnection } from "@causeline/connect-bigquery";
+import { bigQueryProject, checkConnection } from "@causeline/connect-bigquery";
 import { canonicalKpi, intentEnv, IntentSession, planRun, validateIntent, type HistoryEntry, type IntentEnv } from "@causeline/intent";
 import { loadPackForRun } from "@causeline/runner";
 import { conceptsOf, IntentPatch, loadAgents, loadPack, type IntentCheck, type Result } from "@causeline/schema";
@@ -130,7 +130,7 @@ export class IntentService {
   async checkConnection() {
     const pack = loadPack(this.cfg.packDir, { skipMeta: true });
     if (pack.data.dialect !== "bigquery") return { ok: true, summary: "This pack reads a local database; there is nothing to sign in to.", steps: [] };
-    const project = process.env.CAUSELINE_BQ_PROJECT;
+    const project = bigQueryProject(this.cfg.packDir);
     if (!project) return { ok: false, summary: "No Google Cloud project is set. Set CAUSELINE_BQ_PROJECT to its id.", steps: [] };
     const file = join(this.cfg.packDir, "data.yaml");
     const sql = existsSync(file) ? readFileSync(file, "utf-8") : "";

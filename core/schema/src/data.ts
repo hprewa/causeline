@@ -92,6 +92,12 @@ export const DataDefs = z.object({
    * for data that stops at a fixed date (a sample, a historic extract), so "last week" means the last week it holds.
    */
   as_of: z.enum(["today", "data_end"]).default("today"),
+  /**
+   * The most one question may read from a metered database, in GB (BigQuery). A deep dive runs a few dozen queries over the
+   * fact, so the right figure depends on how much the fact reads; the Builder works it out. The environment variable
+   * CAUSELINE_BQ_BUDGET_GB overrides it, and 0 means no limit. Absent: the default.
+   */
+  budget_gb: z.number().min(0).optional(),
   facts: z.record(Identifier, Fact).refine((f) => Object.keys(f).length > 0, { message: "define at least one fact" }),
   metrics: z.record(z.string().min(1), MetricFormula).default({}),
   evidence: z.record(Identifier, EvidenceSource).default({}),

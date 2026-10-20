@@ -4,6 +4,7 @@ import { parseAllDocuments } from "yaml";
 import { loadPack, parseToolRef, type Cost } from "@causeline/schema";
 import { RunStop, type Row, type ToolCaller } from "@causeline/runner";
 import { dryRun, type BigQueryTarget } from "./dryrun.js";
+import { bigQueryProject } from "./connect.js";
 
 /** On-demand list price per tebibyte read. The first terabyte each month is free, so this is an upper estimate. */
 export const USD_PER_TIB = 6.25;
@@ -74,7 +75,8 @@ export function readStatements(toolsYaml: string): Map<string, ToolStatement> {
 
 /**
  * Wrap a tool caller with cost accounting when the pack runs on BigQuery; return it untouched otherwise.
- * The project comes from CAUSELINE_BQ_PROJECT and the per-question limit from CAUSELINE_BQ_BUDGET_GB (0 = no limit).
+ * The project comes from CAUSELINE_BQ_PROJECT (or what the workspace was connected with) and the per-question limit from
+ * CAUSELINE_BQ_BUDGET_GB, else `budget_gb` in data.yaml, else the default (0 = no limit).
  */
 /** The smallest row limit that can be trusted: Toolbox's own default (50) silently truncates results. */
 export const MIN_RESULT_ROWS = 10000;
@@ -95,14 +97,15 @@ export function sourceProblem(sourceYaml: string): string | null {
 export function withCostControl(packDir: string, caller: ToolCaller, env: NodeJS.ProcessEnv = process.env): ToolCaller {
   const pack = loadPack(packDir, { skipMeta: true });
   if (pack.data.dialect !== "bigquery") return caller;
-  const project = env.CAUSELINE_BQ_PROJECT;
+  const project = bigQueryProject(packDir, env);
   if (!project) throw new Error("This pack reads from BigQuery, but no Google Cloud project is set. Set CAUSELINE_BQ_PROJECT to its id.");
   const sourceFile = join(packDir, "toolbox", "source.yaml");
   const problem = existsSync(sourceFile) ? sourceProblem(readFileSync(sourceFile, "utf-8")) : null;
   if (problem) throw new Error(problem);
   const file = join(packDir, "toolbox", "tools.generated.yaml");
   if (!existsSync(file)) throw new Error(`${file} does not exist; generate the tools first`);
-  const budget = Number(env.CAUSELINE_BQ_BUDGET_GB ?? DEFAULT_BUDGET_GB);
+  // the environment decides first; else the pack's own figure (a big table needs more than the default); else the default
+  const budget = Number(env.CAUSELINE_BQ_BUDGET_GB ?? pack.data.budget_gb ?? DEFAULT_BUDGET_GB);
   const target: BigQueryTarget = { project };
   return new MeteredToolCaller(caller, readStatements(readFileSync(file, "utf-8")), async (sql, params) => (await dryRun(target, sql, params)).bytes, budget > 0 ? budget * 1e9 : null);
 }

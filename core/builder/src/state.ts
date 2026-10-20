@@ -54,6 +54,10 @@ export interface BuildState {
   created: string;
   /** The Toolbox source name written into data.yaml. */
   source: string;
+  /** Where the data lives: absent means the local database made from the user's files. */
+  dialect?: "sqlite" | "bigquery";
+  /** For BigQuery: the project queries are billed to, where the data is, and the dataset when one was given. */
+  bigquery?: { project: string; location: string; dataset?: string };
   tables: { name: string; file: string; rows: number; columns: number; notes: string[] }[];
   profiled: boolean;
   /** Per KPI: its checks and where it stands on the ladder (draft, provisional, verified). */

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
 import { addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { connectBigQuery } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
 import { defaultPlaybooksDir, loadPackForRun, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
@@ -183,6 +184,11 @@ export const buildStatusTool = (cfg: ServerConfig) => buildStatus(cfg.packDir);
 export async function connectFilesTool(cfg: ServerConfig, args: { files: string[] }) {
   if (!Array.isArray(args?.files) || args.files.length === 0) throw new Error("connect_files needs the paths of the user's CSV files");
   return connectFiles({ workspace: cfg.packDir, files: args.files });
+}
+
+export async function connectBigQueryTool(cfg: ServerConfig, args: { table?: string; dataset?: string; project?: string; location?: string }) {
+  const result = await connectBigQuery({ workspace: cfg.packDir, ...args });
+  return { ...result, next: result.connected ? "Call describe_data to look at the tables (it reads a little, and says how much), then describe the business as for files." : "Fix that and connect again." };
 }
 
 export const describeDataTool = (cfg: ServerConfig) => describeData(cfg.packDir);

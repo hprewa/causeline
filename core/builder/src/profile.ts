@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import { openDb, q, rowsOf, type SqlDb } from "./db.js";
-import { updateState } from "./state.js";
+import { openData } from "./data.js";
+import { describeRemote } from "./profile-remote.js";
+import { readState, updateState } from "./state.js";
 
 export interface ColumnProfile {
   name: string;
@@ -53,9 +55,52 @@ export interface DataDescription {
   time: TimeCandidate[];
   /** Questions the data cannot answer on its own. */
   ask: string[];
+  /** Things to know that are not questions: columns left out, a sample used, a fixed end date. */
+  notes?: string[];
+  /** On a metered database: what looking at the data read. */
+  cost?: { queries: number; bytes: number; estimated_usd: number };
 }
 
 const scalar = (db: SqlDb, query: string) => Number(Object.values(rowsOf(db, query)[0] ?? { n: 0 })[0] ?? 0);
+
+export type Kind = "integer" | "real" | "text" | "date" | "datetime" | "bool";
+
+/**
+ * What a column looks like it is, from its statistics: `time` (a date), `key` (every value different), `flag` (only 0 and 1),
+ * `measure` (a number) or `concept` (a few repeating values). Suggestions only. `keyTolerance` below 1 lets a key be
+ * recognised from an approximate distinct count.
+ */
+export function columnRoles(kind: Kind, s: { rows: number; nulls: number; distinct: number; lo: unknown; hi: unknown; keyTolerance?: number }): string[] {
+  const numeric = kind === "integer" || kind === "real";
+  const dateLike = kind === "date" || kind === "datetime";
+  const nonNull = s.rows - s.nulls;
+  const roles: string[] = [];
+  if (dateLike) roles.push("time");
+  if (nonNull > 0 && s.distinct >= nonNull * (s.keyTolerance ?? 1) && !dateLike && kind !== "real" && kind !== "bool" && s.rows > 1) roles.push("key");
+  if (kind === "bool" || (kind === "integer" && s.distinct <= 2 && Number(s.lo) >= 0 && Number(s.hi) <= 1)) roles.push("flag");
+  else if (numeric && !roles.includes("key") && s.distinct > 2) roles.push("measure");
+  if (!numeric && !dateLike && kind !== "bool" && !roles.includes("key") && s.distinct >= 2 && s.distinct <= Math.max(50, s.rows * 0.05)) roles.push("concept");
+  if (kind === "integer" && !roles.includes("flag") && !roles.includes("key") && s.distinct >= 2 && s.distinct <= Math.min(30, s.rows * 0.05)) roles.push("concept");
+  return roles;
+}
+
+/** Chains of columns, coarse to fine, from the "each value of this sits under one value of that" edges (child -> its possible parents). */
+export function chainsFromEdges(concept: { name: string; distinct: number }[], edge: Map<string, Set<string>>): string[][] {
+  const names = concept.map((c) => c.name).filter((n) => edge.has(n) || [...edge.values()].some((x) => x.has(n)));
+  const byCoarse = [...names].sort((x, y) => concept.find((c) => c.name === x)!.distinct - concept.find((c) => c.name === y)!.distinct);
+  const chains: string[][] = [];
+  const used = new Set<string>();
+  for (const root of byCoarse) {
+    if (used.has(root)) continue;
+    const chain = [root];
+    for (const next of byCoarse) if (next !== root && !used.has(next) && chain.every((c) => edge.get(next)?.has(c))) chain.push(next);
+    if (chain.length >= 2) {
+      chain.forEach((c) => used.add(c));
+      chains.push(chain);
+    }
+  }
+  return chains;
+}
 
 function profileTable(db: SqlDb, table: string): TableProfile {
   const rows = scalar(db, `SELECT COUNT(*) FROM ${q(table)}`);
@@ -70,14 +115,8 @@ function profileTable(db: SqlDb, table: string): TableProfile {
     const dateLike = !numeric && /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/.test(text) && /^\d{4}-\d{2}-\d{2}/.test(String(stats.hi ?? ""));
     const datetime = dateLike && text.length > 10;
     const distinct = Number(stats.d);
-    const nonNull = rows - Number(stats.nulls);
-    const roles: string[] = [];
-    if (dateLike) roles.push("time");
-    if (nonNull > 0 && distinct === nonNull && !dateLike && declared !== "REAL" && rows > 1) roles.push("key");
-    if (declared === "INTEGER" && distinct <= 2 && Number(stats.lo) >= 0 && Number(stats.hi) <= 1) roles.push("flag");
-    else if (numeric && !roles.includes("key") && distinct > 2) roles.push("measure");
-    if (!numeric && !dateLike && !roles.includes("key") && distinct >= 2 && distinct <= Math.max(50, rows * 0.05)) roles.push("concept");
-    if (declared === "INTEGER" && !roles.includes("flag") && !roles.includes("key") && distinct >= 2 && distinct <= Math.min(30, rows * 0.05)) roles.push("concept");
+    const kind: Kind = dateLike ? (datetime ? "datetime" : "date") : declared === "INTEGER" ? "integer" : declared === "REAL" ? "real" : "text";
+    const roles = columnRoles(kind, { rows, nulls: Number(stats.nulls), distinct, lo: stats.lo, hi: stats.hi });
     return { name, type: dateLike ? (datetime ? "datetime" : "date") : numeric ? declared.toLowerCase() : "text", nulls: Number(stats.nulls), distinct, samples, ...(stats.lo !== null ? { min: stats.lo as string | number, max: stats.hi as string | number } : {}), roles };
   });
   return { table, rows, columns };
@@ -116,25 +155,20 @@ function hierarchyCandidates(db: SqlDb, p: TableProfile): HierarchyCandidate[] {
     child.distinct > parent.distinct && scalar(db, `SELECT COUNT(*) FROM (SELECT ${q(child.name)} FROM ${q(p.table)} GROUP BY ${q(child.name)} HAVING COUNT(DISTINCT ${q(parent.name)}) > 1)`) === 0;
   const edge = new Map<string, Set<string>>();
   for (const child of concept) for (const parent of concept) if (child !== parent && belongs(child, parent)) edge.set(child.name, (edge.get(child.name) ?? new Set()).add(parent.name));
-  // chains: coarse to fine, every column under all the ones before it
-  const names = concept.map((c) => c.name).filter((n) => edge.has(n) || [...edge.values()].some((s) => s.has(n)));
-  const byCoarse = [...names].sort((x, y) => (concept.find((c) => c.name === x)!.distinct - concept.find((c) => c.name === y)!.distinct));
-  const chains: string[][] = [];
-  const used = new Set<string>();
-  for (const root of byCoarse) {
-    if (used.has(root)) continue;
-    const chain = [root];
-    for (const next of byCoarse) if (next !== root && !used.has(next) && chain.every((c) => edge.get(next)?.has(c))) chain.push(next);
-    if (chain.length >= 2) {
-      chain.forEach((c) => used.add(c));
-      chains.push(chain);
-    }
-  }
+  const chains = chainsFromEdges(concept, edge);
   return chains.map((levels) => ({ table: p.table, levels }));
 }
 
 /** Look at the connected data and suggest what it contains. Read-only; everything here is a suggestion for the user to confirm. */
 export async function describeData(workspace: string): Promise<DataDescription> {
+  if (readState(workspace)?.dialect === "bigquery") {
+    const data = await openData(workspace);
+    try {
+      return await describeRemote(workspace, data);
+    } finally {
+      await data.close();
+    }
+  }
   const db = await openDb(join(workspace, "data", "causeline.db"));
   try {
     const tables = rowsOf(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").map((r) => String(r.name));
@@ -161,7 +195,7 @@ export async function describeData(workspace: string): Promise<DataDescription> 
     const many = joins.filter((j) => j.shape === "many_to_many" && /(^|_)(id|key|code)$/.test(j.from.split(".")[1]));
     for (const j of many) ask.push(`${j.from} and ${j.to} repeat on both sides, so joining them would multiply rows: is one of them the wrong column?`);
     for (const j of joins.filter((x) => x.unmatched_rows > 0)) ask.push(`${j.unmatched_rows} rows of ${j.from} have no match in ${j.to}: is that expected?`);
-    const out = { tables: profiles, joins, hierarchies, time, ask };
+    const out: DataDescription = { tables: profiles, joins, hierarchies, time, ask, notes: endNotes(time) };
     updateState(workspace, (s) => {
       s.profiled = true;
     });
@@ -169,4 +203,11 @@ export async function describeData(workspace: string): Promise<DataDescription> 
   } finally {
     db.close();
   }
+}
+
+/** A fixed end date: when the data stopped long ago, "last week" should mean the last week it holds. */
+export function endNotes(time: TimeCandidate[], today = new Date()): string[] {
+  const ends = time.map((t) => ({ t, end: Date.parse(`${String(t.to).slice(0, 10)}T00:00:00Z`) })).filter((x) => !Number.isNaN(x.end));
+  const old = ends.filter((x) => (today.getTime() - x.end) / 86_400_000 > 45);
+  return old.length === 0 ? [] : [`${old.map((x) => `${x.t.table}.${x.t.column} ends on ${String(x.t.to).slice(0, 10)}`).join("; ")}, well before today: this looks like data that stopped, so set \`as_of: data_end\` in the data definition and "last week" will mean the last week the data holds`];
 }

@@ -1,11 +1,11 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stringify } from "yaml";
 import { runDataChecks } from "@causeline/onboard";
 import { completeBuckets } from "@causeline/router";
 import { ScopedToolCaller, ToolIndex, toBuckets, type Bucket, type ToolCaller } from "@causeline/runner";
 import { loadAgents, loadPack, type PackDefinition } from "@causeline/schema";
-import { openDb, rowsOf, q } from "./db.js";
+import { openData } from "./data.js";
 import { levelGap, levelOf, readState, updateState, type AutoResult, type CheckKind, type KpiRecord, type Level, type SignoffCheck } from "./state.js";
 
 const STEP = "signoff";
@@ -317,13 +317,19 @@ const same = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Mat
 
 /** How many distinct values a source table's column holds, from the connected data. */
 async function distinctCount(workspace: string, table: string, column: string): Promise<number | null> {
-  const file = join(workspace, "data", "causeline.db");
-  if (!existsSync(file)) return null;
-  const db = await openDb(file);
+  let data;
   try {
-    return Number(Object.values(rowsOf(db, `SELECT COUNT(DISTINCT ${q(column)}) AS n FROM ${q(table)}`)[0])[0]);
+    data = await openData(workspace);
+  } catch {
+    return null;
+  }
+  try {
+    const res = await data.query(`SELECT COUNT(DISTINCT ${data.quote(column)}) AS n FROM ${data.ref(table)}`);
+    return Number(Object.values(res.rows[0] ?? {})[0]);
+  } catch {
+    return null;
   } finally {
-    db.close();
+    await data.close();
   }
 }
 

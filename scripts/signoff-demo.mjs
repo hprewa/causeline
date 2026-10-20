@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // The sign-off ladder through the real MCP server and its local screen, on the contact-centre example (SQLite, Toolbox).
-//   node scripts/signoff-demo.mjs [--shots <folder>]
+//   node scripts/signoff-demo.mjs [--shots <folder>]     scripted run, optionally with pictures of the page
+//   node scripts/signoff-demo.mjs --hands-on             opens the page in your browser, with numbers to type, and waits (Ctrl+C to stop)
 // It plays the part of the model (chat tools) and of the person at the screen (the page's own HTTP calls), with the
 // "numbers from the user's reports" worked out here from the raw CSV files and not by the system under test.
 // With --shots it also takes pictures of the page (needs Microsoft Edge or Chrome on this computer).
@@ -14,6 +15,7 @@ import { parse } from "yaml";
 import { connectFiles, savePack } from "../core/builder/dist/src/index.js";
 
 const repo = resolve(import.meta.dirname, "..");
+const handsOn = process.argv.includes("--hands-on");
 const shots = process.argv.includes("--shots") ? resolve(process.argv[process.argv.indexOf("--shots") + 1]) : null;
 const dir = mkdtempSync(join(tmpdir(), "signoff-demo-"));
 const py = process.env.CAUSELINE_PYTHON || (process.platform === "win32" ? "python" : "python3");
@@ -45,7 +47,7 @@ await client.connect(
   new StdioClientTransport({
     command: process.execPath,
     args: [resolve(repo, "core", "mcp-server", "dist", "src", "main.js")],
-    env: { ...process.env, CAUSELINE_PACK: ws, CAUSELINE_PLAYBOOKS: resolve(repo, "playbooks"), CAUSELINE_NO_BROWSER: "1" },
+    env: { ...process.env, CAUSELINE_PACK: ws, CAUSELINE_PLAYBOOKS: resolve(repo, "playbooks"), ...(handsOn ? {} : { CAUSELINE_NO_BROWSER: "1" }) },
   }),
 );
 const tool = async (name, args = {}) => {
@@ -72,6 +74,25 @@ function shoot(name, theme) {
   console.log(`  [picture: ${out}]`);
 }
 
+if (handsOn) {
+  try {
+    await tool("propose_checks", { kpi: "service_level" });
+    const stored = JSON.parse(readFileSync(join(ws, "build.json"), "utf-8")).kpis.service_level.checks;
+    const opened = await tool("open_signoff", { kpi: "service_level" });
+    console.log(`
+The sign-off page: ${opened.url}
+(${opened.opened ? "your browser was asked to open it" : "open that address in your browser"}; it stays up while this script runs, Ctrl+C to stop)
+`);
+    console.log("Numbers to type (worked out from the raw data files, standing in for your own reports). Try a wrong one first to see the mismatch:");
+    for (const c of stored) {
+      const keep = (r) => within(c.window)(r) && (!c.scope.centre || centreOf[r[2]] === c.scope.centre) && (!c.scope.queue || r[3] === c.scope.queue);
+      console.log(`  ${c.label}: ${(rate(keep) * 100).toFixed(2)}%`);
+    }
+    await new Promise(() => {});
+  } finally {
+    await client.close();
+  }
+}
 try {
   say("status", JSON.stringify((await tool("signoff_status", { kpi: "service_level" })).kpis[0].level));
   const p = await tool("propose_checks", { kpi: "service_level" });

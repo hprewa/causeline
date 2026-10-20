@@ -140,3 +140,13 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **`SqliteToolCaller` lives in `core/builder`, not in test code.** Why: tests of the checks and the screen then run the product's own generated statements, and a future offline check can use it.
 - **The plugin bundle and skill are updated with the skill rewrite (step 5), not here.** Why: one rewrite of the instructions to the model, after the Builder is on both databases, rather than two.
 
+### Step 4: the Builder on BigQuery (commit see `PROGRESS.md`)
+- **One `BuilderData` surface; the BigQuery implementation lives in `connect-bigquery`, which depends on the Builder, not the reverse.** Why: the Builder and its tests stay free of any cloud library, and a third database is one more implementation.
+- **The dialect, the Toolbox source and `budget_gb` are written by `save_pack` from the connection, never by the agent.** Why: an agent guessing a source name or a limit would be a silent way to break the pack or the budget.
+- **A statement is a read only if BigQuery's own dry run says SELECT; the textual guard is only the first check.** Why: text rules can be fooled, the database's own classification cannot.
+- **`budget_gb` = 25 passes of what one fact scan reads from the dry run, at least 5 GB; the dry-run size, not what was billed.** Why: spike 1 measured a deep dive at 15 to 19 queries over the fact; BigQuery's cache can make a repeated statement read nothing, which once left the budget unset. On the complaints table this gives 19 GB (a deep dive expected at about 15 GB, about $0.08).
+- **Profiling never reads free-text columns, and falls back to a sample (said so) when a pass would pass the budget.** Why: the narrative column alone cost more than all the others; a sample is an honest estimate, a refusal is a dead end.
+- **A column that is almost a level is reported with the fix, not silently dropped or forced.** Why: on the real complaints table 19 of 76 sub-product names sit under several products; the single-parent rule is right, so the data has to say which sub-product it means.
+- **`connect_bigquery` refuses a folder that holds the user's own files, and remembers the billing project in the folder.** Why: the two kinds of data must never mix, and the person should not have to set an environment variable for every session.
+- **The fact test counts rows and returns the sample in one pass.** Why: a metered database bills each pass.
+
