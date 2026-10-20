@@ -150,7 +150,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **`connect_bigquery` refuses a folder that holds the user's own files, and remembers the billing project in the folder.** Why: the two kinds of data must never mix, and the person should not have to set an environment variable for every session.
 - **The fact test counts rows and returns the sample in one pass.** Why: a metered database bills each pass.
 
-### Step 5: skill rewrite and end-to-end (commit see `PROGRESS.md`)
+### Step 5: skill rewrite and end-to-end (commit 74f2950)
 - **The skill says the model never writes `source`, `dialect` or the cost limit, and `save_pack` fills `source` in for files as well.** Why: those are facts of the connection; every one the model must type is one it can get wrong.
 - **The skill teaches "ask for their number first, show ours after" as a rule, and the tool enforces it by not returning ours with the questions.** Why: the instruction and the mechanism agree, so a model that forgets the instruction still cannot anchor the user.
 - **Anything short of verified is called "unconfirmed numbers" in answers, and the investigate skill says so once.** Why: provisional is a real, useful state, and hiding it would be as wrong as overclaiming it.
