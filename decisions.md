@@ -113,7 +113,7 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
 - **The showcase is the complaints pack only; the alerts example pack moves to sprint 3.** Why: the depth upgrades that need planted alerts evals are sprint 3's.
 - **Complaints evidence is the table's own fields; nothing is written to any cloud project.** Why: the demo stays read-only; enforcement-action tables can be added later.
 
-### Step 1: spike and measure (commit see `PROGRESS.md`)
+### Step 1: spike and measure (commit 2d732db)
 - **A pack declares its own query budget in `data.yaml` (`budget_gb`); the environment variable still overrides.** Why: a deep dive on the 2.3 GB public table reads 10 to 12 GB
   (about $0.06), which the default 5 GB would stop; the table's size is a fact about the pack, not about the machine.
 - **The Builder will skip free-text columns when profiling BigQuery and filter columns before scanning.** Why: one narrative column costs more to profile than ten others together.
