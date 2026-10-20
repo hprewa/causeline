@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import { runDataChecks } from "@causeline/onboard";
 import { completeBuckets } from "@causeline/router";
-import { ScopedToolCaller, ToolIndex, toBuckets, type Bucket, type ToolCaller } from "@causeline/runner";
+import { ScopedToolCaller, ToolIndex, medianOf, settledEnd, toBuckets, type Bucket, type ToolCaller } from "@causeline/runner";
+
+export { settledEnd };
 import { loadAgents, loadPack, type PackDefinition } from "@causeline/schema";
 import { openData } from "./data.js";
 import { levelGap, levelOf, readState, updateState, type AutoResult, type CheckKind, type KpiRecord, type Level, type SignoffCheck } from "./state.js";
@@ -94,26 +96,6 @@ async function windowValue(ctx: Ctx, scope: Record<string, string>, w: { start: 
 const within = (got: number, expected: number, tolerance: number) => Number.isFinite(got) && (expected === 0 ? Math.abs(got) <= 1e-9 : Math.abs(got - expected) <= tolerance * Math.abs(expected));
 
 // --- proposing checks ----------------------------------------------------------------------------
-
-const medianOf = (xs: number[]) => {
-  const sorted = [...xs].sort((a, b) => a - b);
-  return sorted.length === 0 ? 0 : sorted[Math.floor(sorted.length / 2)];
-};
-
-/**
- * The index of the newest period that looks settled: not far below what the periods before it held. A period under 80% of the median of the
- * (up to eight) before it is taken as still filling in, and so is any newer one; at most eight are set aside, and at least four periods must
- * come before one for the comparison to mean anything.
- */
-export function settledEnd(volumes: number[]): number {
-  let end = volumes.length - 1;
-  for (let dropped = 0; dropped < 8 && end >= 4; dropped++) {
-    const before = volumes.slice(Math.max(0, end - 8), end);
-    if (before.length >= 4 && volumes[end] < 0.8 * medianOf(before)) end--;
-    else break;
-  }
-  return end;
-}
 
 export interface Proposal {
   id: string;

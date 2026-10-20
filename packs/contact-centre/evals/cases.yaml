@@ -194,11 +194,11 @@
     no_findings: true
 
 # 22. the newest week holds 85% of its calls (the data was still arriving): well above the data-quality guard's half, but below what is usual.
-#     It stops with data_quality because a node falls far below its usual rows; sprint 3 step 6 makes the data check compare the newest
-#     periods with what the data usually holds, so the stop no longer depends on which node happens to fall short.
+#     The data check compares the newest periods with what the data usually holds and stops with data_still_arriving (sprint 3 step 6);
+#     before, it stopped only when one node happened to fall under half its usual rows by chance.
 - id: newest_week_still_arriving
   setup: "--fault ramp_down:wk10:0.85"
   question: "Why did call volume fall in week 10?"
   inputs: { metric: calls_offered, period: 2026-W10 }
   expect:
-    stopped_reason: data_quality
+    stopped_reason: data_still_arriving

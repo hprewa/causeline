@@ -220,3 +220,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The guard needs a shortfall of 4 standard deviations of the data's own variation, as well as under half the usual rows.** Why: one node in sixty falls under half by chance in data that varies; the flat rule stopped ordinary weeks.
 - **The noisy-volume planted case lost its gap marker; the complaints quiet-week cases are not tightened.** Why: the first passes; the others could not be re-run on BigQuery (credentials expired).
 
+### Step 6: the incomplete tail (commit see `PROGRESS.md`)
+- **A period inside the newest under-80% stretch stops the run with `data_still_arriving`, a reason of its own.** Why: "data_quality" means a part of the data is thin; this means the whole newest stretch is, and the right next step differs (confirm with the data's owner, use the latest settled period).
+- **The Builder's rule is shared, not copied.** Why: the sign-off and the analysis must agree on what counts as settled.
+- **A real drop in the newest period is stopped too.** Why: it cannot be told from data arriving; stopping and asking is the safer error, and the message says so.
+

@@ -40,6 +40,7 @@ If a run cannot connect to the data (a cloud warehouse sign-in, a missing projec
 
 - **`status`**: `complete`, or `stopped` with a `stopped_reason` and `stopped_detail`.
   - `data_quality`: some part of the data is much thinner than usual, so any conclusion would be unreliable. Report which nodes and by how much (from `stopped_detail`), and say the analysis was stopped for that reason. Do not offer a cause for the metric movement.
+  - `data_still_arriving`: the period sits in the newest stretch of the data, which holds far less than usual, so it looks as if the data was still being loaded when it was copied. Say that, give the figures from `stopped_detail`, and ask the user to confirm with the owner of the data before reading it as a real drop; offer the latest settled period instead. Do not offer a cause.
   - `period_not_found` or `no_baseline`: tell the user which periods are available (the detail says) and offer to rerun.
   - `no_comparable_baseline`: the period has a calendar flag (a holiday, a peak) that nothing in the baseline shares, so there is nothing like-for-like to compare it with. Say so plainly and that a pooled comparison would mislead; offer a different period or a longer baseline. Do not offer a cause.
 - **`headline`**: the metric's value in the period, its baseline, and the change. Read it by `format`:

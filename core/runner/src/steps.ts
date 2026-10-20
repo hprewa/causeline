@@ -6,6 +6,7 @@ import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./d
 import { seasonalExpectation } from "./expectation.js";
 import { resolveWindow } from "./window.js";
 import { rate, zScore, zSum } from "./stats.js";
+import { medianOf, settledEnd } from "./tail.js";
 import { compareStep, trendStep } from "./tasks.js";
 
 export type StepFn = (ctx: RunContext, step: PlaybookStep) => Promise<void>;
@@ -29,6 +30,16 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
   const series = info.periodSeries ?? [];
   ctx.period = info;
   ctx.dispersion = estimateDispersion(info.periodSeries ?? [], (info.periodSeries ?? []).findIndex((b) => b.bucket === info.label), ctx.kind);
+  // a period in the newest stretch of the data that holds far less than usual is not an event but data still arriving when it was copied
+  const at = series.findIndex((b) => b.bucket === info.label);
+  const volumes = series.map((b) => (ctx.kind === "sum" ? b.num : b.den));
+  if (at >= 0) {
+    const end = settledEnd(volumes);
+    if (at > end) {
+      const usual = Math.round(medianOf(volumes.slice(Math.max(0, end - 7), end + 1)));
+      return stop(ctx, "data_still_arriving", `${info.label} holds ${Math.round(volumes[at])} against about ${usual} in a usual period, as do the ${series.length - 1 - end} newest period(s) of the data: it looks as if the data was still arriving when it was copied. Confirm with the owner of the data before reading this as a change.`);
+    }
+  }
   ctx.window = { ...info.cur };
   ctx.sumScale = 1 / info.baselineLabels.length;
   ctx.seasonNotes.push(...info.notes);

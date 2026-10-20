@@ -64,7 +64,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 3 | Report contributors when none dominates | done | 617bb18 | Step 3 |
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | done | see `git log` (message starts "Sprint 3 step 4") | Step 4 |
 | 5 | Overdispersion-aware tests and the data-quality guard | done | see `git log` (message starts "Sprint 3 step 5") | Step 5 |
-| 6 | Incomplete tail of the data | not started | | |
+| 6 | Incomplete tail of the data | done | see `git log` (message starts "Sprint 3 step 6") | Step 6 |
 | 7 | Proof and docs | not started | | |
 
 ## Coverage debt

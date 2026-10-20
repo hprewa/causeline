@@ -159,3 +159,21 @@ added in step 5, not step 1.
 - Time-bucket z-scores and `standsOut` are not dispersion-adjusted; Bonferroni stays (Benjamini-Hochberg deferred).
 - The shortfall threshold (4) and twelve periods were chosen from the unit tests and the planted case.
 
+## Step 6: the incomplete tail of the data
+
+**Question:** when the newest periods of a copy hold far less than usual because the data was still arriving, does the analysis say so instead of reporting a drop?
+
+**What was built**
+- `settledEnd` (until now only in the Builder's checks) moved to `core/runner/src/tail.ts` and is shared; the Builder re-exports it, behaviour unchanged.
+- The data check stops with `stopped_reason: data_still_arriving` when the analysed period is in the newest stretch that holds under 80% of the median of the periods before it (its volume: rows for a rate, the total for a sum). The detail gives the period's volume against a usual one and says to confirm with the owner of the data. The investigate skill says how to report it.
+
+**Evidence**
+- 4 unit tests (`core/runner/test/tail.test.ts`): a newest week at 60% of its rows stops with the reason; the settled week before it is analysed normally; the same shortfall in a week that later weeks recovered from is not a tail; clean data is not.
+- **Planted case `newest_week_still_arriving`** now expects `data_still_arriving` (before, it stopped with `data_quality` only because one agent of sixty happened to fall under half its usual rows) and passes for that reason.
+- Contact-centre eval 22/22, routing 27/27, intents 16/16, integration 7/7, all unit tests, purity OK.
+
+**Not shown**
+- **A genuine, sudden drop in the newest period is indistinguishable from data arriving**, so a volume KPI that really falls by 20% or more in the newest period is stopped with this reason rather than analysed; the message asks the user to confirm with the data's owner. This is the safer error but it is an error against a real fall.
+- Only the period itself is checked. A baseline that sits inside a tail cannot occur (the baseline precedes the period).
+- `week_after_the_data_ends` and the other complaints cases were not re-run on BigQuery (credentials expired).
+
