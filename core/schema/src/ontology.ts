@@ -171,6 +171,8 @@ export const Thresholds = z
     mix_share: z.number().positive(),
     /** Current rows / baseline average rows below which a node counts as missing data. */
     coverage_ratio: z.number().positive().max(1),
+    /** Share of the change a node must carry to be reported as a contributor when no single node dominated. */
+    contributor_share: z.number().positive().max(1),
     /** z-score above which a parent's change counts as real (else it "looks flat"). */
     parent_z: z.number().positive(),
     /** z-score a child's rate change needs to be a candidate culprit. */

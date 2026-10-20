@@ -14,6 +14,8 @@ export interface FindingDraft {
   impact: number;
   effect?: "rate" | "mix";
   evidence: string[];
+  /** Reported as a contributor, not followed as a culprit. */
+  role?: "contributor";
   scope?: Record<string, string>;
   /** Which column/value to filter on, and its baseline, for the persistence check (absent for time-slot findings). */
   persist?: { col: string; value: string; base: Components };

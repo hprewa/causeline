@@ -200,3 +200,11 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A date range builds `baseline + 8` earlier windows (was twice the baseline).** Why: eight periods of history need them, they cost nothing (the day series is already read), and baseline selection is unchanged because it counts back from the period.
 - **The Builder's budget is 50 passes of one pass's bytes.** Why: a deep dive with a surge is 15 to 35 queries, plus up to five for this step; 40 passes would have stopped the Equifax week at 28 GB.
 
+### Step 3: contributors as findings (commit see `PROGRESS.md`)
+- **A contributor is reported only in a concept that has no finding yet.** Why: the drill deliberately drafts only the deepest informative node of a hierarchy; adding its ancestors back as contributors would put a centre above its team in the ranking and bury the real finding.
+- **It must carry a quarter of the change and 1.5 times its own size's share of it, and be `new` or `unusual`.** Why: a share alone reports the biggest node in any change; a rise spread evenly over every node is nobody's story, and a node that always contributes this much is context. Both are tested.
+- **`role: contributor` is part of the finding.** Why: the reader (and the agent) must be able to tell "the drill followed this" from "this carries an unusual part of the change, though no single node explains it", and say so.
+- **No contributors when the headline change is not significant.** Why: the reporting is for real changes; a quiet week must not gain findings from this step.
+- **`contributor_share` is a pack-tunable threshold (default 0.25).** Why: like the other decision thresholds, how concentrated is "worth reporting" depends on the data.
+- **The Wells Fargo case moved from the known gaps into the cases.** Why: it passes on the real data for the reason the sprint set out to fix; the planted gap case lost its marker the same way.
+

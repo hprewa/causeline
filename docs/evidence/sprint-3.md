@@ -91,3 +91,31 @@ added in step 5, not step 1.
 - The thresholds (a tenth of the change, three robust standard deviations, eight periods) were set from the unit tests and the planted data and looked at on the three real weeks above; none was tuned on them.
 - Nothing uses the verdicts yet: findings are unchanged until step 3. The contributions are not yet in the agent's skill or answers.
 
+## Step 3: report contributors when none dominates
+
+**Question:** when a change is carried by one node without any node reaching the drill share (0.6), can the analysis still name it, without adding noise where nothing is concentrated?
+
+**What was built** (`core/runner/src/contributions.ts`, a `contributors` step after `contributions` in `metric_change`)
+- A contribution becomes a **finding with `role: "contributor"`** when all of these hold:
+  1. the headline change is real (significant);
+  2. the concept it belongs to has **no finding yet** (a finding on a node covers every level of its hierarchy, and a scoped finding covers the concept of its scope), so a drill that already found a deeper node is not repeated by its ancestors;
+  3. it carries at least `contributor_share` of the change (default 0.25, a new pack-tunable threshold) **and at least 1.5 times its own size's share** of it (new field `baseline_share` on a contribution), so a rise spread evenly over every node is nobody's;
+  4. its verdict is `new` or `unusual` against its own eight earlier periods;
+  5. at most three a level.
+- Its impact is its contribution in the KPI's units, so it ranks with the other findings; its effect is `mix` when the mix part of its contribution is larger than the rate part. `Finding` gains an optional `role`.
+- Rule 2 exists because the first design (any qualifying contributor) would have added a centre or a site above every drilled team and, being bigger, ranked above the team the drill found; the
+  existing cases that ask for the top finding would have failed.
+
+**Evidence**
+- 5 new unit tests: the selection rules one by one (a big node, the node that is merely big, the usual node, the small share, a new node; no contributors when the change is not real or the concept already has a finding; the per-level cap), and through the runner: a flat dimension where one value carries 56% of a rise (so not drilled) reports it as a contributor and the other findings are untouched; a rise spread evenly over every node reports none.
+- **Planted case** `contributor_below_the_drill_share` (queue `billing` carries 57% of a rise in volume; the rest is thin; sixteen weeks so the history exists): was a known gap, **now passes** and its `gap` marker is removed. Without the step nothing was reported.
+- **Every other contact-centre case is unchanged** (21/21, 1 known gap still open); routing 27/27, intents 16/16, integration 7/7, every package's unit tests, purity OK.
+- **The real Wells Fargo case now passes on BigQuery** and moves from `known-gaps.md` into `packs/complaints/evals/cases.yaml`: findings for the week of 12 September 2016 are the web channel, **`WELLS FARGO & COMPANY` (contributor, 42% of the rise, unusual against eight earlier weeks)** and the product "Bank account or service" (contributor, unusual); 25 queries, 15.3 GB, about $0.09. Complaints eval: **6/6**.
+
+**Not shown**
+- The thresholds (a quarter of the change, 1.5 times its size, at most three) were chosen from the unit tests and the planted case, and looked at on the three real weeks of step 2; none was adjusted after seeing the Wells Fargo case pass.
+- The quiet-week complaints cases still report findings from the older mechanisms (changes inside a week that cancel out); the contributors rule adds none there because their headline is not significant, but that noise is step 5's.
+- In the planted case only the billing queue is reported; the centre and site contributions read `usual` because the sixteen weeks include the generator's peak week and holiday, which widen every node's history. A short or very variable history makes contributors rarer, not wrong.
+- A contributor is a node that carries an unusual part of a real change; it is not a cause. The answer still has to say so (the investigate skill does; step 7 adds the table to it).
+- The Equifax mix case still fails (step 4), and the quiet-week noise remains (step 5).
+

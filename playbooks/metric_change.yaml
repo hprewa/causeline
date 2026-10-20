@@ -30,6 +30,8 @@ steps:
     compute: persistence               # culprit bad all window, or one slot?
   - id: contributions
     compute: contributions            # who contributed how much to the change, and is that usual for them?
+  - id: contributors
+    compute: contributors             # a change no single node explains still names who carries it, when they are unusual
   - id: evidence
     evidence: "*"                     # whatever the pack records about the culprit (incident logs, scans), if it has any
 output: result.json

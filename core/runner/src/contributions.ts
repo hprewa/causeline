@@ -1,5 +1,5 @@
 import type { Contribution } from "@causeline/schema";
-import { round6, type LevelLook, type RunContext } from "./context.js";
+import { round6, type FindingDraft, type LevelLook, type RunContext } from "./context.js";
 import { toBuckets } from "./rows.js";
 import { rate, sum } from "./stats.js";
 import type { Bucket, Components } from "./types.js";
@@ -11,6 +11,10 @@ export const MIN_HISTORY = 4;
 export const MAX_NODES = 5;
 export const MIN_SHARE = 0.1;
 const PER_LOOK = 2;
+/** How many times its size a node's share of the change must be for it to stand out (a rise spread evenly over every node is nobody's). */
+export const CONCENTRATION = 1.5;
+/** Contributors reported for one level. */
+export const PER_LEVEL = 3;
 
 export interface Effect {
   /** The node's part of the change in the KPI, in the KPI's units; these add up exactly to the change over a full partition. */
@@ -155,6 +159,7 @@ export async function contributionsStep(ctx: RunContext, stepId: string): Promis
       mix_effect: round6(now.mix),
       volume: nodeCur.den,
       baseline_volume: round6(nodeBase.den / k) ?? 0,
+      baseline_share: parentBase.den > 0 ? (round6(nodeBase.den / parentBase.den) ?? 0) : 0,
       history: history.length > 0 ? { periods: history.length, typical: round6(v.typical), low: round6(v.low), high: round6(v.high) } : null,
       delta_vs_typical: round6(v.delta),
       verdict: v.verdict,
@@ -173,3 +178,51 @@ export async function contributionsStep(ctx: RunContext, stepId: string): Promis
   }
 }
 
+
+/** The concepts the findings so far already account for: a finding's own concept, and every level of the hierarchy it sits in. */
+function explainedConcepts(drafts: FindingDraft[], hierarchies: Record<string, string[]>): Set<string> {
+  const out = new Set<string>();
+  for (const d of drafts) {
+    out.add(d.dimension);
+    for (const levels of Object.values(hierarchies)) if (levels.includes(d.dimension) || Object.keys(d.scope ?? {}).some((c) => levels.includes(c))) levels.forEach((l) => out.add(l));
+    for (const c of Object.keys(d.scope ?? {})) out.add(c);
+  }
+  return out;
+}
+
+/**
+ * Which contributions are worth reporting as findings when no single node dominated. A contributor is reported when the change is real,
+ * the concept it belongs to has no finding yet (a drill that found a deeper node already explained its hierarchy), it carries at least
+ * `minShare` of the change AND at least CONCENTRATION times its own size's share of it (so a rise spread evenly is nobody's), and it is
+ * `new` or `unusual` against its own history. At most PER_LEVEL a level.
+ */
+export function selectContributors(contributions: Contribution[], drafts: FindingDraft[], hierarchies: Record<string, string[]>, changeIsReal: boolean, minShare: number): Contribution[] {
+  if (!changeIsReal) return [];
+  const taken = explainedConcepts(drafts, hierarchies);
+  const perLevel = new Map<string, number>();
+  const out: Contribution[] = [];
+  for (const c of [...contributions].sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))) {
+    if (taken.has(c.level) || (c.verdict !== "new" && c.verdict !== "unusual")) continue;
+    const share = c.share ?? 0;
+    if (share < minShare || (c.baseline_share > 0 && share < CONCENTRATION * c.baseline_share)) continue;
+    if ((perLevel.get(c.level) ?? 0) >= PER_LEVEL) continue;
+    perLevel.set(c.level, (perLevel.get(c.level) ?? 0) + 1);
+    out.push(c);
+  }
+  return out;
+}
+
+/** Report the contributors `selectContributors` picks as findings (role: contributor), so a change that no single node explains still names who carries it. */
+export function contributorsStep(ctx: RunContext, stepId: string): void {
+  const picked = selectContributors(ctx.contributions, ctx.drafts, ctx.ontology.hierarchies, !!ctx.headline?.significant, ctx.th.contributor_share);
+  for (const c of picked) {
+    ctx.drafts.push({
+      dimension: c.level,
+      value: c.node,
+      impact: c.contribution,
+      effect: Math.abs(c.mix_effect ?? 0) > Math.abs(c.rate_effect ?? 0) ? "mix" : "rate",
+      role: "contributor",
+      evidence: [stepId, "contributions"],
+    });
+  }
+}

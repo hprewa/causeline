@@ -15,6 +15,16 @@
       - { dimension: company_name, value: "EQUIFAX, INC." }
       - { dimension: day, value: "2017-09-08..2017-09-09" }
 
+# 1b. known event: on 8 September 2016 the CFPB announced its action over Wells Fargo's sales practices. Complaints about Wells Fargo went from
+#     about 190 a week to 311 (week of 5 September) and 404 (week of 12 September), while all complaints went from 3,618 to 4,172. Wells Fargo
+#     carries 42% of the week's rise (under the drill share, so no drill reaches it) and the rest is spread thinly: it is reported as a
+#     contributor, unusual against its own eight earlier weeks.
+- id: wells_fargo_sales_practices_volume
+  question: "Why did complaint volume rise in the week of 12 September 2016?"
+  inputs: { metric: complaint_volume, period: "", more: { start_date: "2016-09-12", end_date: "2016-09-18" } }
+  expect:
+    findings_include: [{ dimension: company_name, value: "WELLS FARGO & COMPANY" }]
+
 # 2. quiet weeks: three weeks picked before running the analysis, from different years, where nothing is known to have happened and the
 #    CFPB's published counts and the table agree. The headline must be within normal variation. (The analysis may still report
 #    changes inside a week that cancel out: that is its job and is not asserted either way; see evals/known-gaps.md.)

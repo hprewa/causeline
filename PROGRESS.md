@@ -37,7 +37,7 @@ is in `docs/evidence/`.
 
 Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
 BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 7/7, core purity check OK; complaints eval
-on BigQuery 5/5 (two further real incidents in `packs/complaints/evals/known-gaps.md`).
+on BigQuery 6/6 (one further real incident in `packs/complaints/evals/known-gaps.md`).
 
 ## Sprint 2: step by step
 
@@ -61,7 +61,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 |---|---|---|---|---|
 | 1 | Reproduce: planted faults, a `gap` marker for cases expected to fail today, a unit fixture for the real mix failure | done | 021e3d4 | Step 1 |
 | 2 | Contributions core (rate and mix effect, share, explained share, history, verdict) with no change to findings | done | d667c0f | Step 2 |
-| 3 | Report contributors when none dominates | not started | | |
+| 3 | Report contributors when none dominates | done | see `git log` (message starts "Sprint 3 step 3") | Step 3 |
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | not started | | |
 | 5 | Overdispersion-aware tests and the data-quality guard | not started | | |
 | 6 | Incomplete tail of the data | not started | | |

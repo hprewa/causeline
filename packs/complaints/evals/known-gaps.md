@@ -4,16 +4,8 @@ These were written as eval cases, run on the real data, and failed. They are not
 was expected, from what outside the data, what the analysis said instead, and what would have to change. Run them by hand with
 the `run_playbook` tool (`metric_change`, with `start_date` and `end_date`) on this pack.
 
-## Wells Fargo, week of 12 September 2016 (complaint volume)
-- **Expected:** a finding on `company_name = WELLS FARGO & COMPANY`. On 8 September 2016 the CFPB announced its action over Wells Fargo's
-  sales practices; in the data, complaints about Wells Fargo went from about 190 a week to 311 (week of 5 September) and 404 (week of
-  12 September), while all complaints went from 3,618 to 4,172.
-- **Got:** one finding, `submitted_via = Web` (impact 480 on a change of 455); Wells Fargo is not reported.
-- **Why, as far as it is known:** Wells Fargo explains about half of the week's rise (about 214 of 455), below the share one child must
-  explain to be drilled into (`drill_share`, 0.6), and the rest of the rise is spread thinly over many companies. The analysis only
-  reports a culprit that stands out as most of the change.
-- **What would change it:** reporting the largest contributors to a change even when none passes the drill share (the "contributions
-  vs history" item in the sprint 3 plan), not a threshold change for this pack.
+## Wells Fargo, week of 12 September 2016 (complaint volume): closed in sprint 3, step 3
+The analysis now reports `WELLS FARGO & COMPANY` as a contributor (42% of the rise, unusual against eight earlier weeks); the case is in `cases.yaml`.
 
 ## The Equifax week, timely response rate
 - **Expected:** the overall timely response rate rose from about 98.1% to 99.4% in the week of 4 September 2017 because most of the week's

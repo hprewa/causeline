@@ -102,6 +102,7 @@ function rankFindings(drafts: FindingDraft[], metric: string, hierarchies: Recor
     evidence: d.evidence,
     ...(d.scope ? { scope: d.scope } : {}),
     ...(d.effect ? { effect: d.effect } : {}),
+    ...(d.role ? { role: d.role } : {}),
     ...(d.persistence ? { persistence: d.persistence } : {}),
   }));
 }

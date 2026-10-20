@@ -41,6 +41,8 @@ export const Finding = z.object({
   /** Nodes this finding is confined to, as {level: node}, when a dimension value is bad only inside one node. */
   scope: z.record(z.string(), z.string()).optional(),
   effect: z.enum(["rate", "mix"]).optional(),
+  /** `contributor`: reported because it carries a large and unusual part of the change although no single node dominated; absent for a culprit the drill followed. */
+  role: z.enum(["contributor"]).optional(),
   persistence: z.enum(["persistent", "single_slot"]).optional(),
   /** The metric this finding is about: the drilled driver when the headline metric is a product. */
   metric: z.string().min(1).optional(),
@@ -114,9 +116,10 @@ export const Contribution = z.object({
   /** The node itself got better or worse; volume moved toward or away from a better or worse node. They add up to the contribution. */
   rate_effect: z.number().nullable(),
   mix_effect: z.number().nullable(),
-  /** Rows in this period, and per period in the baseline. */
+  /** Rows in this period, and per period in the baseline, and the node's share of the baseline's rows (how big it is, to set its share of the change against). */
   volume: z.number(),
   baseline_volume: z.number(),
+  baseline_share: z.number().default(0),
   /** The same contribution in up to eight earlier periods, each against its own baseline: how many, the median, and the range. Null without history. */
   history: z.object({ periods: z.number().int().nonnegative(), typical: z.number().nullable(), low: z.number().nullable(), high: z.number().nullable() }).nullable(),
   delta_vs_typical: z.number().nullable(),

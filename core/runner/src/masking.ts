@@ -10,6 +10,7 @@ export const DEFAULT_THRESHOLDS: ResolvedThresholds = {
   offset_ratio: 3,
   mix_share: 0.5,
   coverage_ratio: 0.5,
+  contributor_share: 0.25,
   parent_z: 2,
   child_z: 3,
   onset_z: 2,

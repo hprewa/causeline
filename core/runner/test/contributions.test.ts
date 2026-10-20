@@ -116,3 +116,66 @@ test("a total (volume) is attributed the same way", async () => {
   assert.ok(top, "a contributor is reported");
   assert.ok(top.contribution > 0 && top.verdict === "unusual", JSON.stringify(top));
 });
+
+// --- reporting contributors (sprint 3 step 3) ----------------------------------------------------------------------------
+
+import { CONCENTRATION, PER_LEVEL, selectContributors } from "../src/contributions.js";
+import type { Contribution } from "@causeline/schema";
+
+const contrib = (level: string, node: string, share: number, baselineShare: number, verdict: Contribution["verdict"] = "unusual"): Contribution => ({
+  level,
+  node,
+  contribution: share * 100,
+  share,
+  rate_effect: share * 100,
+  mix_effect: 0,
+  volume: 1000,
+  baseline_volume: 500,
+  baseline_share: baselineShare,
+  history: { periods: 8, typical: 0, low: -1, high: 1 },
+  delta_vs_typical: share * 100,
+  verdict,
+});
+const draft = (dimension: string, scope?: Record<string, string>) => ({ dimension, value: "x", impact: 1, evidence: ["where"], ...(scope ? { scope } : {}) });
+const hier = { org: ["centre", "site"], line: ["product", "subproduct"] };
+
+test("a contributor is a node carrying a quarter of a real change, well beyond its size, that is new or unusual, in a concept nothing explained yet", () => {
+  const picked = selectContributors([contrib("company", "big", 0.45, 0.05), contrib("company", "ordinary", 0.3, 0.28), contrib("company", "usual", 0.4, 0.05, "usual"), contrib("company", "small", 0.1, 0.01), contrib("company", "fresh", 0.3, 0.0, "new")], [], hier, true, 0.25);
+  assert.deepEqual(picked.map((c) => c.node), ["big", "fresh"], "the big one (45%, nine times its size) and the new one; not the node that is just big, the usual one, or the small share");
+  assert.ok(CONCENTRATION > 1);
+});
+
+test("no contributors when the change is not real, and none in a concept a finding already explains", () => {
+  const all = [contrib("company", "a", 0.5, 0.05), contrib("centre", "cc_1", 0.6, 0.1), contrib("subproduct", "p", 0.5, 0.05), contrib("state", "ca", 0.4, 0.05)];
+  assert.deepEqual(selectContributors(all, [], hier, false, 0.25), [], "the change is within normal variation");
+  const picked = selectContributors(all, [draft("company"), draft("site"), draft("product", { state: "ca" })], hier, true, 0.25).map((c) => `${c.level}=${c.node}`);
+  assert.deepEqual(picked, [], "company has a finding; a finding on site covers centre; a finding on product covers subproduct; a scoped finding covers its scope's concept");
+  assert.deepEqual(selectContributors(all, [draft("company")], hier, true, 0.25).map((c) => c.level).sort(), ["centre", "state", "subproduct"]);
+});
+
+test("at most three contributors for one level, the biggest first", () => {
+  const many = Array.from({ length: 6 }, (_, i) => contrib("company", `c${i}`, 0.3 + i * 0.01, 0.02));
+  const picked = selectContributors(many, [], hier, true, 0.25);
+  assert.equal(picked.length, PER_LEVEL);
+  assert.deepEqual(picked.map((c) => c.node), ["c5", "c4", "c3"]);
+});
+
+test("through the runner: a flat dimension where no value dominates reports its biggest contributor, as a contributor", async () => {
+  // d1=Y gets half again its volume, the other two a fifth: Y carries 56% of the rise (under the drill share), the hierarchies see nothing concentrated
+  const fault: FaultSpec[] = [{ where: (f) => f.week === 10 && f.d1 === "Y", okOutOf10: 9, extraOutOf10: 5 }, { where: (f) => f.week === 10 && f.d1 !== "Y", okOutOf10: 9, extraOutOf10: 2 }];
+  const withIt = await runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts(fault, 12)), inputs: { metric: "n_rows", period: "W10" } });
+  const plain = await runPlaybook({ playbook: { ...playbook, steps: playbook.steps.filter((s) => s.id !== "contributors") }, ontology, meta, tools: new FakeToolCaller(buildFacts(fault, 12)), inputs: { metric: "n_rows", period: "W10" } });
+  assert.ok(!plain.findings.some((f) => f.dimension === "d1"), "without the step nothing is reported for d1 (no value reaches the drill share)");
+  const y = withIt.findings.find((f) => f.dimension === "d1" && f.value === "Y");
+  assert.ok(y, JSON.stringify(withIt.findings.map((f) => [f.dimension, f.value, f.role])));
+  assert.equal(y.role, "contributor");
+  assert.ok(y.impact > 0);
+  assert.deepEqual(plain.findings, withIt.findings.filter((f) => f.role !== "contributor").map((f, i) => ({ ...f, rank: i + 1 })), "the other findings are untouched apart from their rank");
+});
+
+test("through the runner: a rise spread evenly over every node reports no contributor", async () => {
+  const fault: FaultSpec[] = [{ where: (f) => f.week === 10, okOutOf10: 9, extraOutOf10: 3 }];
+  const r = await runPlaybook({ playbook, ontology, meta, tools: new FakeToolCaller(buildFacts(fault, 12)), inputs: { metric: "n_rows", period: "W10" } });
+  assert.ok(r.headline!.significant);
+  assert.ok(!r.findings.some((f) => f.role === "contributor"), JSON.stringify(r.findings.map((f) => [f.dimension, f.value, f.role])));
+});

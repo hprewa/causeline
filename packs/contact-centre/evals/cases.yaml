@@ -165,14 +165,15 @@
 # A case with `gap` is expected to fail today; it is reported as a known gap, and the run fails if it starts to pass until the marker
 # is removed. The marker comes off in the step that fixes it.
 
-# 19. one queue explains about half of a rise in volume and the rest is spread thinly over every queue: no child reaches the drill share
+# 19. one queue explains about half of a rise in volume and the rest is spread thinly over every queue: no child reaches the drill share.
+#     Sixteen weeks, so that the queue's contribution can be judged against eight earlier weeks (a contributor is reported only when it is
+#     unusual for itself).
 - id: contributor_below_the_drill_share
-  setup: "--fault surge:billing:wk7:0.3 --fault surge_all:wk7:0.12"
-  question: "Why did call volume rise in week 7?"
-  inputs: { metric: calls_offered, period: 2026-W07 }
+  setup: "--weeks 16 --calls 190000 --fault surge:billing:wk14:0.3 --fault surge_all:wk14:0.12"
+  question: "Why did call volume rise in week 14?"
+  inputs: { metric: calls_offered, period: 2026-W14 }
   expect:
     findings_include: [{ dimension: queue, value: billing }]
-  gap: "no child reaches the drill share (0.6), so the level is called broad and nothing is reported; the largest contributors are not reported"
 
 # 20. a quarter of a week's calls go to one agent whose rate is ordinary before and high now: found through the hierarchy. (Passes today and
 #     must keep passing. The same shape found only through a flat dimension of hundreds of values, where thin baselines make the rate and
