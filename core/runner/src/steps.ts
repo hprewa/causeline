@@ -1,4 +1,5 @@
 import { contributionsStep, contributorsStep } from "./contributions.js";
+import { estimateDispersion, shortfallZ } from "./dispersion.js";
 import type { PlaybookStep } from "@causeline/schema";
 import type { RunContext } from "./context.js";
 import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./drill.js";
@@ -10,6 +11,9 @@ import { compareStep, trendStep } from "./tasks.js";
 export type StepFn = (ctx: RunContext, step: PlaybookStep) => Promise<void>;
 
 /** Stop the run: the reason lands in result.json as stopped_reason / stopped_detail. */
+/** How many standard deviations below its usual rows a node must be to count as missing data. */
+const SHORTFALL_Z = 4;
+
 function stop(ctx: RunContext, reason: string, detail: string): void {
   ctx.stop = { reason, detail };
 }
@@ -24,6 +28,7 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
   if ("error" in info) return stop(ctx, info.error, info.detail);
   const series = info.periodSeries ?? [];
   ctx.period = info;
+  ctx.dispersion = estimateDispersion(info.periodSeries ?? [], (info.periodSeries ?? []).findIndex((b) => b.bucket === info.label), ctx.kind);
   ctx.window = { ...info.cur };
   ctx.sumScale = 1 / info.baselineLabels.length;
   ctx.seasonNotes.push(...info.notes);
@@ -48,7 +53,8 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
         const baseAvg = Number(row.base_den) / periods;
         const cur = Number(row.cur_den);
         // only nodes big enough to judge: thin nodes are small cells, not missing data
-        if (baseAvg >= ctx.minVolume && cur < ctx.th.coverage_ratio * baseAvg) {
+        // far below usual AND further below than the data's own period-to-period movement explains (a node with a few dozen rows halves by chance)
+        if (baseAvg >= ctx.minVolume && cur < ctx.th.coverage_ratio * baseAvg && shortfallZ(baseAvg, cur, ctx.dispersion) >= SHORTFALL_Z) {
           gaps.push(`${level}=${row.node}: ${cur} rows vs a baseline average of ${Math.round(baseAvg)} per period (${Math.round((cur / baseAvg) * 100)}% of usual)`);
         }
       }

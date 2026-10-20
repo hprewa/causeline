@@ -215,3 +215,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The culprit is still the largest mix effect.** Why: once the thin nodes are stabilised the right node has it; choosing by contribution was not needed and would change other cases.
 - **The Equifax timely-rate case moved from the known gaps into the cases.**
 
+### Step 5: overdispersion and the data-quality guard (commit see `PROGRESS.md`)
+- **Dispersion is estimated from the whole's own previous twelve periods and added to every child's variance; under five periods nothing is adjusted.** Why: the baseline fetched for the headline already shows how much the data moves by itself; with too few periods an estimate would be a guess.
+- **The guard needs a shortfall of 4 standard deviations of the data's own variation, as well as under half the usual rows.** Why: one node in sixty falls under half by chance in data that varies; the flat rule stopped ordinary weeks.
+- **The noisy-volume planted case lost its gap marker; the complaints quiet-week cases are not tightened.** Why: the first passes; the others could not be re-run on BigQuery (credentials expired).
+

@@ -1,5 +1,6 @@
 import type { PathNode } from "@causeline/schema";
 import { round6, type FindingDraft, type HierarchyCandidate, type RunContext } from "./context.js";
+import { adjustedZ } from "./dispersion.js";
 import { decomposeAgainstBaseline, decomposeBuckets, decomposeRatio, decomposeSum, type BucketItem, type Decomposition } from "./decompose.js";
 import { decideLevel, dominantRun, type LevelDecision } from "./masking.js";
 import type { Window } from "./period.js";
@@ -41,7 +42,14 @@ function noteUnjudged(ctx: RunContext, level: string, items: BucketItem[]): void
 /** Split a child breakdown the way this metric's kind requires. */
 function decomposeChildren(ctx: RunContext, rows: Row[]): Decomposition | null {
   const children = toChildRows(rows);
-  return ctx.kind === "sum" ? decomposeSum(children, ctx.sumScale) : decomposeRatio(children, { thinBelow: ctx.minVolume });
+  const d = ctx.kind === "sum" ? decomposeSum(children, ctx.sumScale) : decomposeRatio(children, { thinBelow: ctx.minVolume });
+  if (d && ctx.dispersion.history > 0) {
+    // z-scores that allow for the data's own period-to-period movement, not counting noise alone
+    const k = ctx.kind === "sum" ? ctx.sumScale : 1 / Math.max(1, ctx.period?.baselineLabels.length ?? 1);
+    for (const c of d.children) c.z = adjustedZ(ctx.kind, c.cur, c.base, k, ctx.dispersion);
+    d.parent.z = adjustedZ(ctx.kind, d.parent.cur, d.parent.base, k, ctx.dispersion);
+  }
+  return d;
 }
 
 function decide(ctx: RunContext, d: Decomposition | null): LevelDecision {

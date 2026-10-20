@@ -1,5 +1,6 @@
 import type { Comparison, Contribution, Evidence, Explained, Headline, Trend, MaskingFlag, Ontology, PathNode } from "@causeline/schema";
 import type { Decomposition } from "./decompose.js";
+import type { Dispersion } from "./dispersion.js";
 import type { ResolvedThresholds } from "./masking.js";
 import type { PeriodInfo, Window } from "./period.js";
 import type { SlotNames } from "./seasonal.js";
@@ -75,6 +76,8 @@ export interface RunContext {
   /** Supporting records fetched by evidence steps. */
   evidence: Evidence[];
   candidates: HierarchyCandidate[];
+  /** How much more the metric moves from period to period than counting noise gives; zero until the data check has estimated it. */
+  dispersion: Dispersion;
   /** Splits of the whole window the drill looked at (a hierarchy's first level, a diluted sweep, a flat dimension). */
   looks: LevelLook[];
   contributions: Contribution[];

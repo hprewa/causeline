@@ -1,3 +1,4 @@
+import { NO_DISPERSION } from "./dispersion.js";
 import { Result, type ToolsMeta, type Finding, type Generator, type Ontology, type Playbook, type SeasonalityNote } from "@causeline/schema";
 import { round6, type FindingDraft, type RunContext } from "./context.js";
 import { DEFAULT_THRESHOLDS, resolveThresholds } from "./masking.js";
@@ -188,6 +189,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     evidence: [],
     candidates: [],
     looks: [],
+    dispersion: NO_DISPERSION,
     contributions: [],
     stepKinds: new Map(),
   };

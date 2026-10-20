@@ -63,7 +63,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 2 | Contributions core (rate and mix effect, share, explained share, history, verdict) with no change to findings | done | d667c0f | Step 2 |
 | 3 | Report contributors when none dominates | done | 617bb18 | Step 3 |
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | done | see `git log` (message starts "Sprint 3 step 4") | Step 4 |
-| 5 | Overdispersion-aware tests and the data-quality guard | not started | | |
+| 5 | Overdispersion-aware tests and the data-quality guard | done | see `git log` (message starts "Sprint 3 step 5") | Step 5 |
 | 6 | Incomplete tail of the data | not started | | |
 | 7 | Proof and docs | not started | | |
 

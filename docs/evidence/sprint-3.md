@@ -139,3 +139,23 @@ added in step 5, not step 1.
 - The other four complaints cases (three quiet weeks, the week after the data ends) were **not re-run after this change**: Google credentials expired (`invalid_rapt`) during the run. They are unaffected in the unit and contact-centre evals, but this is unverified on BigQuery until re-authentication.
 - The synthetic generator cannot reproduce the real failure (it needs hundreds of thin companies); the unit fixture and the real data carry the evidence.
 
+## Step 5: overdispersion-aware tests and a statistical data-quality guard
+
+**Question:** can a quiet week in data whose weekly volume has a life of its own stop producing findings, without losing any planted fault?
+
+**What was built** (`core/runner/src/dispersion.ts`)
+- The data check estimates, from the whole's own previous twelve periods (at least five), how much more it moves than counting noise gives: for a rate `rho` (extra variance as a multiple of p(1 - p)), for a total `s2` (squared relative noise), and `volumeS2` for row counts. Fewer than five periods: nothing is adjusted.
+- Every child's z-score (and the parent's) adds that variance (`adjustedZ`), so a node's ordinary week-to-week movement is no longer "significant". With no dispersion the z-score is exactly the old one (tested).
+- The data-quality guard stopped a run whenever a node had under half its usual rows. It now also needs the shortfall to be at least 4 standard deviations of the data's own variation (`shortfallZ`).
+
+**Evidence**
+- 6 new unit tests (`core/runner/test/dispersion.test.ts`): steady versus wild rate history, too little history, volume noise, adjusted z equals the plain one with no dispersion and shrinks with it (rate and total), shortfall rule.
+- **Planted case `quiet_week_with_noisy_volume`** (each queue's weekly volume moves 12% on its own): was a known gap (findings invented), **now passes** and the marker is removed.
+- Contact-centre eval **22/22, no known gaps**; routing 27/27; intents 16/16; integration 7/7; runner tests 132/132; purity OK. Every earlier planted fault is still found with the same outcome.
+
+**Not shown**
+- **The real complaints quiet-week cases were not re-run**: Google credentials expired (`invalid_rapt`), so the effect on real data, and whether the three quiet-week cases can be tightened to "no findings", is unverified. They stay as they are.
+- `newest_week_still_arriving` still stops with `data_quality`, but I have not shown that it now does so for the right reason; step 6 gives that stop an explicit cause and a test.
+- Time-bucket z-scores and `standsOut` are not dispersion-adjusted; Bonferroni stays (Benjamini-Hochberg deferred).
+- The shortfall threshold (4) and twelve periods were chosen from the unit tests and the planted case.
+
