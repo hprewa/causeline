@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { parseAllDocuments } from "yaml";
 import { parseToolRef } from "@causeline/schema";
 import type { Row, ToolCaller } from "@causeline/runner";
-import { openDb, rowsOf } from "../src/db.js";
+import { openDb, rowsOf } from "./db.js";
 
 interface Tool {
   parameters: { name: string; default?: unknown }[];
@@ -12,9 +12,9 @@ interface Tool {
 
 /**
  * The generated query tools, run straight on the workspace's SQLite file (no Toolbox process), so tests of the
- * Builder's checks use the very statements the product sends. Parameters are bound in the order they are declared.
+ * Builder's checks and of the sign-off screen use the very statements the product sends. Parameters are bound in the order they are declared.
  */
-export class SqliteTools implements ToolCaller {
+export class SqliteToolCaller implements ToolCaller {
   private readonly tools = new Map<string, Tool>();
 
   constructor(private readonly workspace: string) {

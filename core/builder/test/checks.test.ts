@@ -10,7 +10,7 @@ import { autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumbe
 import { connectFiles } from "../src/connect.js";
 import { savePack } from "../src/savepack.js";
 import { levelGap, levelOf, readState, writeState, type KpiRecord } from "../src/state.js";
-import { SqliteTools } from "./sqlite-tools.js";
+import { SqliteToolCaller as SqliteTools } from "../src/sqlite-tools.js";
 
 // 6 whole weeks from Monday 2026-01-05, 8 rows a day over three sites in two regions and two channels.
 const SITES = ["n1", "n2", "s1"];

@@ -89,3 +89,46 @@ run_checks: provisional -> verified, restored=true; re-worked 2 stored numbers, 
 - `one_row_per` is declared on the contact-centre pack's SQLite fact only; counting the source table goes through the local database, and the BigQuery equivalent comes with the Builder's data layer (step 4).
 - `package-lock.json` also picked up two dependencies of the MCP server that had been missing from it since sprint 1 (`connect-bigquery`, `intent`).
 
+## Step 3: sign-off tools and the local sign-off screen
+
+**Question:** can the ladder be used through the MCP server and a real screen, with the screen and the chat doing exactly the same things, and the page safe to serve from a local process?
+
+**What was built**
+- Five MCP tools: `propose_checks` (questions only, no numbers of ours), `confirm_number` (the user's number and its source; confirmed if it matches, ours revealed in the answer; `flag` records and flags instead),
+  `signoff_status`, `run_checks`, `open_signoff` (starts the page and tries to open a browser; always returns the address). Tool descriptions say never to confirm a number the user did not give.
+- `core/mcp-server/src/signoff.ts`: `node:http` on `127.0.0.1`, random port, a secret in the path, started on first use and unref'd. The page's actions (suggest, give a number, confirm or flag, re-run) call
+  the same Builder functions as the chat tools, so there is one code path; it cannot edit the model, SQL or playbooks. `signoff-page.ts` is one HTML file: no external scripts, fonts or images; light and dark;
+  everything from the server is set as text; a per-response nonce on the one script and one style.
+- Protections: secret path (timing-safe compare), `Host` must be this machine (DNS rebinding), `Origin` must be absent or this page, writes must be `application/json` (a foreign page cannot send that without a
+  preflight we do not grant), 64 KB body limit, CSP `default-src 'none'; connect-src 'self'`, `no-store`, `nosniff`.
+- `SqliteToolCaller` (the generated statements run on the workspace database without Toolbox) moved from test code into `core/builder` so the screen is tested with the real statements.
+
+**Evidence**
+- 4 HTTP-level tests (`core/mcp-server/test/signoff.test.ts`): no secret / wrong secret 404; a foreign Host or Origin 403 (reads and writes); non-JSON 415; bad JSON 400; oversize 413; the page is self-contained with a
+  matching nonce and a hostile `?kpi=` is escaped; a whole sign-off driven through the page's own calls (wrong number refused with hints and ours revealed afterwards; no source refused; right numbers give provisional then
+  verified; a flagged number holds it at provisional; stored checks re-run) with the chat tool seeing the same state; the chat tools do the same (odd period, flag, confirm, re-run).
+- `scripts/signoff-demo.mjs` plays it through the real stdio MCP server and Toolbox on the contact-centre example (numbers worked out from the raw CSVs by the script). Output:
+
+```
+status: "draft"
+system proposes (no numbers of ours with the questions):
+  total-1: The whole business, 9-15 March 2026 / slice-1: Centre cc_1, 9-15 March 2026 / slice-2: Queue sales, ... / grain-1: The whole business, on 15 March 2026
+user (chat) gives 70% for the whole business: confirmed=false; ours 80.99%; the tools give a number 15.7% above yours
+user (chat) corrects it: confirmed=true; level=provisional; needs one more confirmed number of a different kind from total, from a named source
+open_signoff: http://127.0.0.1:<port>/<secret>/?kpi=service_level (browser started: false, as the demo asks)
+the screen shows: provisional; total-1:confirmed, slice-1:pending, slice-2:pending, grain-1:pending
+person at the screen types a slightly wrong number for cc_1: match=false; ours 80.83%; hints: 3
+person at the screen enters the right one and presses Confirm: level=verified
+the chat tool sees the same: verified; total-1:confirmed (the weekly report (raw calls file)), slice-1:confirmed (the centre report), ...
+verify_expert (needs a verified KPI and the incident): verified=true
+```
+- Pictures of the page (headless Edge, same data): `docs/evidence/sprint-2/1-one-number-confirmed.png`, `2-a-number-that-does-not-match.png`, `3-verified.png`, `4-verified-dark.png`.
+- Unit tests in every package pass (mcp-server 11 of 16 run, the 5 integration ones skipped), integration 6/6, runner evals 18/18, core purity OK.
+
+**Not shown**
+- **A person using the page in a real browser.** The pictures are headless renders of the real page, and the clicks in the demo are the page's own HTTP calls sent by a script; no one has clicked the buttons. That is the checkpoint review.
+- **Whether a real MCP client (Claude Code) can reach the page**: `open_signoff` starts a local browser with `start`/`open`/`xdg-open` and returns the address; it was run here with the browser start switched off.
+- The screen is not protected against another program running as the same user on this machine that has read the secret address (it is a local convenience, not a login). The address is shown only in the tool result.
+- Mobile layout was designed for (16px gutter, stacking fields) but not looked at on a phone.
+- The Claude Code plugin bundle and the `causeline-build` skill are not updated yet (step 5): the plugin still carries the previous server and skill.
+

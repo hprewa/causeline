@@ -1,7 +1,8 @@
 import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import type { ServerConfig } from "./config.js";
 import { IntentService } from "./intent.js";
-import { addIncidentTool, buildStatusTool, connectFilesTool, describeDataTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import { SignoffScreen } from "./signoff.js";
+import { addIncidentTool, buildStatusTool, confirmNumberTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -52,6 +53,22 @@ const playBackInput = fromJsonSchema<{ confirm?: boolean }>(obj({ confirm: { typ
 const reconcileInput = fromJsonSchema<{ kpi: string; period: string; expected: number; tolerance?: number }>(
   obj({ kpi: { type: "string" }, period: { type: "string", description: "A period label, or words like 'week 10'." }, expected: { type: "number", description: "The number the user already knows from their own report (93.1 means 93.1% for a rate)." }, tolerance: { type: "number", description: "Relative difference allowed (default 0.01)." } }, ["kpi", "period", "expected"]),
 );
+const proposeInput = fromJsonSchema<{ kpi: string; odd_period?: { start: string; end: string; name?: string } }>(
+  obj({ kpi: { type: "string" }, odd_period: { type: "object", description: "A period the user knows was unusual and would like checked: {start, end} as YYYY-MM-DD, name optional.", properties: { start: { type: "string" }, end: { type: "string" }, name: { type: "string" } }, required: ["start", "end"] } }, ["kpi"]),
+);
+const confirmNumberInput = fromJsonSchema<{ kpi: string; check: string; expected: number; source: string; tolerance?: number; flag?: boolean; note?: string }>(
+  obj({
+    kpi: { type: "string" },
+    check: { type: "string", description: "The check id from propose_checks (for example total-1)." },
+    expected: { type: "number", description: "The number the user gave from their own report (93.1 means 93.1% for a rate)." },
+    source: { type: "string", description: "Which report or system it comes from, in the user's words. Required: a number with no named source does not count." },
+    tolerance: { type: "number", description: "Relative difference allowed (default 0.01)." },
+    flag: { type: "boolean", description: "Set to record the number and flag it as wrong or doubtful instead of confirming." },
+    note: { type: "string", description: "With flag: what looks wrong." },
+  }, ["kpi", "check", "expected", "source"]),
+);
+const kpiOptional = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "One KPI; leave out for all." } }));
+const openSignoffInput = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "The KPI to show first." } }));
 const incidentInput = fromJsonSchema<Record<string, unknown>>(
   obj({
     kpi: { type: "string" },
@@ -115,7 +132,7 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
 });
 
 /** The causeline-mcp tools: analysis, onboarding and the Builder. `callers` supplies the data connection (Toolbox, or a fake in tests). */
-export function createServer(cfg: ServerConfig, callers: Callers): McpServer {
+export function createServer(cfg: ServerConfig, callers: Callers, screen: SignoffScreen = new SignoffScreen(cfg, callers)): McpServer {
   const server = new McpServer({ name: "causeline-mcp", version: "0.1.0" });
 
   server.registerTool(
@@ -209,6 +226,11 @@ export function createServer(cfg: ServerConfig, callers: Callers): McpServer {
   builder("save_pack", "Save the business description", "Check the draft ontology and data definition (shape, how the parts fit, that every SELECT and formula runs on the user's data) and only then write the pack files and generate the query tools. Returns plain-words errors and nothing is written while there are any. Experts are saved as drafts. Never show the user YAML or SQL; use play_back.", saveInput, (a) => savePackTool(cfg, a));
   builder("play_back", "Say the pack in sentences", "The saved pack as numbered plain sentences, and what changed since the user last confirmed. Read them to the user and ask if each is right. Call with confirm=true only after the user agrees; what they confirmed is exactly what the system uses.", playBackInput, (a) => playBackTool(cfg, a));
   builder("reconcile_metric", "Match a KPI to a number the user knows", "Compute a KPI for a period and compare with a number from the user's own report. A match is stored as a confirmed number and makes the KPI provisional; a mismatch returns both numbers and where to look. A KPI is only verified once a second confirmed number of a different kind is in, so an expert cannot be verified on one number.", reconcileInput, (a) => reconcileMetricTool(cfg, callers, a));
+  builder("propose_checks", "Suggest numbers to check", "For a KPI: the numbers worth setting against the user's own reports, from different angles (the whole business over the last complete period, the biggest part of a hierarchy and of one other concept, one day, and an odd period they name). Returns only the questions to ask, not our numbers: ask the user for each number from their own report, and which report it is, BEFORE showing anything. Then record each with confirm_number.", proposeInput, async (a) => proposeChecksTool(cfg, callers, a));
+  builder("confirm_number", "Record a number from the user's report", "Give the user's number for one check and where it comes from. If it matches ours within the tolerance it is confirmed; otherwise nothing is confirmed and both numbers come back with where to look. Ours is revealed in the answer: say both. Two confirmed numbers of different kinds from named sources, plus passing automatic checks, make a KPI verified; one makes it provisional. Never confirm a number the user did not give.", confirmNumberInput, async (a) => confirmNumberTool(cfg, callers, a));
+  builder("signoff_status", "Where each KPI stands", "The ladder for one KPI or all: draft, provisional or verified, what stands between it and the next step in plain words, the automatic checks, and each check with its state. Our number is shown only for a check the user has already answered.", kpiOptional, (a) => signoffStatusTool(cfg, a), true);
+  builder("run_checks", "Re-run the stored checks", "Work out again every confirmed number and the automatic checks. Use it after the model changed (a changed KPI drops to provisional) or to refresh a sign-off: a KPI becomes verified again only if every stored number still matches. Numbers that no longer match go back to pending with the new figure.", verifyInput, async (a) => runChecksTool(cfg, callers, a));
+  builder("open_signoff", "Open the sign-off screen", "Open a page on this computer where the user can enter numbers from their own reports, see ours beside them, and confirm or flag each one. Returns its address (give it to the user if the browser did not open). Everything on it is also available through confirm_number; offer it when there are several numbers to check or the user would rather click than type.", openSignoffInput, async (a: { kpi?: string }) => ({ ...(await screen.open(a?.kpi)), note: "The page is local to this computer and works until this session ends. Anything the user confirms there shows in signoff_status." }));
   builder("add_incident", "Record a past incident", "Remember a past incident the user knows the cause of (period, where it was, how they would ask) as a test case run on their real data. Ask the user for one per KPI.", incidentInput, (a) => addIncidentTool(cfg, a as never));
   builder("verify_expert", "Check an expert against the user's incident", "Run the KPI's recorded incidents through the analysis. Only if the KPI is verified (see reconcile_metric) and every incident is found where the user said does the expert become verified. Say plainly what failed otherwise.", verifyInput, (a) => verifyExpertTool(cfg, a));
 

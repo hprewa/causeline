@@ -132,3 +132,11 @@ Evidence for every step is in `docs/evidence/sprint-2.md`; the steps are in `PRO
   Builder over MCP can therefore reach provisional only (recorded in the evidence).
 - **A version 1 `build.json` is read as version 2 (a matched number becomes one confirmed total without dates, so `run_checks` asks for it again).** Why: workspaces started earlier keep working without hiding that their number cannot be re-worked.
 
+### Step 3: sign-off tools and the screen (commit see `PROGRESS.md`)
+- **The screen and the chat tools call the same Builder functions; the screen can only suggest numbers, take a number, confirm or flag it, and re-run the stored checks.** Why: one code path means one set of rules; a screen that could edit the model would be a second, unreviewed way to change what is vouched for.
+- **The page is served from the MCP process on 127.0.0.1, with a secret in the path, a Host and Origin check, JSON-only writes, a nonce CSP and no external resources.** Why: it needs no install and no account, and a web page from elsewhere must not be able to read or sign off anything.
+- **`open_signoff` always returns the address as well as trying to open a browser.** Why: some clients and some machines cannot start one, and the user must never be stuck.
+- **`confirm_number` takes `flag`, so a doubtful number can be recorded from chat too.** Why: a flag is part of the ladder's rules and should not need the screen.
+- **`SqliteToolCaller` lives in `core/builder`, not in test code.** Why: tests of the checks and the screen then run the product's own generated statements, and a future offline check can use it.
+- **The plugin bundle and skill are updated with the skill rewrite (step 5), not here.** Why: one rewrite of the instructions to the model, after the Builder is on both databases, rather than two.
+

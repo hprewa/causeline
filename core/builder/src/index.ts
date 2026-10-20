@@ -9,3 +9,4 @@ export * from "./playback.js";
 export * from "./savepack.js";
 export * from "./checks.js";
 export * from "./verify.js";
+export * from "./sqlite-tools.js";

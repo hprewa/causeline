@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, connectFiles, describeData, playBack, reconcileMetric, savePack, testFact, verifyExpert } from "@causeline/builder";
+import { addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
 import { defaultPlaybooksDir, loadPackForRun, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
@@ -205,3 +205,25 @@ export async function reconcileMetricTool(cfg: ServerConfig, callers: Callers, a
 export const addIncidentTool = (cfg: ServerConfig, args: Parameters<typeof addIncident>[0] extends infer T ? Omit<T & object, "workspace"> : never) => addIncident({ workspace: cfg.packDir, ...(args as object) } as Parameters<typeof addIncident>[0]);
 
 export const verifyExpertTool = (cfg: ServerConfig, args: { kpi: string }) => verifyExpert({ workspace: cfg.packDir, kpi: args.kpi, toolbox: cfg.toolboxBinary, corePlaybooksDir: cfg.corePlaybooksDir });
+
+// --- sign-off: numbers from the user's own reports, and where each KPI stands -----------------------------------------
+
+export async function proposeChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; odd_period?: { start: string; end: string; name?: string } }) {
+  return proposeChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller(), odd: args.odd_period });
+}
+
+/** Give a number: when it matches it is confirmed; with `flag` it is recorded and flagged instead. The tools' number comes back with the answer. */
+export async function confirmNumberTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; check: string; expected: number; source: string; tolerance?: number; flag?: boolean; note?: string }) {
+  const tools = await callers.caller();
+  const base = { workspace: cfg.packDir, kpi: args.kpi, check: args.check, expected: Number(args.expected), source: args.source, tolerance: args.tolerance, tools };
+  if (!args.flag) return confirmNumber(base);
+  const reveal = await recordNumber(base);
+  const d = await decide({ workspace: cfg.packDir, kpi: args.kpi, check: args.check, decision: "flag", note: args.note, tools });
+  return { ...reveal, confirmed: false, state: d.state, level: d.level, gap: d.gap };
+}
+
+export const signoffStatusTool = (cfg: ServerConfig, args: { kpi?: string } = {}) => ({ kpis: signoffStatus(cfg.packDir, args?.kpi) });
+
+export async function runChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string }) {
+  return runChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller() });
+}
