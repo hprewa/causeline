@@ -226,6 +226,7 @@ async function chain(
     const callParams = i === 0 ? params : { ...params, [levels[i - 1]]: parent! };
     const d = decomposeChildren(ctx, await ctx.tools.call(tool, callParams, stepId));
     const dec = decide(ctx, d);
+    if (d && parent === undefined) ctx.looks.push({ concept: level, decomposition: d });
     ctx.path.push({
       level,
       node: dec.culprit ?? "(none)",
@@ -278,6 +279,7 @@ export async function hierarchyDrill(ctx: RunContext, stepId: string): Promise<v
         const level = levels[j];
         const d = decomposeChildren(ctx, await ctx.tools.call(ctx.index.slice(ctx.metric, level), params, stepId));
         const dec = decide(ctx, d);
+        if (d) ctx.looks.push({ concept: level, decomposition: d });
         ctx.path.push({
           level,
           node: dec.culprit ?? "(none)",
@@ -326,6 +328,7 @@ export async function rankDimensions(ctx: RunContext, stepId: string, mode: "win
       const callParams = cand ? { ...params, [cand.level]: cand.node } : params;
       const d = decomposeChildren(ctx, await ctx.tools.call(tool, callParams, stepId));
       const dec = decide(ctx, d);
+      if (d && !cand) ctx.looks.push({ concept: dim, decomposition: d });
       ctx.path.push({
         level: dim,
         node: dec.culprit ?? "(none)",

@@ -49,3 +49,45 @@ the failure is not "no mix attribution"; it is an unstable split. The plan's ste
 **Plan adjustments:** step 4 becomes "stabilise the rate and mix split for thin baselines, require the mix to point the way of the change, choose the culprit
 by contribution" (the cause found), with per-node mix attribution only if the real case still needs it afterwards; the ramp-down case's gap marker is
 added in step 5, not step 1.
+
+## Step 2: contributions core (no change to which findings are reported)
+
+**Question:** can every deep dive say, deterministically, who contributed how much to the change and whether that is usual for them, without touching what is reported as a finding?
+
+**What was built**
+- **`core/runner/src/contributions.ts`** and a `contributions` step at the end of `metric_change` (before evidence). From the splits the drill already looked at (a hierarchy's first
+  level, a diluted sweep, a flat dimension over the whole window) it takes the biggest contributors in the change's direction (each at least a tenth of the change, two a split,
+  five in all), and for each works out **its contribution in the KPI's own units, its share of the change, its rate effect and mix effect** (the formula `decomposeRatio` uses; for a
+  total, the node's amount less its share of the baseline's average period) for this period and for **up to eight earlier periods, each against its own baseline**. The verdict:
+  `new` (under min_volume rows a period in the baseline), `unusual` (outside everything seen earlier **and** at least three robust standard deviations from the median), `usual`, or
+  `unknown` (under four earlier periods). It also reports the share of the change that one level's reported contributors account for, and what is left.
+- **`result.json`** gains `contributions[]` and `explained` (`core/schema/src/result.ts`, additive; the JSON schema is regenerated). **No finding, path or flag changes**: a test runs
+  the same fault with and without the step and compares findings and path; every contact-centre case gives the same outcome.
+- **Cost:** one day-level series query per node reported, at most five, shown as steps tagged `contributions`. The history needs eight earlier windows: a date range used to build only
+  nine windows (the baseline and its like-for-like reach), so it now builds `baseline + 8` earlier ones (free: they come from the day series already read) and the history is eight periods, not four.
+- **Budgets:** the Builder's budget is now 50 passes of what one pass reads (was 40; a deep dive is 15 to 35 queries plus up to five for this step), and the complaints pack says 40 GB.
+
+**Evidence**
+- 9 new unit tests (`core/runner/test/contributions.test.ts`): contributions add up exactly to the change and equal `decomposeRatio`'s per node; the total's formula; the verdict rules (usual,
+  a small excursion that is still usual, unusual, new, unknown); day rows summed into periods by their timestamps; candidate selection; a planted fault through the runner (the node is `unusual`
+  with 5 to 8 periods of history, rate plus mix equals the contribution, the explained share and at most five queries); clean data reports nothing unusual or new; too little history gives `unknown`;
+  a total (volume) is attributed the same way.
+- Contact-centre eval: `runner score: 20/20 (and 2 known gaps, 2 still open)`, each case five queries longer; routing 27/27; intents 16/16; integration 7/7; every package's unit tests; purity OK.
+  Complaints eval on BigQuery: **5/5**, unchanged.
+- **On the real incidents** (BigQuery, traced with a probe that prints the contributions):
+  - Wells Fargo week of 12 September 2016: `WELLS FARGO & COMPANY` contributes +190 complaints, **42% of the change, `unusual`** (typical +9, range -19 to +125 over eight weeks), next to the product
+    "Bank account or service" (`unusual`) and "Mortgage" (`usual`: it often contributes this much). The analysis still reports only the web channel as a finding; step 3 reports contributors like this one.
+    The web channel's contribution, 480 (105%), is `usual` against eight weeks of a very variable channel.
+  - Equifax week, timely response rate: `EQUIFAX, INC.` contributes +0.0134 of a +0.0149 change against the pooled baseline (the headline's seasonal baseline gives +0.0208) (**90%, `unusual`**), mostly by rate (+0.0153) with a small negative mix (-0.0019).
+    The findings still name the product, a day and the wrong company; the contributions table has the right answer.
+  - Equifax week, complaint volume: Equifax +5,215 (109%, `unusual`), the credit reporting product, the web channel, the issue "Improper use of your report", and the state CA (+1,042, 22%, `unusual`).
+  - Cost with the step: Wells week 24 queries, 14.8 GB (about $0.08); Equifax volume week 45 queries, 28.2 GB (about $0.16, inside the new 40 GB).
+
+**Not shown**
+- The history uses a plain pooled baseline of the periods just before each earlier one, not the seasonal like-for-like baseline the headline uses. For weekly periods the weekday mix is the
+  same so this is close; for a date range of a few days it is approximate. A node is judged against periods that include earlier incidents, so a node that has often had incidents reads `usual`.
+- Only the biggest contributors of splits over the whole window are reported; contributors inside a drilled node (a company within a product) are not (it would cost a history query per node and parent).
+- The explained share picks the one level whose reported contributors account for the most; it is not a statement that the other levels explain less.
+- The thresholds (a tenth of the change, three robust standard deviations, eight periods) were set from the unit tests and the planted data and looked at on the three real weeks above; none was tuned on them.
+- Nothing uses the verdicts yet: findings are unchanged until step 3. The contributions are not yet in the agent's skill or answers.
+

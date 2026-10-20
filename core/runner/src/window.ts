@@ -76,7 +76,9 @@ export async function resolveWindow(a: WindowArgs): Promise<PeriodInfo | Failure
 
   // windows, oldest first, each wholly inside the data; the last is the one asked about
   const windows: { label: string; from: number; to: number }[] = [];
-  for (let k = 2 * Math.max(1, baselineCount); k >= 0; k--) {
+  // the baseline reaches back up to twice its length (like-for-like picks); the contributions step judges a node against up to eight earlier windows too
+  const reach = Math.max(2 * Math.max(1, baselineCount), Math.max(1, baselineCount) + 8);
+  for (let k = reach; k >= 0; k--) {
     const [from, to] = [s - k * step, e - k * step];
     if (from >= first) windows.push({ label: `${dayText(from)}..${dayText(to)}`, from, to });
   }

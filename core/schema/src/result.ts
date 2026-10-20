@@ -102,6 +102,33 @@ export const Comparison = z.object({
 });
 export type Comparison = z.infer<typeof Comparison>;
 
+/** One node's part of the change, set against what that node usually contributes. */
+export const Contribution = z.object({
+  /** The concept (a hierarchy level or a flat dimension) and the value. */
+  level: z.string().min(1),
+  node: z.string().min(1),
+  /** The node's part of the change in the KPI, in the KPI's own units (points of a rate, or amounts of a total). */
+  contribution: z.number(),
+  /** Its share of the whole change; null when the whole did not change. */
+  share: z.number().nullable(),
+  /** The node itself got better or worse; volume moved toward or away from a better or worse node. They add up to the contribution. */
+  rate_effect: z.number().nullable(),
+  mix_effect: z.number().nullable(),
+  /** Rows in this period, and per period in the baseline. */
+  volume: z.number(),
+  baseline_volume: z.number(),
+  /** The same contribution in up to eight earlier periods, each against its own baseline: how many, the median, and the range. Null without history. */
+  history: z.object({ periods: z.number().int().nonnegative(), typical: z.number().nullable(), low: z.number().nullable(), high: z.number().nullable() }).nullable(),
+  delta_vs_typical: z.number().nullable(),
+  /** `new` (not a regular part of the data), `unusual` (outside its history), `usual` (it always contributes about this much: context, not the cause), `unknown` (too little history). */
+  verdict: z.enum(["new", "unusual", "usual", "unknown"]),
+});
+export type Contribution = z.infer<typeof Contribution>;
+
+/** How much of the change the reported contributors of one level account for, and what is left. */
+export const Explained = z.object({ level: z.string().min(1), share: z.number(), unexplained: z.number() });
+export type Explained = z.infer<typeof Explained>;
+
 export const Decision = z.enum(["drill", "broad", "masked", "insufficient_volume"]);
 export type Decision = z.infer<typeof Decision>;
 
@@ -192,6 +219,9 @@ export const Result = z.object({
   /** The driver the run went on to drill, or null when none dominated. */
   drilled_driver: z.string().nullable().optional(),
   findings: z.array(Finding).default([]),
+  /** Who contributed how much to the change, judged against history. Deterministic; not a finding. */
+  contributions: z.array(Contribution).default([]),
+  explained: Explained.optional(),
   /** Supporting records from evidence sources, in the order they were asked. */
   evidence: z.array(Evidence).default([]),
   /** Ordered nodes visited during the guided drill, with the decision and numbers at each step. */

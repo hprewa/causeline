@@ -191,3 +191,12 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Step 4 targets the cause found (an unstable split), not the symptom first thought of (no mix attribution).** Why: tracing the real case showed rate +0.129 and mix -0.095 against a change of +0.033, from nodes with three baseline rows; adding per-node mix tests on top of that split would have inherited the instability.
 - **A note in `known-gaps.md` was wrong about the company's baseline and is corrected, not left.** Why: it said the company's rate "did not move"; its four-week baseline included one bad week.
 
+### Step 2: contributions core (commit see `PROGRESS.md`)
+- **Contributions are computed from the node's own series for the period and for eight earlier ones, not read off the drill's decompositions.** Why: the drill's splits are over the narrowed window and its baseline; history needs the same measure in every period, and a node's contribution to a whole is cheap to recompute from one day-level series.
+- **A node is `unusual` only if it is outside everything seen before AND at least three robust standard deviations from the median; with under four earlier periods the verdict is `unknown`.** Why: with eight points a plain "outside the range" is wrong about one time in nine; the second condition keeps ordinary excursions `usual`. A guess would be worse than "unknown".
+- **`new` means under min_volume rows a period in the baseline.** Why: a node that was not a regular part of the data has no history to be compared with.
+- **The step adds no finding and changes none (a test compares the runs).** Why: attribution and the decision to report are separate changes; step 3 uses the verdicts, with its own gate.
+- **Contributions are limited to splits over the whole window, at most five nodes, one query each.** Why: each node costs a query over the fact (about 0.6 GB on the complaints table); the biggest contributors are the ones a person needs.
+- **A date range builds `baseline + 8` earlier windows (was twice the baseline).** Why: eight periods of history need them, they cost nothing (the day series is already read), and baseline selection is unchanged because it counts back from the period.
+- **The Builder's budget is 50 passes of one pass's bytes.** Why: a deep dive with a surge is 15 to 35 queries, plus up to five for this step; 40 passes would have stopped the Equifax week at 28 GB.
+

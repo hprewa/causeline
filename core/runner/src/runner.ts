@@ -186,6 +186,8 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     drafts: [],
     evidence: [],
     candidates: [],
+    looks: [],
+    contributions: [],
     stepKinds: new Map(),
   };
 
@@ -214,6 +216,8 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     ...(ctx.trend ? { trend: ctx.trend } : {}),
     ...(ctx.comparison ? { comparison: ctx.comparison } : {}),
     findings: ctx.stop ? [] : rankFindings(ctx.drafts, metric, ontology.hierarchies),
+    contributions: ctx.stop ? [] : ctx.contributions,
+    ...(ctx.explained && !ctx.stop ? { explained: ctx.explained } : {}),
     evidence: ctx.stop ? [] : ctx.evidence,
     path: ctx.path,
     masking_flags: ctx.flags,

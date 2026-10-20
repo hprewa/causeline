@@ -1,3 +1,4 @@
+import { contributionsStep } from "./contributions.js";
 import type { PlaybookStep } from "@causeline/schema";
 import type { RunContext } from "./context.js";
 import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./drill.js";
@@ -191,6 +192,8 @@ async function askEvidence(ctx: RunContext, stepId: string, source: string): Pro
 /** Rows of an evidence source kept in result.json: enough to read, not a data dump. */
 const EVIDENCE_SAMPLE = 10;
 
+const contributions: StepFn = async (ctx, step) => contributionsStep(ctx, step.id);
+
 export const COMPUTE: Record<string, StepFn> = {
   evidence: evidenceStep,
   trend: trendStep,
@@ -200,4 +203,5 @@ export const COMPUTE: Record<string, StepFn> = {
   guided_drill: guidedDrill,
   rank_dimensions: rankDims,
   persistence,
+  contributions,
 };

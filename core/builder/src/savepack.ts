@@ -100,10 +100,10 @@ async function save(opts: { workspace: string; ontology: unknown; data: unknown;
       if (ev.until && t.columns.length > 0 && !t.columns.includes(ev.until)) errors.push(`evidence "${name}": there is no column called ${ev.until} in the result`);
     }
   }
-  // a metered database: a deep dive runs 15 to 35 queries over the fact (more when a big surge is drilled through several levels), so the budget for one question is 40 passes of what one pass reads
+  // a metered database: a deep dive runs 15 to 35 queries over the fact (more when a big surge is drilled through several levels), plus up to five more for the contributions step, so the budget for one question is 50 passes of what one pass reads
   let budgetGb = d.data.budget_gb;
   if (backend.dialect === "bigquery" && budgetGb === undefined && passBytes > 0) {
-    budgetGb = Math.max(5, Math.ceil((40 * passBytes) / 1e9));
+    budgetGb = Math.max(5, Math.ceil((50 * passBytes) / 1e9));
     rawData.budget_gb = budgetGb;
     warnings.push(`a deep dive on this data reads about ${Math.round((20 * passBytes) / 1e8) / 10} GB (about $${(Math.round((20 * passBytes * 6.25) / 2 ** 40 * 100) / 100).toFixed(2)} at list price); the limit for one question is set to ${budgetGb} GB`);
   }

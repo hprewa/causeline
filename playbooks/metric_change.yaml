@@ -28,6 +28,8 @@ steps:
     within: where
   - id: cross_check
     compute: persistence               # culprit bad all window, or one slot?
+  - id: contributions
+    compute: contributions            # who contributed how much to the change, and is that usual for them?
   - id: evidence
     evidence: "*"                     # whatever the pack records about the culprit (incident logs, scans), if it has any
 output: result.json

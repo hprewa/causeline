@@ -81,10 +81,10 @@ const pad = (n: number) => String(n).padStart(2, "0");
  * Six weeks of data, 10 rows per (a2, b1, d1, day) cell. Outcomes follow an exact repeating
  * pattern (9 in 10 ok; amounts cycle through 10..14), so clean data has no sampling noise.
  */
-export function buildFacts(faults: FaultSpec[] = []): Fact[] {
+export function buildFacts(faults: FaultSpec[] = [], weeks = 6): Fact[] {
   const facts: Fact[] = [];
   const counters = new Map<string, number>();
-  for (let week = 1; week <= 6; week++) {
+  for (let week = 1; week <= weeks; week++) {
     for (let day = 1; day <= 7; day++) {
       const date = new Date(Date.UTC(2026, 0, (week - 1) * 7 + day));
       const dateStr = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;

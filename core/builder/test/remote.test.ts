@@ -194,15 +194,15 @@ test("saving a pack on BigQuery: a DATE time column is refused, the source and d
   const written = parse(readFileSync(join(ws, "data.yaml"), "utf-8"));
   assert.equal(written.dialect, "bigquery");
   assert.equal(written.source, "shop-bq", "the source is the one the connection wrote, not the agent's guess");
-  assert.equal(written.budget_gb, 24, "40 passes of 0.6 GB");
-  assert.equal(good.budget_gb, 24);
-  assert.match(good.warnings.join("\n"), /a deep dive on this data reads about 12 GB \(about \$.*\); the limit for one question is set to 24 GB/);
+  assert.equal(written.budget_gb, 30, "50 passes of 0.6 GB");
+  assert.equal(good.budget_gb, 30);
+  assert.match(good.warnings.join("\n"), /a deep dive on this data reads about 12 GB \(about \$.*\); the limit for one question is set to 30 GB/);
   assert.ok(good.cost!.queries >= 2, "what saving read is reported");
   assert.ok((good.tools ?? 0) > 0);
   // a repeated statement answered from BigQuery's cache reads nothing, but the budget is still worked out from what a pass would read
   registerData("bigquery", async () => fake({ tables: [orders], answer: script, bytes: 600e6, queryBytes: 0, types: { ...types, ts: "TIMESTAMP" } }));
   const cached = await savePack({ workspace: ws, ontology, data: draftData("TIMESTAMP(ordered_on)") });
-  assert.equal(cached.budget_gb, 24);
+  assert.equal(cached.budget_gb, 30);
   // an explicit budget in the draft is kept
   registerData("bigquery", async () => fake({ tables: [orders], answer: script, bytes: 600e6, types: { ...types, ts: "TIMESTAMP" } }));
   const kept = await savePack({ workspace: ws, ontology, data: { ...draftData("TIMESTAMP(ordered_on)"), budget_gb: 40 } });

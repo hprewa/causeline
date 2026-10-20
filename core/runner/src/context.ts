@@ -1,4 +1,5 @@
-import type { Comparison, Evidence, Headline, Trend, MaskingFlag, Ontology, PathNode } from "@causeline/schema";
+import type { Comparison, Contribution, Evidence, Explained, Headline, Trend, MaskingFlag, Ontology, PathNode } from "@causeline/schema";
+import type { Decomposition } from "./decompose.js";
 import type { ResolvedThresholds } from "./masking.js";
 import type { PeriodInfo, Window } from "./period.js";
 import type { SlotNames } from "./seasonal.js";
@@ -27,6 +28,12 @@ export interface HierarchyCandidate {
   base: Components;
   /** Product of current-volume shares down to and including this node. */
   scaleAfter: number;
+}
+
+/** A split of the whole window by one concept that the drill looked at, kept so the contributions step can say who contributed what. */
+export interface LevelLook {
+  concept: string;
+  decomposition: Decomposition;
 }
 
 export interface RunContext {
@@ -66,6 +73,10 @@ export interface RunContext {
   /** Supporting records fetched by evidence steps. */
   evidence: Evidence[];
   candidates: HierarchyCandidate[];
+  /** Splits of the whole window the drill looked at (a hierarchy's first level, a diluted sweep, a flat dimension). */
+  looks: LevelLook[];
+  contributions: Contribution[];
+  explained?: Explained;
   stop?: { reason: string; detail: string };
   /** What each executed step was, so `within` can tell a hierarchy drill from a dimension ranking. */
   stepKinds: Map<string, { compute: string; over?: string }>;

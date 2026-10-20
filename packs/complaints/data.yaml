@@ -5,10 +5,10 @@ source: complaints-bq
 dialect: bigquery
 # The data stopped in the past: "last week" means the last week it holds.
 as_of: data_end
-# A deep dive reads 12 to 19 GB (about $0.07 to $0.11 at list price): the table is not partitioned, so every query reads the columns it
+# A deep dive reads 12 to 28 GB (about $0.07 to $0.16 at list price; the contributions step adds up to five queries): the table is not partitioned, so every query reads the columns it
 # names from the whole table, whatever the window, and a week with a big surge is drilled through more levels. 0.62 GB a pass, up to
-# about forty passes.
-budget_gb: 30
+# about fifty passes.
+budget_gb: 40
 
 facts:
   complaints:
