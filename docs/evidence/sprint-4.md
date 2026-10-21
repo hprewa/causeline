@@ -16,3 +16,22 @@ Design: `docs/audit/playbook-language.md`. Each step is a commit; what was and w
 
 **Not shown**
 - No condition reads a fact yet (steps 2 and 3). The routing, intents and integration suites and the BigQuery evals were not re-run for this step (the change only adds output).
+
+## Step 2: a safe condition language and load-time validation
+
+**Question:** can a playbook say "if this was found, do that" in a form that can be checked before anything runs and cannot execute code?
+
+**What was built**
+- `core/schema/src/condition.ts`: a small language over published facts: numbers, words, yes/no, `null`, `step.fact` references, `== != < <= > >=`, `in [..]`, `and`, `or`, `not`, brackets. It is parsed once into a tree and evaluated by code; nothing in it can invoke a function or assign a value. A fact nobody published reads as `null`, and ordering with `null` is false.
+- Playbook steps accept `when` (run only if it holds), `next` (rules `if`/`then`, closed by an `else`; a target is a step, `{stop: reason}` or `{handoff: kpi}`) and `max_visits`. The schema checks syntax, that targets are steps, and that the last rule is an `else`.
+- `checkPlaybook` (runner, called whenever a playbook is loaded) checks that a condition reads only facts that an earlier step really publishes (against the `FACTS` list of step 1), that a rule sending the run back names a target with `max_visits`, and that no step is unreachable.
+- Nothing runs the new fields yet (step 3); the four shipped playbooks do not use them and pass the check.
+
+**Evidence**
+- 6 schema tests: every operator, null behaviour, the facts a condition reads, ten malformed conditions refused (assignment, a call, a bare word, a three-part name, an unclosed string...), rule structure.
+- 4 runner tests: the shipped playbooks are sound; unknown fact, later fact and unknown step are named; a loop without `max_visits`; an unreachable step.
+- All unit tests, contact-centre eval 22/22, routing 27/27, purity OK.
+
+**Not shown**
+- Hand-off targets are not checked against a pack's experts yet (step 4). There is no property-based test of the evaluator, only the cases above.
+

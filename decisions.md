@@ -231,3 +231,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Facts are published by the runner from what the step did, under a fixed list per compute step, not declared by each playbook.** Why: the playbook names no computation; the list is what conditions are checked against at load.
 - **The trace records every step, not only drill moves.** Why: with branching, the route taken must be auditable; `path` stays as the drill detail.
 
+### Step 2: the condition language (commit see `PROGRESS.md`)
+- **Conditions are parsed by our own small parser, not by evaluating text.** Why: a playbook may come from a person; it must not be able to run code, and it must be checkable before any run.
+- **A fact that was not published reads as null, not as an error.** Why: a step that was skipped publishes nothing, and a later rule has to be able to ask about it.
+- **Conditions may read only facts from earlier steps (or the step's own, in `next`).** Why: a forward reference could never hold a value; loops are allowed only into a step with `max_visits`.
+- **A `next` list must close with an `else`.** Why: every run must have somewhere to go; "no rule matched" is not an outcome.
+

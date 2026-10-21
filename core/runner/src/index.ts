@@ -6,6 +6,7 @@ export * from "./period.js";
 export * from "./toolcaller.js";
 export { runPlaybook, defaultGenerator, type RunInputs, type RunOptions } from "./runner.js";
 export * from "./load.js";
+export { checkPlaybook } from "./validate.js";
 export { runCli, summarise } from "./cli.js";
 export * from "./toolbox-process.js";
 export { VERSION } from "./version.js";

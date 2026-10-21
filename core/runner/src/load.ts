@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { loadPack, Playbook, type PackDefinition } from "@causeline/schema";
+import { checkPlaybook } from "./validate.js";
 
 /** The pack's ontology, data definition and (once generated) tool index. The runner needs the index to find tools. */
 export function loadPackForRun(packDir: string): PackDefinition & { meta: NonNullable<PackDefinition["meta"]> } {
@@ -21,5 +22,8 @@ export function loadPlaybook(name: string, packDir: string, coreDir?: string): P
   const candidates = [join(packDir, "playbooks", `${name}.yaml`), join(core, `${name}.yaml`)];
   const found = candidates.find((p) => existsSync(p));
   if (!found) throw new Error(`playbook "${name}" not found; looked in:\n  ${candidates.join("\n  ")}`);
-  return Playbook.parse(parse(readFileSync(found, "utf-8")));
+  const playbook = Playbook.parse(parse(readFileSync(found, "utf-8")));
+  const problems = checkPlaybook(playbook);
+  if (problems.length > 0) throw new Error(`playbook "${name}" (${found}) is not valid: ${problems.join("; ")}`);
+  return playbook;
 }
