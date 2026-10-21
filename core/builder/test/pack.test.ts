@@ -143,19 +143,19 @@ test("a shipped pack reads as sentences a person can follow", () => {
   assert.match(text, /Days flagged "is holiday" are only compared with other days flagged the same way/);
 });
 
-test("saving never makes an expert verified, and never unverifies one whose KPI did not change", async () => {
+test("saving never raises an expert above draft, and never lowers one whose KPI did not change", async () => {
   const { ws, files } = workspace();
   await connectFiles({ workspace: ws, files });
-  const claims = { ...draft(), agents: [{ name: "on-time-rate-deep-rca", kpi: "on_time_rate", task: "deep_rca", status: "verified", examples: ["why?"] }] };
+  const claims = { ...draft(), agents: [{ name: "on-time-rate-deep-rca", kpi: "on_time_rate", task: "deep_rca", ladder: 2, status: "verified", examples: ["why?"] }] };
   await savePack({ workspace: ws, ...claims });
-  assert.equal(loadAgents(ws)[0].status, "draft", "a draft cannot claim to be verified");
+  assert.equal(loadAgents(ws)[0].status, "draft", "a draft cannot claim a rung");
 
-  // verification happens elsewhere (verify_expert); simulate its result on disk
+  // the rungs are earned elsewhere (from the checks); simulate the result on disk
   const file = join(ws, "agents", "on-time-rate-deep-rca.yaml");
-  writeFileSync(file, readFileSync(file, "utf-8").replace("status: draft", "status: verified"));
-  assert.equal(loadAgents(ws)[0].status, "verified");
+  writeFileSync(file, readFileSync(file, "utf-8").replace("status: draft", "status: reconciled"));
+  assert.equal(loadAgents(ws)[0].status, "reconciled");
   const again = await savePack({ workspace: ws, ...draft() });
-  assert.equal(loadAgents(ws)[0].status, "verified", "saved again with the same formula: still verified");
+  assert.equal(loadAgents(ws)[0].status, "reconciled", "saved again with the same formula: still reconciled");
   assert.deepEqual(again.warnings.filter((w) => /draft again/.test(w)), []);
 
   const changed = await savePack({ workspace: ws, ...draft({ numerator: "1 - on_time" }) });

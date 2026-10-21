@@ -1,4 +1,4 @@
-import { loadAgents, loadPack, isRatioFormula, type AgentDef, type DataDefs, type Ontology } from "@causeline/schema";
+import { loadAgents, loadPack, isRatioFormula, statusSentence, type AgentDef, type DataDefs, type Ontology } from "@causeline/schema";
 import { readState, updateState } from "./state.js";
 
 const words = (s: string) => s.replace(/_/g, " ");
@@ -69,7 +69,7 @@ export function describePack(ontology: Ontology, data: DataDefs, agents: AgentDe
     out.push(`When something is found, I look up ${ev.description ? ev.description.replace(/\.$/, "").toLowerCase() : words(name)} about the ${list(ev.about.map(words))} concerned. That supports the finding; it does not prove the cause.`);
   }
   for (const a of agents) {
-    out.push(`Expert "${a.name}" answers ${words(a.task)} questions about ${words(a.kpi)}${a.playbook ? ` using the ${words(a.playbook)} steps` : ""}. It is ${a.status === "verified" ? "verified" : "a draft (not checked against a past case yet)"}.`);
+    out.push(`Expert "${a.name}" answers ${words(a.task)} questions about ${words(a.kpi)}${a.playbook ? ` using the ${words(a.playbook)} steps` : ""}. It ${statusSentence(a.status, a.unconfirmed_numbers)}.`);
   }
   return out;
 }

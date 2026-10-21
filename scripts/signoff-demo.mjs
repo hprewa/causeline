@@ -125,16 +125,19 @@ try {
   const d = await screen("decide", { kpi: "service_level", check: slice.id, decision: "confirm" });
   say("person at the screen enters the right one and presses Confirm", `level=${d.level}`);
 
+  const gw = window(grain.id).window;
+  const third = await tool("confirm_number", { kpi: "service_level", check: grain.id, expected: rate(within(gw)), source: "the daily export", tolerance: 0.001 });
+  say("user (chat) gives a third number, for one day", `confirmed=${third.confirmed}; level=${third.level}`);
+
   const viaChat = (await tool("signoff_status", { kpi: "service_level" })).kpis[0];
   say("the chat tool sees the same", `${viaChat.level}; ${viaChat.checks.map((c) => `${c.id}:${c.state}${c.source ? ` (${c.source})` : ""}`).join(", ")}`);
-  shoot("3-verified");
-  shoot("4-verified-dark", "dark");
+  shoot("3-reconciled");
+  shoot("4-reconciled-dark", "dark");
 
   const ver = await tool("add_incident", { kpi: "service_level", period: "2026-W07", finding: { dimension: "team", value: "team_05" }, question: "Why did service level drop in week 7?" });
   const v = await tool("verify_expert", { kpi: "service_level" });
-  say("verify_expert (needs a verified KPI and the incident)", `verified=${v.verified} ${v.reasons.join("; ")}`);
+  say("verify_expert (needs a reconciled KPI and the incident)", `verified=${v.verified} level=${v.level} ${v.reasons.join("; ")}`);
   void ver;
-  void grain;
 } finally {
   await client.close();
 }

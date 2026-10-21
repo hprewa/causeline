@@ -29,11 +29,11 @@ test("a failing case or a known gap proves nothing", () => {
   assert.ok(c.untested.includes("parts:when:run"));
 });
 
-test("a verified expert whose playbook has an untested branch is flagged", () => {
+test("an expert above draft whose playbook has an untested branch is flagged", () => {
   const coverage = branchCoverage([ok("a", ["contributors:when:run"])], pack);
   const flagged = expertsWithUntestedBranches(coverage, pack);
   assert.ok(flagged.some((f) => f.expert === "service-level-deep-rca"));
-  assert.match(renderCoverage(coverage, flagged), /marked verified/);
+  assert.match(renderCoverage(coverage, flagged), /stands as reconciled/);
   const full = branchCoverage([ok("a", ["contributors:when:run", "contributors:when:skipped", "parts:when:run", "parts:when:skipped"])], pack);
   assert.deepEqual(expertsWithUntestedBranches(full, pack), []);
 });

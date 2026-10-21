@@ -21,7 +21,7 @@ h1 { font-size: 1.4rem; margin: 0 0 4px; }
 .head { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
 .head h2 { font-size:1.15rem; margin:0; }
 .badge { font-size:.8rem; font-weight:600; padding:2px 10px; border-radius:99px; border:1px solid currentColor; }
-.draft { color:var(--muted); } .provisional { color:var(--warn); background:var(--warnbg); } .verified { color:var(--ok); background:var(--okbg); }
+.draft { color:var(--muted); } .reconciled, .calibrated { color:var(--warn); background:var(--warnbg); } .verified { color:var(--ok); background:var(--okbg); }
 .gap { color:var(--muted); margin:6px 0 12px; }
 .row { border-top:1px solid var(--line); padding:12px 0; }
 .label { font-weight:600; }
@@ -83,7 +83,12 @@ async function act(fn) {
   await load();
 }
 
-var LEVELS = { draft: "Draft", provisional: "Provisional", verified: "Verified" };
+var LEVELS = { draft: "Draft", reconciled: "Reconciled", calibrated: "Calibrated", verified: "Verified" };
+var NOW = {
+  reconciled: "Reconciled: the automatic checks pass and the numbers from your reports match, from different periods and angles. ",
+  calibrated: "Calibrated: it also stays quiet over ordinary past periods. ",
+  verified: "Verified: it also finds the known incidents or planted faults it was tested on. "
+};
 
 function checkRow(k, c) {
   var row = h("div", { class: "row" }, h("div", { class: "label" }, c.label));
@@ -122,7 +127,8 @@ function kpiCard(k) {
   var card = h("section", { class: "card", id: "kpi-" + k.kpi });
   card.appendChild(h("div", { class: "head" }, h("h2", null, k.kpi.replace(/_/g, " ")), h("span", { class: "badge " + k.level }, LEVELS[k.level] || k.level)));
   if (k.description) card.appendChild(h("div", { class: "lede" }, k.description));
-  card.appendChild(h("div", { class: "gap" }, k.level === "verified" ? "Verified: the automatic checks pass and two numbers from different angles are confirmed." : "To go further: " + k.gap + "."));
+  card.appendChild(h("div", { class: "gap" }, (NOW[k.level] || "") + (k.gap ? "To go further: " + k.gap + "." : "")));
+  if (k.unconfirmed) card.appendChild(h("div", { class: "note" }, "Numbers not confirmed against your reports: answers from this KPI say so."));
   if (k.auto) {
     var failed = k.auto.results.filter(function (r) { return !r.ok && !r.skipped; });
     var d = h("details", failed.length ? { open: "open" } : null, h("summary", null, failed.length ? failed.length + " automatic check(s) fail" : "Automatic checks: all pass (" + k.auto.results.length + ")"));

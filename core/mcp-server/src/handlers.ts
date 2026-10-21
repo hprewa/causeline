@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { acceptSample, addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { connectBigQuery } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
@@ -227,6 +227,9 @@ export async function confirmNumberTool(cfg: ServerConfig, callers: Callers, arg
   const d = await decide({ workspace: cfg.packDir, kpi: args.kpi, check: args.check, decision: "flag", note: args.note, tools });
   return { ...reveal, confirmed: false, state: d.state, level: d.level, gap: d.gap };
 }
+
+/** The person has no exact figure but says the number looks right: it is kept as a plausible sample and the KPI is marked "numbers not confirmed". */
+export const acceptSampleTool = (cfg: ServerConfig, args: { kpi: string; check: string; note?: string }) => acceptSample({ workspace: cfg.packDir, ...args });
 
 export const signoffStatusTool = (cfg: ServerConfig, args: { kpi?: string } = {}) => ({ kpis: signoffStatus(cfg.packDir, args?.kpi) });
 

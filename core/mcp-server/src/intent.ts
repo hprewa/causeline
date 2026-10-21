@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { bigQueryProject, checkConnection } from "@causeline/connect-bigquery";
 import { canonicalKpi, intentEnv, IntentSession, planRun, validateIntent, type HistoryEntry, type IntentEnv } from "@causeline/intent";
 import { loadPackForRun } from "@causeline/runner";
-import { conceptsOf, IntentPatch, loadAgents, loadPack, type IntentCheck, type Result } from "@causeline/schema";
+import { conceptsOf, IntentPatch, loadAgents, loadPack, statusSentence, type IntentCheck, type Result } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 import { runPlaybookTool, type Callers } from "./handlers.js";
 
@@ -106,7 +106,7 @@ export class IntentService {
       ran: true,
       n: entry.n,
       playback: check.playback,
-      notes: [...check.notes, ...(plan.verified ? [] : ["This used the generic expert for this KPI, which has not been verified yet; say so."])],
+      notes: [...check.notes, `This answer comes from an expert that ${statusSentence(plan.status, plan.unconfirmed_numbers)}; say so in plain words.`],
       expert: plan.expert,
       file,
       result,

@@ -23,11 +23,11 @@ test("an expert defaults to a draft with no hand-off, and needs a known task", (
 
 test("experts are checked against the ontology and the playbooks", () => {
   const issues = (agents: unknown[]) => validatePack({ ontology, data, playbooks: [pb], agents: agents.map((a) => AgentDef.parse(a)) });
-  assert.deepEqual(issues([{ name: "ok", kpi: "m", task: "deep_rca", playbook: "custom", status: "verified", examples: ["why?"] }]).errors, []);
+  assert.deepEqual(issues([{ name: "ok", kpi: "m", task: "deep_rca", playbook: "custom", ladder: 2, status: "reconciled", examples: ["why?"] }]).errors, []);
   assert.match(issues([{ name: "x", kpi: "ghost", task: "value" }]).errors.join(), /KPI "ghost"/);
   assert.match(issues([{ name: "x", kpi: "m", task: "value", playbook: "nope" }]).errors.join(), /playbook "nope"/);
   assert.match(issues([{ name: "x", kpi: "m", task: "value" }, { name: "x", kpi: "m", task: "trend" }]).errors.join(), /two experts/);
-  assert.match(issues([{ name: "x", kpi: "m", task: "value", status: "verified" }]).warnings.join(), /no example questions/);
+  assert.match(issues([{ name: "x", kpi: "m", task: "value", ladder: 2, status: "reconciled" }]).warnings.join(), /no example questions/);
 });
 
 test("a route and a routing case parse", () => {

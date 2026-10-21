@@ -3,4 +3,5 @@ kpi: workload
 task: deep_rca
 examples:
   - Why did the workload we have to staff for go up?
-status: verified # workload_aht_driver passes
+ladder: 2
+status: reconciled # synthetic data: a product of two KPIs whose totals are checked against recomputed totals; workload_aht_driver passes; not calibrated

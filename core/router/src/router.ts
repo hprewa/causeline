@@ -1,4 +1,4 @@
-import type { AgentDef, Ontology, Route, RouteOption, Task } from "@causeline/schema";
+import { statusSentence, type AgentDef, type Ontology, type Route, type RouteOption, type Task } from "@causeline/schema";
 
 /**
  * The router: a plain question to a KPI, a task and an expert. Deterministic, no LLM, no data access:
@@ -145,7 +145,7 @@ export function effectiveExperts(ont: Ontology, agents: AgentDef[]): AgentDef[] 
   const out = [...agents];
   for (const kpi of Object.keys(ont.metrics)) {
     for (const task of ["value", "compare", "trend", "deep_rca"] as Task[]) {
-      if (!out.some((a) => a.kpi === kpi && a.task === task)) out.push({ name: `${kpi}-${task}`, kpi, task, examples: [], handoff: "none", status: "draft" });
+      if (!out.some((a) => a.kpi === kpi && a.task === task)) out.push({ name: `${kpi}-${task}`, kpi, task, examples: [], handoff: "none", status: "draft", unconfirmed_numbers: false, ladder: 2 });
     }
   }
   return out;
@@ -153,7 +153,7 @@ export function effectiveExperts(ont: Ontology, agents: AgentDef[]): AgentDef[] 
 
 const plain = (s: string) => s.replace(/_/g, " ");
 
-function announceFor(kpi: string, task: Task, inputs: Record<string, string | number | boolean>, status: string): string {
+function announceFor(kpi: string, task: Task, inputs: Record<string, string | number | boolean>, expert: AgentDef): string {
   const when = inputs.period ? ` in ${inputs.period}` : "";
   const what: Record<Task, string> = {
     value: `how ${plain(kpi)} stood${when}`,
@@ -161,7 +161,7 @@ function announceFor(kpi: string, task: Task, inputs: Record<string, string | nu
     trend: `how ${plain(kpi)} has moved over time`,
     deep_rca: `why ${plain(kpi)} changed${when}, and where`,
   };
-  return `I will check ${what[task]}.${status === "draft" ? " This uses the generic expert for that KPI, which has not been verified yet." : ""}`;
+  return `I will check ${what[task]}. This expert ${statusSentence(expert.status, expert.unconfirmed_numbers)}.`;
 }
 
 // --- route ------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ export function route(input: RouterInput): Route {
     strategy: "explorer",
     options: [{ kpi: null, task: null, expert: "explorer", playbook: null, inputs: {}, status: "exploratory", confidence: 0.3, reasons: [reason] }],
     needs: null,
-    announce: `${reason} I will treat this as an exploratory question; answers to it are not from a verified expert.`,
+    announce: `${reason} I will treat this as an exploratory question; no expert covers it, so the answer is not from a tested expert.`,
   });
 
   const hits = matchKpis(question, ont);
@@ -193,7 +193,7 @@ export function route(input: RouterInput): Route {
         options: Object.keys(ont.metrics).map((kpi) => {
           const e = experts.find((x) => x.kpi === kpi && x.task === "deep_rca")!;
           const playbook = e.playbook && input.playbooks.includes(e.playbook) ? e.playbook : CORE_PLAYBOOK.deep_rca;
-          return { kpi, task: "deep_rca" as Task, expert: e.name, playbook, inputs: (period ? { metric: kpi, period } : { metric: kpi }) as Record<string, string>, status: e.status === "verified" ? ("verified" as const) : ("draft" as const), confidence: 0.4, reasons: ["no KPI was named: every KPI is checked and the ones that moved are explained"] };
+          return { kpi, task: "deep_rca" as Task, expert: e.name, playbook, inputs: (period ? { metric: kpi, period } : { metric: kpi }) as Record<string, string>, status: e.status, confidence: 0.4, reasons: ["no KPI was named: every KPI is checked and the ones that moved are explained"] };
         }),
         needs,
         announce: period ? `You did not name a KPI, so I will check every KPI for ${period} and look into the ones that moved.` : `You did not name a KPI, so I will check every KPI and look into the ones that moved.`,
@@ -251,13 +251,13 @@ export function route(input: RouterInput): Route {
     needs = { input: "period", question: `Which ${level} should I look at?`, choices: periods.slice(-3).reverse() };
   }
 
-  const status = expert.status === "verified" ? "verified" : "draft";
+  const status = expert.status;
   const confidence = Math.max(0.1, Math.min(1, top.score * (taskGuess.certain ? 1 : 0.75) * (needs ? 0.7 : 1)));
   const option: RouteOption = { kpi: top.kpi, task, expert: expert.name, playbook, inputs, status, confidence: Math.round(confidence * 100) / 100, reasons };
 
   const others: RouteOption[] = hits.slice(1, 3).map((h) => {
     const e = experts.find((x) => x.kpi === h.kpi && x.task === task) ?? experts.find((x) => x.kpi === h.kpi)!;
-    return { kpi: h.kpi, task: e.task, expert: e.name, playbook: e.playbook ?? CORE_PLAYBOOK[e.task], inputs: { ...inputs, metric: h.kpi }, status: e.status === "verified" ? ("verified" as const) : ("draft" as const), confidence: Math.round(h.score * 0.5 * 100) / 100, reasons: [`"${h.via}" also matches ${h.kpi}`] };
+    return { kpi: h.kpi, task: e.task, expert: e.name, playbook: e.playbook ?? CORE_PLAYBOOK[e.task], inputs: { ...inputs, metric: h.kpi }, status: e.status, confidence: Math.round(h.score * 0.5 * 100) / 100, reasons: [`"${h.via}" also matches ${h.kpi}`] };
   });
 
   return {
@@ -265,6 +265,6 @@ export function route(input: RouterInput): Route {
     strategy: "expert",
     options: [option, ...others],
     needs,
-    announce: needs ? `I think you are asking about ${plain(top.kpi)}. ${needs.question}` : announceFor(top.kpi, task, inputs, status),
+    announce: needs ? `I think you are asking about ${plain(top.kpi)}. ${needs.question}` : announceFor(top.kpi, task, inputs, expert),
   };
 }

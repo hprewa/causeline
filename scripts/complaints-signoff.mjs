@@ -3,7 +3,7 @@
 // MCP tools, and records the result. It plays the person who has those reports: the numbers are fetched live from the CFPB's public
 // complaint search at run time, never typed in. Needs CAUSELINE_BQ_PROJECT and a Google sign-in; reads about 10 GB (a few cents).
 //   node scripts/complaints-signoff.mjs [--folder <dir>] [--verify] [--only-verify]
-// With --verify it also runs the pack's eval cases and tries to verify each expert whose KPI is verified and that has an incident.
+// With --verify it also runs the pack's eval cases and replays the recorded incident for each expert whose KPI is reconciled and that has one.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -95,7 +95,7 @@ try {
     for (const kpi of Object.keys(value)) {
       report.kpis[kpi] ??= [];
       const v = await tool("verify_expert", { kpi });
-      say(`verify_expert ${kpi}: verified=${v.verified} ${v.reasons.join("; ")}`);
+      say(`verify_expert ${kpi}: verified=${v.verified} level=${v.level} ${v.reasons.join("; ")}`);
       report.kpis[kpi].expert = { verified: v.verified, reasons: v.reasons };
     }
   }

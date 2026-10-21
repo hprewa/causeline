@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LADDER_VERSION, readStatus, Rung } from "./status.js";
 
 /** The questions a KPI expert can take on. `mix` is recognised by the router but has no template of its own yet. */
 export const TASKS = ["value", "compare", "trend", "deep_rca"] as const;
@@ -9,7 +10,7 @@ export type Task = z.infer<typeof Task>;
  * agents/<name>.yaml: a KPI expert is a task template bound to one KPI. Without a playbook it uses the core
  * template for the task, so a KPI needs no playbook of its own for value, compare or trend.
  */
-export const AgentDef = z.object({
+const AgentBase = z.object({
   name: z.string().min(1),
   kpi: z.string().min(1),
   task: Task,
@@ -19,10 +20,24 @@ export const AgentDef = z.object({
   examples: z.array(z.string().min(1)).default([]),
   /** What to do when the finding sits in a child KPI: `follow_kpi_tree` is designed, not built. */
   handoff: z.enum(["none", "follow_kpi_tree"]).default("none"),
-  /** `verified` once its eval cases pass; anything else is labelled unverified in every answer. */
-  status: z.enum(["verified", "draft"]).default("draft"),
+  /** Where it stands on the ladder (draft, reconciled, calibrated, verified); the Builder sets it from checks that were run, and every answer says it in words. */
+  status: Rung.default("draft"),
+  /** The numbers it rests on were a plausible sample, not confirmed against the person's reports. */
+  unconfirmed_numbers: z.boolean().default(false),
+  /** Marks a file as written with the current ladder; a file without it is read with the earlier names (see `migrateLegacyStatus`). */
+  ladder: z.literal(LADDER_VERSION).default(LADDER_VERSION),
 });
-export type AgentDef = z.infer<typeof AgentDef>;
+
+/** Files written before the ladder was renamed are read with their old meaning and come out in the new names. */
+const migrateAgent = (raw: unknown): unknown => {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  if (r.ladder === LADDER_VERSION) return raw;
+  return { ...r, ...readStatus(r), ladder: LADDER_VERSION };
+};
+
+export const AgentDef = z.preprocess(migrateAgent, AgentBase);
+export type AgentDef = z.infer<typeof AgentBase>;
 
 export const RouteOption = z.object({
   kpi: z.string().nullable(),
@@ -32,7 +47,7 @@ export const RouteOption = z.object({
   playbook: z.string().nullable(),
   /** Inputs for the playbook that could be filled in from the question. */
   inputs: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
-  status: z.enum(["verified", "draft", "exploratory"]),
+  status: z.union([Rung, z.literal("exploratory")]),
   confidence: z.number().min(0).max(1),
   reasons: z.array(z.string()).default([]),
 });

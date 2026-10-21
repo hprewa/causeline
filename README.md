@@ -19,7 +19,7 @@ Early and under active development. What works today: the runner (drill by place
 like-for-like seasonality, masking checks, evidence from other tables), questions about any date range, the router,
 a running **intent** (a question built over several messages, checked against the data and read back in plain words
 before anything runs), the Builder (your own CSV files or a BigQuery table to a checked pack by conversation), a
-**sign-off** of each KPI against numbers from your own reports (draft, provisional, verified; in the chat or on a local
+**sign-off** of each KPI against numbers from your own reports (draft, reconciled, calibrated, verified; in the chat or on a local
 page), an MCP server and a Claude Code plugin, and an eval harness. Data can live in a local database or in **BigQuery**,
 with a cost budget per question. Two example packs ship: a contact centre (synthetic data, identical answers on both
 databases) and consumer complaints (the CFPB's public data, built by conversation and signed off against the CFPB's own
@@ -35,7 +35,7 @@ branching playbooks and hand-offs between KPIs, a minimal explorer, and easier s
 | Data | `data.yaml` | the only file with SQL: facts, KPI formulas, evidence sources |
 | Tools | generated Toolbox tools + `tools.meta.yaml` | what each query answers; never written by hand |
 | Playbooks | `playbooks/*.yaml` | the steps of an investigation. No SQL, no domain words |
-| Experts | `agents/*.yaml` | which KPI an expert covers, and whether it is `verified` or a `draft` |
+| Experts | `agents/*.yaml` | which KPI an expert covers, and where it stands: `draft`, `reconciled`, `calibrated` or `verified` |
 | Runner | `core/runner` | all the maths, in plain TypeScript |
 | Router | `core/router` | picks KPI, task and period from a question, deterministically |
 | Intent | `core/intent` | the structure an agent fills in (KPI, task, period, filters); resolves "last 4 weeks" to dates, checks every value against the data, asks one question at a time |
@@ -53,11 +53,11 @@ command line is needed. Point the plugin at an empty folder (`CAUSELINE_PACK`) a
 1. **Connect:** "I have these CSV files" (or a BigQuery table). The Builder loads them locally and says in plain words what it found.
 2. **Describe the business:** you say what you watch and how it is worked out; the agent writes it down, tests that it
    runs on your data, and reads it back as sentences until you say each one is right.
-3. **Check it:** for each KPI you give numbers you know from your own reports, from at least two angles (the whole
-   business for a week, one part of it, one day), and say which report each comes from; your number comes first and ours is
-   shown after. In the chat, or on a local page (`open_signoff`), you confirm or flag each. A KPI is *verified* only when
-   the automatic checks pass and two angles match; if the numbers for some days disagree with another KPI's, they are set aside.
-   You also give one past problem whose cause you know (the analysis must find it). Only then is the expert *verified*.
+3. **Check it:** for each KPI you give numbers you know from your own reports, from at least two periods and two angles (the whole
+   business for a week, one part of it, one day), at least three numbers in all, and say which report each comes from; your number comes first and ours is
+   shown after. In the chat, or on a local page (`open_signoff`), you confirm or flag each. A KPI is *reconciled* only when
+   the automatic checks pass and the numbers match; if the numbers for some days disagree with another KPI's, they are set aside.
+   You also give one past problem whose cause you know (the analysis must find it); that check is kept. An expert is *calibrated* once a replay over ordinary past periods shows it rarely raises a false alarm, and *verified* once it also finds known incidents or planted faults: those two checks are not built yet, so today the highest rung is *reconciled*.
 4. **Ask:** "Why did the service level drop last Tuesday?" The router picks the KPI and the steps, says what it chose,
    and the answer separates what the data shows from what is only consistent with it.
 

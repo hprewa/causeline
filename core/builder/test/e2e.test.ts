@@ -1,5 +1,5 @@
 // Needs Python (the data generator) and the Toolbox binary: run with `npm run test:integration` (CAUSELINE_INTEGRATION=1).
-// The Builder's own tools, driven by a script instead of an agent, from raw CSVs to a verified expert. The agent
+// The Builder's own tools, driven by a script instead of an agent, from raw CSVs to a reconciled expert. The agent
 // run (scripts/builder-proof.mjs) is the same path with a language model doing the drafting.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -17,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..", "..", "..");
 const enabled = process.env.CAUSELINE_INTEGRATION === "1";
 
-test("from raw CSVs to a verified expert, step by step", { skip: !enabled && "set CAUSELINE_INTEGRATION=1", timeout: 600000 }, async () => {
+test("from raw CSVs to a reconciled expert whose incident is found, step by step", { skip: !enabled && "set CAUSELINE_INTEGRATION=1", timeout: 600000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "builder-e2e-"));
   const py = process.env.CAUSELINE_PYTHON || (process.platform === "win32" ? "python" : "python3");
   // a worked example: the contact-centre generator, with one planted problem, exported as plain CSVs
@@ -66,15 +66,15 @@ test("from raw CSVs to a verified expert, step by step", { skip: !enabled && "se
     const known = Math.round((ok / total) * 1000) / 10;
     const right = await reconcileMetric({ workspace: ws, kpi: "service_level", period: "week 6", expected: known, tolerance: 0.002, tools });
     assert.equal(right.match, true, JSON.stringify(right));
-    assert.equal(right.level, "provisional", "one confirmed number is the first rung, not the last");
+    assert.equal(right.level, "draft", "one confirmed number is a start, not the first rung");
     assert.equal(buildStatus(ws).steps.find((s) => s.step.startsWith("KPI service_level"))!.done, false);
 
     addIncident({ workspace: ws, kpi: "service_level", period: "2026-W07", finding: { dimension: "team", value: "team_05" }, question: "Why did service level drop in week 7?" });
     const early = await verifyExpert({ workspace: ws, kpi: "service_level" });
     assert.equal(early.verified, false);
-    assert.match(early.reasons.join("; "), /service_level is not verified yet \(it is provisional\)/);
+    assert.match(early.reasons.join("; "), /service_level is not reconciled yet \(it is draft\)/);
 
-    // a second number, of a different kind (one day), again from the CSVs and not from the system under test
+    // a second number, of a different kind and period (one day), again from the CSVs and not from the system under test
     const proposed = await proposeChecks({ workspace: ws, kpi: "service_level", tools });
     assert.ok(proposed.proposals.some((p) => p.kind === "grain"), JSON.stringify(proposed.proposals));
     const grain = readState(ws)!.kpis.service_level.checks.find((c) => c.kind === "grain")!;
@@ -88,12 +88,31 @@ test("from raw CSVs to a verified expert, step by step", { skip: !enabled && "se
     }
     const day = await confirmNumber({ workspace: ws, kpi: "service_level", check: grain.id, expected: dayOk / dayTotal, source: "the daily export", tolerance: 0.002, tools });
     assert.equal(day.confirmed, true, JSON.stringify(day));
-    assert.equal(day.level, "verified", day.gap);
+    assert.equal(day.level, "draft", "two numbers are not enough");
+
+    // a third number, of a slice (one queue, the same week)
+    const slice = readState(ws)!.kpis.service_level.checks.find((c) => c.kind === "slice" && Object.keys(c.scope)[0] === "queue")!;
+    let qTotal = 0;
+    let qOk = 0;
+    for (const l of readFileSync(join(dir, "raw", "calls.csv"), "utf-8").trim().split("\n").slice(1)) {
+      const c = l.split(",");
+      const t = new Date(c[1].replace(" ", "T") + "Z").getTime();
+      if (t < start || t >= start + 7 * 86_400_000 || c[3] !== slice.scope.queue) continue;
+      qTotal++;
+      qOk += Number(c[5]);
+    }
+    const third = await confirmNumber({ workspace: ws, kpi: "service_level", check: slice.id, expected: qOk / qTotal, source: "the queue report", tolerance: 0.002, tools });
+    assert.equal(third.confirmed, true, JSON.stringify(third));
+    assert.equal(third.level, "reconciled", third.gap);
     assert.equal(buildStatus(ws).steps.find((s) => s.step.startsWith("KPI service_level"))!.done, true);
 
-    const verified = await verifyExpert({ workspace: ws, kpi: "service_level" });
-    assert.equal(verified.verified, true, verified.reasons.join("; "));
-    assert.equal(loadAgents(ws).find((a) => a.kpi === "service_level" && a.task === "deep_rca")!.status, "verified");
+    // the recorded incident is found, but the expert is only as trusted as its KPI: calibration has not been run
+    const checked = await verifyExpert({ workspace: ws, kpi: "service_level" });
+    assert.equal(checked.cases.every((c) => c.pass), true, JSON.stringify(checked.cases));
+    assert.equal(checked.verified, false, "not verified until calibrated");
+    assert.equal(checked.level, "reconciled");
+    assert.match(checked.reasons.join("; "), /replay it over ordinary past periods/);
+    assert.equal(loadAgents(ws).find((a) => a.kpi === "service_level" && a.task === "deep_rca")!.status, "reconciled");
   } finally {
     await server.stop();
   }

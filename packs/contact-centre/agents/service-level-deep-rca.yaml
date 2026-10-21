@@ -4,4 +4,5 @@ task: deep_rca
 examples:
   - Why did service level drop in week 7?
   - Week 6 service level looks normal. Is anything wrong inside it?
-status: verified # understaffed_team, time_block_wednesday_lunch, the masking cases and lunch_dip_is_not_a_finding pass
+ladder: 2
+status: reconciled # synthetic data: the totals are checked against totals recomputed from the files, not a person's report; the planted-fault cases pass; not calibrated

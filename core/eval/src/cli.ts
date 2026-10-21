@@ -16,7 +16,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
   --max-turns <n>         agent turn limit (default 12)
   --routing               score the pack's routing eval (evals/routing.yaml) instead of its cases; needs at least 90%
   --intents               score the pack's intent eval (evals/intents.yaml): conversations to resolved intents; needs all of them (add --agent claude-code for a live attempt at each)
-  --no-branch-gate        do not fail the run when an expert marked verified has a playbook branch that no passing case takes (it is reported either way)
+  --no-branch-gate        do not fail the run when an expert above draft has a playbook branch that no passing case takes (it is reported either way)
   --reuse                 reuse a case's prepared pack when its setup has not changed
   --toolbox <path>        Toolbox binary (default: CAUSELINE_TOOLBOX, PATH, or ./toolbox.exe)
   --work-dir <dir>        where per-case packs are built (default: runs/eval-work/<pack name>)

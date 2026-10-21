@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The Builder on BigQuery, through the real MCP server (stdio) and Toolbox. Needs a Google Cloud sign-in for applications
 // (`gcloud auth application-default login`) and CAUSELINE_BQ_PROJECT set to the project queries are billed to.
-//   node scripts/bigquery-build-demo.mjs --example    the contact-centre data, loaded to a small dataset of yours, built to a verified KPI
+//   node scripts/bigquery-build-demo.mjs --example    the contact-centre data, loaded to a small dataset of yours, built to a reconciled KPI
 //   node scripts/bigquery-build-demo.mjs --public     the public CFPB complaints table: connect, look, try a fact, save a small pack (reads about 1-2 GB)
 // Every step prints what it read. The "numbers from the user's reports" in --example come from the raw files, not from the system under test.
 import { spawnSync } from "node:child_process";
@@ -120,11 +120,14 @@ try {
     const centre = slice.scope.centre;
     const r2 = await tool("confirm_number", { kpi: "service_level", check: slice.id, expected: rate((r) => within(slice.window)(r) && centreOf[r[2]] === centre), source: "the centre report", tolerance: 0.001 });
     say(`confirm_number ${centre}`, `confirmed=${r2.confirmed}; level=${r2.level}; ${r2.gap || "nothing left"}`);
+    const grain = checks().find((c) => c.kind === "grain");
+    const r3 = await tool("confirm_number", { kpi: "service_level", check: grain.id, expected: rate(within(grain.window)), source: "the daily export", tolerance: 0.001 });
+    say("confirm_number one day", `confirmed=${r3.confirmed}; level=${r3.level}; ${r3.gap || "nothing left"}`);
     const st = (await tool("signoff_status", { kpi: "service_level" })).kpis[0];
     say("automatic checks on BigQuery", st.auto.results.map((r) => `${r.ok ? (r.skipped ? "skip" : "ok") : "FAIL"} ${r.id}`).join("; "));
     await tool("add_incident", { kpi: "service_level", period: "2026-W07", finding: { dimension: "team", value: "team_05" }, question: "Why did service level drop in week 7?" });
     const v = await tool("verify_expert", { kpi: "service_level" });
-    say("verify_expert", `verified=${v.verified} ${v.reasons.join("; ")}`);
+    say("verify_expert", `verified=${v.verified} level=${v.level} ${v.reasons.join("; ")}`);
   }
   say("total read by the Builder's own steps (not counting Toolbox runs of the generated tools)", `${gb(total)} (about $${((total / 2 ** 40) * 6.25).toFixed(4)} at list price)`);
 } finally {

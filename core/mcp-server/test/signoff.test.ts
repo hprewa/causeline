@@ -130,26 +130,33 @@ test("a KPI is signed off from the page's own calls, and the chat tools see the 
 
   await api("number", { kpi: "ok_rate", check: total.id, expected: week, source: "the weekly report" });
   const confirmed = await api("decide", { kpi: "ok_rate", check: total.id, decision: "confirm" });
-  assert.equal(confirmed.json.level, "provisional");
+  assert.equal(confirmed.json.level, "draft");
 
   const sliceState = readState(cfg().packDir)!.kpis.ok_rate.checks.find((c) => c.id === slice.id)!;
   const [concept, value] = Object.entries(sliceState.scope)[0];
   const part = rate("2026-02-09", "2026-02-15", (r) => (r as unknown as Record<string, string>)[concept] === value);
   await api("number", { kpi: "ok_rate", check: slice.id, expected: part, source: "the group report" });
   const second = await api("decide", { kpi: "ok_rate", check: slice.id, decision: "confirm" });
-  assert.equal(second.json.level, "verified", second.json.gap);
+  assert.equal(second.json.level, "draft", "two numbers from one period are not enough");
+
+  // the third number, from another period and kind: the last day
+  const grain = proposed.json.proposals.find((p: { kind: string }) => p.kind === "grain");
+  const day = readState(cfg().packDir)!.kpis.ok_rate.checks.find((c) => c.id === grain.id)!.window;
+  await api("number", { kpi: "ok_rate", check: grain.id, expected: rate(day.start, day.end), source: "the daily export" });
+  const third = await api("decide", { kpi: "ok_rate", check: grain.id, decision: "confirm" });
+  assert.equal(third.json.level, "reconciled", third.json.gap);
 
   // the same state through the chat tool
   const viaTool = signoffStatusTool(cfg(), { kpi: "ok_rate" }).kpis[0];
-  assert.equal(viaTool.level, "verified");
-  assert.deepEqual(viaTool.checks.filter((c) => c.state === "confirmed").map((c) => c.source).sort(), ["the group report", "the weekly report"]);
+  assert.equal(viaTool.level, "reconciled");
+  assert.deepEqual(viaTool.checks.filter((c) => c.state === "confirmed").map((c) => c.source).sort(), ["the daily export", "the group report", "the weekly report"]);
   // flagging from the page, and running the stored checks again
-  const grain = proposed.json.proposals.find((p: { kind: string }) => p.kind === "grain");
-  await api("number", { kpi: "ok_rate", check: grain.id, expected: 0.1, source: "the daily export" });
-  assert.equal((await api("decide", { kpi: "ok_rate", check: grain.id, decision: "flag", note: "looks far off" })).json.state, "flagged");
-  assert.equal(signoffStatusTool(cfg(), { kpi: "ok_rate" }).kpis[0].level, "provisional", "a flagged number holds it back");
+  const other = proposed.json.proposals.filter((p: { kind: string }) => p.kind === "slice")[1];
+  await api("number", { kpi: "ok_rate", check: other.id, expected: 0.1, source: "the other report" });
+  assert.equal((await api("decide", { kpi: "ok_rate", check: other.id, decision: "flag", note: "looks far off" })).json.state, "flagged");
+  assert.equal(signoffStatusTool(cfg(), { kpi: "ok_rate" }).kpis[0].level, "draft", "a flagged number holds it back");
   const again = (await api("run-checks", { kpi: "ok_rate" })).json;
-  assert.equal(again.rechecked.length, 2);
+  assert.equal(again.rechecked.length, 3);
   assert.ok(again.rechecked.every((r: { match: boolean }) => r.match));
 });
 

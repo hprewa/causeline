@@ -28,19 +28,19 @@ export function branchCoverage(outcomes: CaseOutcome[], packDir: string, coreDir
   });
 }
 
-/** Experts marked `verified` whose playbook has a branch no passing case takes: they cannot honestly keep the label. */
-export function expertsWithUntestedBranches(coverage: BranchCoverage[], packDir: string): { expert: string; playbook: string; untested: string[] }[] {
+/** Experts above draft whose playbook has a branch no passing case takes: they cannot honestly keep their rung. */
+export function expertsWithUntestedBranches(coverage: BranchCoverage[], packDir: string): { expert: string; status: string; playbook: string; untested: string[] }[] {
   return loadAgents(packDir)
-    .filter((a) => a.status === "verified")
+    .filter((a) => a.status !== "draft")
     .flatMap((a) => {
       const playbook = a.playbook ?? (a.task === "deep_rca" ? "metric_change" : a.task);
       const c = coverage.find((x) => x.playbook === playbook);
-      return c && c.untested.length > 0 ? [{ expert: a.name, playbook, untested: c.untested }] : [];
+      return c && c.untested.length > 0 ? [{ expert: a.name, status: a.status, playbook, untested: c.untested }] : [];
     });
 }
 
 export function renderCoverage(coverage: BranchCoverage[], flagged: ReturnType<typeof expertsWithUntestedBranches>): string {
   const lines = coverage.map((c) => `branches of ${c.playbook}: ${c.covered.length}/${c.total} taken by a passing case${c.untested.length > 0 ? `; never taken: ${c.untested.join(", ")}` : ""}${c.notApplicable.length > 0 ? `; not applicable to this pack: ${c.notApplicable.join(", ")}` : ""}`);
-  for (const f of flagged) lines.push(`  ${f.expert} is marked verified, but ${f.untested.length} branch(es) of ${f.playbook} are never taken by a passing case`);
+  for (const f of flagged) lines.push(`  ${f.expert} stands as ${f.status}, but ${f.untested.length} branch(es) of ${f.playbook} are never taken by a passing case`);
   return lines.join("\n");
 }

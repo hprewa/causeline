@@ -129,7 +129,7 @@ export function validatePack(files: PackFiles): PackIssues {
     seenAgents.add(a.name);
     if (!ont.metrics[a.kpi]) errors.push(`agents: expert "${a.name}" is for KPI "${a.kpi}", which is not in the ontology`);
     if (a.playbook && playbooks && !playbooks.some((p) => p.name === a.playbook)) errors.push(`agents: expert "${a.name}" uses playbook "${a.playbook}", which does not exist`);
-    if (a.status === "verified" && a.examples.length === 0) warnings.push(`agents: expert "${a.name}" is marked verified but lists no example questions`);
+    if (a.status !== "draft" && a.examples.length === 0) warnings.push(`agents: expert "${a.name}" is marked ${a.status} but lists no example questions`);
   }
 
   // --- generated tools against what the runner will ask for -----------------------------------------

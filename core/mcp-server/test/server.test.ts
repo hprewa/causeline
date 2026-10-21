@@ -67,7 +67,7 @@ after(async () => {
 
 test("exposes exactly the causeline-mcp tools, with read-only hints where they apply", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "confirm_number", "connect_bigquery", "connect_files", "describe_data", "generate_tools", "get_intent", "list_playbooks", "open_signoff", "play_back", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "confirm_number", "connect_bigquery", "connect_files", "describe_data", "generate_tools", "get_intent", "list_playbooks", "open_signoff", "play_back", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
   const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
   assert.equal(byName.list_playbooks.annotations?.readOnlyHint, true);
   assert.equal(byName.generate_tools.annotations?.readOnlyHint, false);

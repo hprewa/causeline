@@ -6,7 +6,9 @@ import { resolvePeriods } from "@causeline/router";
 import { toBuckets, ToolIndex, type ToolCaller } from "@causeline/runner";
 import { AgentDef, EvalCases, loadAgents, loadPack } from "@causeline/schema";
 import { adoptConfirmed, normaliseExpected } from "./checks.js";
-import { levelGap, levelOf, readState, updateState, type Level } from "./state.js";
+import { atLeast } from "@causeline/schema";
+import { syncExperts } from "./checks.js";
+import { levelGap, levelOf, logChange, readState, updateState, type Level } from "./state.js";
 
 export interface Reconciliation {
   kpi: string;
@@ -25,8 +27,8 @@ export interface Reconciliation {
 
 /**
  * The one-number path: compute a KPI for one whole period through the generated tools and compare it with a number
- * the user already knows. A match is stored as a confirmed `total` check (the first rung: provisional); verified
- * needs a second number of a different kind (see `proposeChecks` and `confirmNumber`).
+ * the user already knows. A match is stored as a confirmed `total` check, one of the three numbers (from two periods and
+ * two kinds) the first rung asks for (see `proposeChecks` and `confirmNumber`).
  */
 export async function reconcileMetric(opts: { workspace: string; kpi: string; period: string; expected: number; tolerance?: number; source?: string; tools: ToolCaller }): Promise<Reconciliation> {
   const pack = loadPack(opts.workspace, { requireMeta: true });
@@ -113,22 +115,26 @@ export function addIncident(opts: IncidentInput): { id: string; file: string } {
 
 export interface Verification {
   kpi: string;
+  /** True only when the KPI has also been calibrated, so the expert is verified in the full sense. */
   verified: boolean;
+  /** Where the expert stands now. */
+  level?: Level;
   reasons: string[];
   cases: { id: string; pass: boolean; detail: string }[];
 }
 
 /**
- * The only way an expert becomes `verified`: its KPI is verified (automatic checks pass and at least two numbers of
- * different kinds are confirmed against named sources), it has at least one recorded incident, and every incident
- * case passes through the runner.
+ * Replay the incidents the person recorded through the analysis. Needs a reconciled KPI (its numbers match the person's reports), at least
+ * one recorded incident, and every incident case to pass through the runner. A pass is stored on the KPI as its incident check; it makes
+ * the expert `verified` only once the KPI has also been calibrated (stays quiet over ordinary periods), so until then the expert stands
+ * where its KPI stands and the result says what is still missing.
  */
 export async function verifyExpert(opts: { workspace: string; kpi: string; toolbox?: string; corePlaybooksDir?: string }): Promise<Verification> {
   const state = readState(opts.workspace);
   const reasons: string[] = [];
   if (!state) throw new Error("this workspace has not been set up yet");
   const rec = state.kpis[opts.kpi];
-  if (levelOf(rec) !== "verified") reasons.push(`${opts.kpi} is not verified yet (it is ${levelOf(rec)}): ${levelGap(rec)}`);
+  if (!atLeast(levelOf(rec), "reconciled")) reasons.push(`${opts.kpi} is not reconciled yet (it is ${levelOf(rec)}): ${levelGap(rec)}`);
   const mine = state.incidents.filter((i) => i.kpi === opts.kpi);
   if (mine.length === 0) reasons.push(`no past incident is recorded for ${opts.kpi}; record one you know the cause of`);
   if (reasons.length > 0) return { kpi: opts.kpi, verified: false, reasons, cases: [] };
@@ -138,10 +144,24 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
   const verified = cases.length > 0 && cases.every((c) => c.pass);
   if (!verified) return { kpi: opts.kpi, verified: false, reasons: cases.filter((c) => !c.pass).map((c) => `${c.id} did not find what you said happened: ${c.detail}`), cases };
 
-  // write (or update) the KPI's deep-dive expert as verified
+  // store the incident check on the KPI, and write (or update) the KPI's deep-dive expert at the KPI's rung
+  const level = (() => {
+    const out = { level: "draft" as Level };
+    updateState(opts.workspace, (s) => {
+      const k = s.kpis[opts.kpi];
+      const before = levelOf(k);
+      k.verification = { at: new Date().toISOString(), pass: true, incidents_passed: cases.map((c) => c.id) };
+      k.level = levelOf(k);
+      out.level = k.level;
+      logChange(s, `kpi:${opts.kpi}`, before, out.level, `the recorded incident${cases.length === 1 ? "" : "s"} (${cases.map((c) => c.id).join(", ")}) passed`, "verify_expert");
+    });
+    return out.level;
+  })();
   const existing = loadAgents(opts.workspace).find((a) => a.kpi === opts.kpi && a.task === "deep_rca");
-  const agent = AgentDef.parse({ ...(existing ?? { name: `${opts.kpi.replace(/_/g, "-")}-deep-rca`, kpi: opts.kpi, task: "deep_rca", examples: mine.map((i) => i.text) }), status: "verified" });
+  const agent = AgentDef.parse({ ...(existing ?? { name: `${opts.kpi.replace(/_/g, "-")}-deep-rca`, kpi: opts.kpi, task: "deep_rca", examples: mine.map((i) => i.text) }), status: existing?.status ?? "draft", ladder: 2 });
   mkdirSync(join(opts.workspace, "agents"), { recursive: true });
   writeFileSync(join(opts.workspace, "agents", `${agent.name}.yaml`), stringify(agent, { lineWidth: 0 }), "utf-8");
-  return { kpi: opts.kpi, verified: true, reasons: [], cases };
+  syncExperts(opts.workspace, opts.kpi, level, `the recorded incident check passed and its KPI is ${level}`, "verify_expert");
+  const stillNeeds = level === "verified" ? [] : [`the incident check passed, and ${opts.kpi} stands as ${level}: ${levelGap(readState(opts.workspace)!.kpis[opts.kpi])}`];
+  return { kpi: opts.kpi, verified: level === "verified", reasons: stillNeeds, cases, level };
 }

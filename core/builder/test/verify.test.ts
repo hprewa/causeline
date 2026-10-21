@@ -48,21 +48,21 @@ test("an incident becomes an eval case against the real data, and is remembered"
   assert.throws(() => addIncident({ workspace: ws, kpi: "ghost", period: "2026-W03", finding: { dimension: "site", value: "x" }, question: "q" }), /not a KPI/);
 });
 
-test("an expert cannot become verified without a matched number and a recorded incident", async () => {
+test("an expert cannot be tested against an incident without a reconciled KPI and a recorded incident", async () => {
   const ws = await savedWorkspace();
   const none = await verifyExpert({ workspace: ws, kpi: "ok_rate" });
   assert.equal(none.verified, false);
-  assert.match(none.reasons.join("; "), /is not verified yet \(it is draft\)/);
+  assert.match(none.reasons.join("; "), /is not reconciled yet \(it is draft\)/);
   assert.match(none.reasons.join("; "), /no past incident is recorded/);
 
   updateState(ws, (s) => {
-    const check = (kind: "total" | "slice") => ({ id: `${kind}-1`, kind, scope: {}, window: { start: "2026-01-05", end: "2026-01-11" }, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" as const });
-    s.kpis.ok_rate = { level: "verified", checks: [check("total"), check("slice")], auto: { at: "now", pass: true, results: [] } };
+    const check = (kind: "total" | "slice" | "grain", start: string) => ({ id: `${kind}-1`, kind, scope: {}, window: { start, end: start === "2026-01-05" ? "2026-01-11" : start }, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" as const });
+    s.kpis.ok_rate = { level: "reconciled", checks: [check("total", "2026-01-05"), check("slice", "2026-01-05"), check("grain", "2026-01-12")], auto: { at: "now", pass: true, results: [] } };
   });
   const noIncident = await verifyExpert({ workspace: ws, kpi: "ok_rate" });
   assert.deepEqual(noIncident.reasons.length, 1);
   assert.match(noIncident.reasons[0], /no past incident/);
-  assert.equal(existsSync(join(ws, "agents")) && loadAgents(ws).some((a) => a.status === "verified"), false, "nothing was marked verified");
+  assert.equal(existsSync(join(ws, "agents")) && loadAgents(ws).some((a) => a.status !== "draft"), false, "nothing was raised above draft");
 });
 
 test("an incident can be given as dates, and is run as a date range", async () => {

@@ -83,6 +83,19 @@ Playbooks that branch, and hand-offs between KPIs (design: `docs/audit/playbook-
 | 5 | Branch coverage in the eval report, and the `verified` gate | done | see `git log` (message starts "Sprint 4 step 5") | Step 5 |
 | 6 | Recovery (a change that has since reversed); interactions between findings moved to a later sprint | done | see `git log` (message starts "Sprint 4 step 6") | Step 6 |
 
+## Status ladder migration
+
+New ladder (draft, reconciled, calibrated, verified; flag "numbers not confirmed"), migrated through the schema, Builder, router, intent run, MCP tools, sign-off screen, evals, packs, skills and docs (`docs/evidence/ladder.md`).
+
+| Part | State |
+|---|---|
+| Shared definitions, reading of old expert and build files, status log | done |
+| Builder rule (three numbers, two periods, two kinds), experts follow their KPI, `accept_sample` | done |
+| Router, intent run, MCP tool texts, sign-off screen, branch gate, shipped experts, skills, README, guard in CI | done |
+| Unit tests in every package | pass |
+| Contact-centre, routing, intent evals and the scripted end-to-end tests after the change | **not run** (machine ran out of memory twice) |
+| Calibration and fault injection (the two rungs above reconciled) | not started: phase 2 |
+
 ## Parked from sprint 3 (not done, by decision)
 
 | Item | Why it matters |

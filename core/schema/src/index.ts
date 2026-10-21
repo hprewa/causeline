@@ -3,6 +3,7 @@ export * from "./data.js";
 export * from "./meta.js";
 export * from "./playbook.js";
 export * from "./condition.js";
+export * from "./status.js";
 export * from "./agent.js";
 export * from "./result.js";
 export * from "./evalcase.js";

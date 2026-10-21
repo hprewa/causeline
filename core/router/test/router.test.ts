@@ -17,7 +17,7 @@ const ontology = Ontology.parse({
   },
 });
 const periods = Array.from({ length: 10 }, (_, i) => `2026-W${String(i + 1).padStart(2, "0")}`);
-const agents = [AgentDef.parse({ name: "pass-rate-rca", kpi: "pass_rate", task: "deep_rca", playbook: "pass_drop", status: "verified", examples: ["why did the pass rate drop?"] })];
+const agents = [AgentDef.parse({ name: "pass-rate-rca", kpi: "pass_rate", task: "deep_rca", playbook: "pass_drop", ladder: 2, status: "reconciled", examples: ["why did the pass rate drop?"] })];
 const members = { zone: ["North", "South", "East"] };
 
 const go = (question: string, extra: Partial<Parameters<typeof route>[0]> = {}) =>
@@ -53,18 +53,19 @@ for (const [question, kpi, task, period, needs] of TABLE) {
   });
 }
 
-test("a verified expert with its own playbook is chosen, and the answer says so; a generic one is flagged as unverified", () => {
-  const verified = go("why did the pass rate drop last week?");
-  assert.equal(verified.options[0].expert, "pass-rate-rca");
-  assert.equal(verified.options[0].playbook, "pass_drop");
-  assert.equal(verified.options[0].status, "verified");
-  assert.doesNotMatch(verified.announce, /unverified/);
+test("a reconciled expert with its own playbook is chosen, and the answer says where it stands; a generic one says it has not been checked", () => {
+  const checked = go("why did the pass rate drop last week?");
+  assert.equal(checked.options[0].expert, "pass-rate-rca");
+  assert.equal(checked.options[0].playbook, "pass_drop");
+  assert.equal(checked.options[0].status, "reconciled");
+  assert.match(checked.announce, /numbers that match your own reports, but has not been tested for false alarms/);
+  assert.doesNotMatch(checked.announce, /not been checked against your own reports/);
 
   const generic = go("why did scrap rate drop last week?");
   assert.equal(generic.options[0].expert, "scrap_rate-deep_rca");
   assert.equal(generic.options[0].playbook, "metric_change");
   assert.equal(generic.options[0].status, "draft");
-  assert.match(generic.announce, /generic expert .* not been verified/);
+  assert.match(generic.announce, /expert has not been checked against your own reports yet/);
 });
 
 test("an expert whose playbook does not exist falls back to the core template", () => {

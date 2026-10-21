@@ -15,7 +15,7 @@ const labels = [
 ];
 const win = (start: string, end: string, label?: string) => ({ start, end, days: 7, description: "d", ...(label ? { label } : {}) });
 const resolved = (over: Partial<ResolvedIntent>): ResolvedIntent => ({ kpi: "rate", task: "deep_rca", window: win("2026-03-09", "2026-03-15"), aggregation: "", filters: {}, ...over });
-const agents: AgentDef[] = [{ name: "rate-expert", kpi: "rate", task: "deep_rca", playbook: "own_playbook", examples: [], handoff: "none", status: "verified" }];
+const agents: AgentDef[] = [{ name: "rate-expert", kpi: "rate", task: "deep_rca", playbook: "own_playbook", examples: [], handoff: "none", status: "reconciled", unconfirmed_numbers: false, ladder: 2 }];
 
 test("a deep dive runs the KPI's expert with dates, view, baseline and a scope for the filters", () => {
   const plan = planRun(resolved({ aggregation: "day", baseline: 6, filters: { spot: "s1" } }), { ontology, agents, labels });
@@ -23,14 +23,14 @@ test("a deep dive runs the KPI's expert with dates, view, baseline and a scope f
   if (plan.kind !== "run") return;
   assert.equal(plan.playbook, "own_playbook");
   assert.equal(plan.expert, "rate-expert");
-  assert.equal(plan.verified, true);
+  assert.equal(plan.status, "reconciled");
   assert.deepEqual(plan.inputs, { metric: "rate", start_date: "2026-03-09", end_date: "2026-03-15", aggregation: "day", baseline: 6, scope: '{"spot":"s1"}' });
 });
 
-test("with no expert of its own a KPI uses the core template for the task, and says it is unverified", () => {
+test("with no expert of its own a KPI uses the core template for the task, and says it has not been checked", () => {
   for (const [task, playbook] of [["value", "value"], ["trend", "trend"], ["deep_rca", "metric_change"]] as const) {
     const plan = planRun(resolved({ kpi: "count", task }), { ontology, agents, labels });
-    assert.ok(plan.kind === "run" && plan.playbook === playbook && !plan.verified, task);
+    assert.ok(plan.kind === "run" && plan.playbook === playbook && plan.status === "draft", task);
   }
 });
 

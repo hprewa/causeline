@@ -4,4 +4,5 @@ task: deep_rca
 examples:
   - Why did the share closed with monetary relief change last week?
   - Which product or company moved the monetary relief rate?
-status: draft # the KPI is verified, but no past incident with a known cause is recorded for it (see evals/known-gaps.md)
+ladder: 2
+status: reconciled # the KPI matches the CFPB's published counts from four angles; no past incident with a known cause is recorded for it, and it has not been calibrated

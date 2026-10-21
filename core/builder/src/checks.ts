@@ -8,7 +8,8 @@ import { ScopedToolCaller, ToolIndex, medianOf, settledEnd, toBuckets, type Buck
 export { settledEnd };
 import { loadAgents, loadPack, type PackDefinition } from "@causeline/schema";
 import { openData } from "./data.js";
-import { levelGap, levelOf, readState, updateState, type AutoResult, type CheckKind, type KpiRecord, type Level, type SignoffCheck } from "./state.js";
+import { atLeast } from "@causeline/schema";
+import { levelGap, levelOf, logChange, readState, unconfirmedNumbers, updateState, type AutoResult, type CheckKind, type KpiRecord, type Level, type SignoffCheck } from "./state.js";
 
 const STEP = "signoff";
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -249,7 +250,9 @@ export async function recordNumber(opts: { workspace: string; kpi: string; check
         other.suspect = (other.suspect ?? []).filter((x) => !(x.from_kpi === opts.kpi && x.start <= c.window.end && x.end >= c.window.start));
         if (far) other.suspect.push({ start: c.window.start, end: c.window.end, from_kpi: opts.kpi, detail: `yours ${expected}, ours ${now.value} for ${dayWords(c.window.start, c.window.end)}` });
         if (other.suspect.length === 0) delete other.suspect;
+        const was = other.level;
         other.level = levelOf(other);
+        logChange(s, `kpi:${k}`, was, other.level, `${opts.kpi} was checked against the same data`, "builder");
       }
     }
   });
@@ -276,8 +279,11 @@ export interface Decision {
   gap: string;
 }
 
-/** Make the ladder's level agree with what is stored, and take a verified expert back to draft when its KPI is no longer verified. */
-function settle(workspace: string, kpi: string, change: (rec: KpiRecord) => void): { before: Level; after: Level; rec: KpiRecord } {
+/**
+ * Make the ladder's level agree with what is stored, write any change of rung to the status log, and set the KPI's experts to the same rung
+ * (an expert stands exactly where its KPI stands: it is never trusted more than the numbers under it).
+ */
+function settle(workspace: string, kpi: string, change: (rec: KpiRecord) => void, why = "a check changed", by = "builder"): { before: Level; after: Level; rec: KpiRecord } {
   let before = "draft" as Level;
   let out: KpiRecord | undefined;
   updateState(workspace, (s) => {
@@ -285,22 +291,26 @@ function settle(workspace: string, kpi: string, change: (rec: KpiRecord) => void
     before = levelOf(rec);
     change(rec);
     rec.level = levelOf(rec);
+    logChange(s, `kpi:${kpi}`, before, rec.level, why, by);
     out = rec;
   });
   const after = levelOf(out);
-  if (before === "verified" && after !== "verified") demoteExperts(workspace, kpi);
+  if (before !== after) syncExperts(workspace, kpi, after, `its KPI ${kpi} is now ${after}`, by);
   return { before, after, rec: out! };
 }
 
-/** An expert is only ever verified on a verified KPI: when the KPI falls, its experts become drafts again. */
-export function demoteExperts(workspace: string, kpi: string): string[] {
+/** Set every expert of a KPI to the KPI's rung, and log each change. Returns the experts that changed. */
+export function syncExperts(workspace: string, kpi: string, to: Level, why: string, by = "builder"): string[] {
   const names: string[] = [];
+  const changes: { name: string; from: Level }[] = [];
   for (const a of loadAgents(workspace)) {
-    if (a.kpi !== kpi || a.status !== "verified") continue;
+    if (a.kpi !== kpi || a.status === to) continue;
     mkdirSync(join(workspace, "agents"), { recursive: true });
-    writeFileSync(join(workspace, "agents", `${a.name}.yaml`), stringify({ ...a, status: "draft" }, { lineWidth: 0 }), "utf-8");
+    writeFileSync(join(workspace, "agents", `${a.name}.yaml`), stringify({ ...a, status: to, unconfirmed_numbers: false }, { lineWidth: 0 }), "utf-8");
     names.push(a.name);
+    changes.push({ name: a.name, from: a.status });
   }
+  if (changes.length > 0 && readState(workspace)) updateState(workspace, (s) => changes.forEach((c) => logChange(s, `expert:${c.name}`, c.from, to, why, by)));
   return names;
 }
 
@@ -319,6 +329,32 @@ export async function decide(opts: { workspace: string; kpi: string; check: stri
     if (opts.note) c.note = opts.note;
   });
   return { kpi: opts.kpi, check: opts.check, state: rec.checks.find((c) => c.id === opts.check)!.state, level: levelOf(rec), gap: levelGap(rec) };
+}
+
+/**
+ * The person has no exact figure to check against but, shown the number the tools give, says it looks right. It counts toward no rung (only
+ * numbers confirmed against a named report do), and marks the KPI "numbers not confirmed" so every answer from it says so.
+ */
+export function acceptSample(opts: { workspace: string; kpi: string; check: string; note?: string }): Decision & { got: number } {
+  const target = find(readState(opts.workspace)?.kpis[opts.kpi], opts.kpi, opts.check);
+  const { rec } = settle(
+    opts.workspace,
+    opts.kpi,
+    (r) => {
+      const c = find(r, opts.kpi, opts.check);
+      c.state = "plausible";
+      c.confirmed_at = new Date().toISOString();
+      c.note = opts.note ?? "the person said it looks plausible; no exact figure to check it against";
+    },
+    "a number was accepted as plausible, not confirmed against a report",
+    "accept_sample",
+  );
+  // the KPI's draft experts say so in every answer
+  for (const a of loadAgents(opts.workspace)) {
+    if (a.kpi !== opts.kpi || a.status !== "draft" || a.unconfirmed_numbers) continue;
+    writeFileSync(join(opts.workspace, "agents", `${a.name}.yaml`), stringify({ ...a, unconfirmed_numbers: true }, { lineWidth: 0 }), "utf-8");
+  }
+  return { kpi: opts.kpi, check: opts.check, state: "plausible", level: levelOf(rec), gap: levelGap(rec), got: target.got };
 }
 
 /** The chat path: give a number and, when it matches, confirm it in the same step (the person gave it; they are the confirmation). */
@@ -439,7 +475,7 @@ export interface RunChecksResult {
 /**
  * Work out again every number that was confirmed, and the automatic checks. A number that no longer matches goes
  * back to pending (with the new figure beside it); only when all still match, and the automatic checks pass, does
- * a KPI that had fallen to provisional become verified again.
+ * a KPI that had fallen back to draft stand as reconciled again.
  */
 export async function runChecks(opts: { workspace: string; kpi: string; tools: ToolCaller }): Promise<RunChecksResult> {
   const ctx = await open(opts.workspace, opts.kpi, opts.tools);
@@ -468,7 +504,7 @@ export async function runChecks(opts: { workspace: string; kpi: string; tools: T
       }
     }
   });
-  return { kpi: opts.kpi, before, after, restored: before !== "verified" && after === "verified", rechecked: results, auto, gap: levelGap(rec) };
+  return { kpi: opts.kpi, before, after, restored: !atLeast(before, "reconciled") && atLeast(after, "reconciled"), rechecked: results, auto, gap: levelGap(rec) };
 }
 
 // --- where things stand --------------------------------------------------------------------------
@@ -478,6 +514,8 @@ export interface SignoffKpi {
   level: Level;
   /** What stands between it and the next step up, in plain words. */
   gap: string;
+  /** The numbers it rests on were only a plausible sample, not confirmed against the person's reports. */
+  unconfirmed: boolean;
   auto?: { at: string; pass: boolean; results: AutoResult[] };
   checks: { id: string; kind: CheckKind; label: string; state: SignoffCheck["state"]; expected?: number; source?: string; got?: number; note?: string }[];
 }
@@ -492,6 +530,7 @@ export function signoffStatus(workspace: string, kpi?: string): SignoffKpi[] {
       kpi: k,
       level: levelOf(rec),
       gap: levelGap(rec),
+      unconfirmed: unconfirmedNumbers(rec),
       ...(rec.auto ? { auto: rec.auto } : {}),
       checks: rec.checks.map((c) => ({ id: c.id, kind: c.kind, label: c.label, state: c.state, ...(c.expected !== undefined ? { expected: c.expected, source: c.source, got: c.got } : {}), ...(c.note ? { note: c.note } : {}) })),
     }));

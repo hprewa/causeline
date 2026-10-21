@@ -4,4 +4,5 @@ task: deep_rca
 examples:
   - Why did the timely response rate change last week?
   - Which company or product moved the timely response rate?
-status: draft # the KPI is verified, but no past incident with a known cause is recorded for it (see evals/known-gaps.md)
+ladder: 2
+status: reconciled # the KPI matches the CFPB's published counts from four angles; the Equifax week is a case, but it has not been calibrated over quiet weeks

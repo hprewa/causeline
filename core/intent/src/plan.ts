@@ -1,12 +1,14 @@
 import { CORE_PLAYBOOK, effectiveExperts } from "@causeline/router";
-import type { AgentDef, Ontology, ResolvedIntent } from "@causeline/schema";
+import type { AgentDef, Ontology, ResolvedIntent, Rung } from "@causeline/schema";
 
 export type RunPlan =
   | {
       kind: "run";
       playbook: string;
       expert: string;
-      verified: boolean;
+      /** Where the expert stands on the ladder, and whether the numbers under it were only a plausible sample. */
+      status: Rung;
+      unconfirmed_numbers: boolean;
       inputs: Record<string, string | number>;
     }
   | { kind: "cannot"; reason: string };
@@ -44,5 +46,5 @@ export function planRun(r: ResolvedIntent, opts: { ontology: Ontology; agents: A
   if (r.aggregation) inputs.aggregation = r.aggregation;
   if (r.baseline !== undefined) inputs.baseline = r.baseline;
   if (Object.keys(r.filters).length > 0) inputs.scope = JSON.stringify(r.filters);
-  return { kind: "run", playbook: expert.playbook ?? CORE_PLAYBOOK[r.task], expert: expert.name, verified: expert.status === "verified", inputs };
+  return { kind: "run", playbook: expert.playbook ?? CORE_PLAYBOOK[r.task], expert: expert.name, status: expert.status, unconfirmed_numbers: expert.unconfirmed_numbers, inputs };
 }

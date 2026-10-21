@@ -262,3 +262,15 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A live agent run is only meaningful on a freshly bundled plugin.** Why: the first run read stale results and looked like agent errors.
 - **The skill tells the agent to round to nearest and not to subtract figures.** Why: two checks failed on numbers the agent had derived.
 
+## The status ladder (commit see `PROGRESS.md`)
+- **Four rungs: draft, reconciled, calibrated, verified; plus a flag "numbers not confirmed".** Why: the old `verified` meant only that two numbers matched; it never showed the analysis stays quiet in ordinary periods or finds real incidents. Each name is now a check that was run.
+- **Reconciled needs three numbers from two periods and two kinds, each with a named source.** Why: two numbers from one week can agree by luck or by the same wrong date rule; a different period and angle catches week-start and join mistakes.
+- **An expert stands exactly where its KPI stands.** Why: it must never be trusted more than the numbers under it; one record is easier to keep honest than two.
+- **Old `verified` stands as reconciled until the KPI changes (`grandfathered`); old `provisional` is a draft.** Why: nothing a person had earned is silently thrown away, and nothing is promoted. This departs from the planning note on the flag: old provisional meant a matched number, not a plausible one.
+- **The files carry a marker (`ladder: 2`, build version 3).** Why: the old and the new `verified` are the same word with different meanings.
+- **Every change of rung is logged.** Why: answers state the rung, so the history of who and why must exist.
+- **`verify_expert` stores the incident check and cannot make an expert verified alone.** Why: finding one incident without calibration proves nothing about false alarms.
+- **The branch-coverage gate covers every expert above draft.** Why: a rung above draft claims the analysis was tested; untested playbook branches contradict it.
+- **The shipped contact-centre experts are reconciled on synthetic data.** Why: totals are checked against totals recomputed from the files; there is no person's report, and the file says so.
+- **A guard fails the build if the retired name returns.** Why: renames rot unless something checks them.
+

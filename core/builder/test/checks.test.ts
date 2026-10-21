@@ -6,10 +6,10 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import { loadAgents } from "@causeline/schema";
 import type { Row, ToolCaller } from "@causeline/runner";
-import { autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, settledEnd, signoffStatus } from "../src/checks.js";
+import { acceptSample, autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, settledEnd, signoffStatus } from "../src/checks.js";
 import { connectFiles } from "../src/connect.js";
 import { savePack } from "../src/savepack.js";
-import { levelGap, levelOf, readState, writeState, type KpiRecord } from "../src/state.js";
+import { levelGap, levelOf, readState, unconfirmedNumbers, writeState, type KpiRecord } from "../src/state.js";
 import { SqliteToolCaller as SqliteTools } from "../src/sqlite-tools.js";
 
 // 6 whole weeks from Monday 2026-01-05, 8 rows a day over three sites in two regions and two channels.
@@ -55,6 +55,19 @@ async function workspace() {
   return { ws, tools: new SqliteTools(ws), dir };
 }
 
+/** Confirm the three proposed kinds of number (the whole business last week, one slice of it, one day): enough for the first rung. */
+async function reconcileAll(ws: string, tools: SqliteTools, kpi = "ok_rate") {
+  const p = await proposeChecks({ workspace: ws, kpi, tools });
+  const [total, slice, grain] = ["total", "slice", "grain"].map((k) => p.proposals.find((x) => x.kind === k)!);
+  const value = (from: string, to: string, keep?: (r: Row_) => boolean) => (kpi === "ok_rate" ? truth(from, to, keep).rate : truth(from, to, keep).rate * truth(from, to, keep).count);
+  const sc = readState(ws)!.kpis[kpi].checks.find((c) => c.id === slice.id)!;
+  const [c, v] = Object.entries(sc.scope)[0];
+  const day = readState(ws)!.kpis[kpi].checks.find((x) => x.id === grain.id)!.window.start;
+  await confirmNumber({ workspace: ws, kpi, check: total.id, expected: value(LAST_WEEK.from, LAST_WEEK.to), source: "a report", tolerance: 0.002, tools });
+  await confirmNumber({ workspace: ws, kpi, check: slice.id, expected: value(LAST_WEEK.from, LAST_WEEK.to, (x) => (x as unknown as Record<string, string>)[c] === v), source: "a report", tolerance: 0.002, tools });
+  return confirmNumber({ workspace: ws, kpi, check: grain.id, expected: value(day, day), source: "a report", tolerance: 0.002, tools });
+}
+
 test("day spans are said in plain words", () => {
   assert.equal(dayWords("2026-02-09", "2026-02-15"), "9–15 February 2026");
   assert.equal(dayWords("2026-02-15", "2026-02-15"), "15 February 2026");
@@ -62,31 +75,79 @@ test("day spans are said in plain words", () => {
 });
 
 test("the ladder is worked out from what is stored and cannot be set by hand", () => {
-  const check = (kind: "total" | "slice", source = "a report", state: "confirmed" | "pending" | "flagged" = "confirmed") => ({ id: `${kind}-1`, kind, scope: {}, window: { start: "2026-01-05", end: "2026-01-11" }, label: kind, got: 1, expected: 1, source, tolerance: 0.01, state });
+  const W1 = { start: "2026-01-05", end: "2026-01-11" };
+  const W2 = { start: "2026-01-12", end: "2026-01-18" };
+  const check = (kind: "total" | "slice" | "grain", source = "a report", state: "confirmed" | "pending" | "flagged" | "plausible" = "confirmed", window = W1) => ({ id: `${kind}-${window.start}`, kind, scope: {}, window, label: kind, got: 1, expected: 1, source, tolerance: 0.01, state });
   const auto = { at: "now", pass: true, results: [] };
   const rec = (checks: KpiRecord["checks"], a: KpiRecord["auto"] | null = auto): KpiRecord => ({ level: "verified", checks, ...(a ? { auto: a } : {}) });
   assert.equal(levelOf(undefined), "draft");
   assert.equal(levelOf(rec([])), "draft", "claiming verified on the record changes nothing");
   assert.equal(levelOf(rec([check("total", "a report", "pending")])), "draft");
-  assert.equal(levelOf(rec([check("total")])), "provisional", "one confirmed number");
-  assert.equal(levelOf(rec([check("total"), check("total")])), "provisional", "two numbers of the same kind are one angle");
-  assert.equal(levelOf(rec([check("total"), check("slice")])), "verified");
-  assert.equal(levelOf(rec([check("total"), check("slice", " ")])), "provisional", "a number with no named source does not count towards the second angle");
-  assert.equal(levelOf(rec([check("total"), check("slice"), { ...check("slice"), id: "slice-2", state: "flagged" }])), "provisional", "a flagged number blocks verified");
-  assert.equal(levelOf(rec([check("total"), check("slice")], { at: "now", pass: false, results: [{ id: "x", ok: false, detail: "rows repeat" }] })), "draft", "an automatic failure outranks matching numbers");
-  assert.equal(levelOf(rec([check("total"), check("slice")], null)), "provisional", "automatic checks not run since a change: no more than provisional");
-  assert.match(levelGap(rec([check("total")])), /one more confirmed number of a different kind from total/);
+  assert.equal(levelOf(rec([check("total")])), "draft", "one confirmed number is not enough");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain")])), "draft", "three numbers from one period are one angle in time");
+  assert.equal(levelOf(rec([check("total"), check("total", "a report", "confirmed", W2), check("total", "a report", "confirmed", { start: "2026-01-19", end: "2026-01-25" })])), "draft", "three numbers of one kind");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain", "a report", "confirmed", W2)])), "reconciled", "three numbers, two periods, three kinds");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain", " ", "confirmed", W2)])), "draft", "a number with no named source does not count");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain", "a report", "confirmed", W2), { ...check("slice", "a report", "flagged", W2) }])), "draft", "a flagged number blocks the rung");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain", "a report", "confirmed", W2)], { at: "now", pass: false, results: [{ id: "x", ok: false, detail: "rows repeat" }] })), "draft", "an automatic failure outranks matching numbers");
+  assert.equal(levelOf(rec([check("total"), check("slice"), check("grain", "a report", "confirmed", W2)], null)), "draft", "automatic checks not run since a change: no rung");
+  assert.match(levelGap(rec([check("total")])), /needs 2 more confirmed numbers, a number of a different kind from total, a number for a different period/);
+
+  // the rungs above need what only calibration and verification can store
+  const good = rec([check("total"), check("slice"), check("grain", "a report", "confirmed", W2)]);
+  assert.equal(levelOf({ ...good, verification: { at: "now", pass: true, incidents_passed: ["i"] } }), "reconciled", "incidents without calibration do not skip a rung");
+  const calibrated = { ...good, calibration: { at: "now", pass: true, false_alarm_rate: 0.02, allowed: 0.05, quiet_periods: 40 } };
+  assert.equal(levelOf(calibrated), "calibrated");
+  assert.equal(levelOf({ ...calibrated, verification: { at: "now", pass: true, incidents_passed: ["i"] } }), "verified");
+  assert.equal(levelOf({ ...calibrated, calibration: { ...calibrated.calibration, pass: false } }), "reconciled");
+
+  // a plausible sample counts toward nothing, and is said
+  const sample = rec([check("total", "", "plausible")]);
+  assert.equal(levelOf(sample), "draft");
+  assert.equal(unconfirmedNumbers(sample), true);
+  assert.equal(unconfirmedNumbers(good), false);
 });
 
-test("a version 1 build file is read as version 2 and its matched number becomes one confirmed total", async () => {
+test("a version 1 build file is read as the current version: its matched number is one confirmed total, so a draft that needs more", async () => {
   const { ws } = await workspace();
   const s = readState(ws)!;
   writeState(ws, { ...s, version: 1, kpis: { ok_rate: { status: "reconciled", reconciled: { period: "2026-W06", expected: 0.8, got: 0.8, tolerance: 0.01 } }, handled: { status: "tested" } } } as never);
   const upgraded = readState(ws)!;
-  assert.equal(upgraded.version, 2);
-  assert.equal(levelOf(upgraded.kpis.ok_rate), "provisional");
+  assert.equal(upgraded.version, 3);
+  assert.equal(levelOf(upgraded.kpis.ok_rate), "draft");
   assert.equal(upgraded.kpis.ok_rate.checks[0].kind, "total");
   assert.equal(levelOf(upgraded.kpis.handled), "draft");
+  assert.ok(upgraded.status_log.some((c) => c.subject === "kpi:ok_rate" && c.by === "migration" && /needs three numbers/.test(c.why)));
+});
+
+test("a version 2 build (draft, provisional, verified) is read with the new ladder: verified stands as reconciled until the KPI changes; provisional is a draft", async () => {
+  const { ws, tools } = await workspace();
+  const confirmed = (id: string, kind: string) => ({ id, kind, scope: {}, window: { start: "2026-02-09", end: "2026-02-15" }, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" });
+  const s = readState(ws)!;
+  writeState(ws, {
+    ...s,
+    version: 2,
+    status_log: undefined,
+    kpis: {
+      ok_rate: { level: "verified", checks: [confirmed("total-1", "total"), confirmed("slice-1", "slice")], auto: { at: "now", pass: true, results: [] } },
+      handled: { level: "provisional", checks: [confirmed("total-1", "total")], auto: { at: "now", pass: true, results: [] } },
+    },
+  } as never);
+  const upgraded = readState(ws)!;
+  assert.equal(levelOf(upgraded.kpis.ok_rate), "reconciled");
+  assert.deepEqual(upgraded.kpis.ok_rate.grandfathered?.from, "verified");
+  assert.equal(levelOf(upgraded.kpis.handled), "draft");
+  assert.deepEqual(upgraded.status_log.map((c) => [c.subject, c.from, c.to, c.by]), [["kpi:ok_rate", "reconciled", "reconciled", "migration"], ["kpi:handled", "draft", "draft", "migration"]]);
+
+  // writing it back and reading it again changes nothing, and nothing is logged twice
+  writeState(ws, upgraded);
+  assert.deepEqual(readState(ws), upgraded);
+
+  // a change to the KPI ends the grandfathering: it is a draft until the numbers are worked again
+  await savePack({ workspace: ws, ontology, data: data("ok * 1") });
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "draft");
+  assert.ok(readState(ws)!.status_log.some((c) => c.subject === "kpi:ok_rate" && c.from === "reconciled" && c.to === "draft" && c.by === "save_pack"));
+  void tools;
 });
 
 test("proposed checks are chosen by rule and hide the tools' numbers until the person has given theirs", async () => {
@@ -103,7 +164,7 @@ test("proposed checks are chosen by rule and hide the tools' numbers until the p
   assert.equal(readState(ws)!.kpis.ok_rate.checks.length, 4);
 });
 
-test("a KPI climbs draft, provisional, verified as numbers from different angles are confirmed", async () => {
+test("a KPI climbs from draft to reconciled as numbers from different angles and periods are confirmed", async () => {
   const { ws, tools } = await workspace();
   const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
   const total = p.proposals.find((x) => x.kind === "total")!;
@@ -118,12 +179,12 @@ test("a KPI climbs draft, provisional, verified as numbers from different angles
   assert.ok(wrong.hints.length >= 3);
   await assert.rejects(decide({ workspace: ws, kpi: "ok_rate", check: total.id, decision: "confirm", tools }), /do not match/);
 
-  // the right number, said as a percentage, with a source: provisional (automatic checks pass)
+  // the right number, said as a percentage, with a source: still a draft (one number is not enough), and the automatic checks pass
   const week = truth(LAST_WEEK.from, LAST_WEEK.to).rate;
   const first = await confirmNumber({ workspace: ws, kpi: "ok_rate", check: total.id, expected: Math.round(week * 1000) / 10, source: "the weekly report", tolerance: 0.002, tools });
   assert.equal(first.confirmed, true, JSON.stringify(first));
-  assert.equal(first.level, "provisional");
-  assert.match(first.gap, /one more confirmed number of a different kind/);
+  assert.equal(first.level, "draft");
+  assert.match(first.gap, /needs 2 more confirmed numbers, a number of a different kind from total, a number for a different period/);
   const auto = readState(ws)!.kpis.ok_rate.auto!;
   assert.equal(auto.pass, true, JSON.stringify(auto.results.filter((r) => !r.ok)));
   assert.ok(auto.results.some((r) => r.id === "parts_add_up:region" && r.ok));
@@ -134,12 +195,20 @@ test("a KPI climbs draft, provisional, verified as numbers from different angles
   const [concept, value] = Object.entries(sliceCheck.scope)[0];
   const part = truth(LAST_WEEK.from, LAST_WEEK.to, (r) => (r as unknown as Record<string, string>)[concept] === value).rate;
   const second = await confirmNumber({ workspace: ws, kpi: "ok_rate", check: slices[0].id, expected: part, source: "the regional report", tolerance: 0.002, tools });
-  assert.equal(second.level, "verified", second.gap);
-  assert.equal(signoffStatus(ws, "ok_rate")[0].level, "verified");
+  assert.equal(second.level, "draft", "a second number from the same period is not enough");
+  assert.match(second.gap, /needs 1 more confirmed number, a number for a different period/);
+
+  // a third number, from a different period (the last day) and a different kind
+  const grain = p.proposals.find((x) => x.kind === "grain")!;
+  const day = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === grain.id)!.window.start;
+  const third = await confirmNumber({ workspace: ws, kpi: "ok_rate", check: grain.id, expected: truth(day, day).rate, source: "the daily dashboard", tolerance: 0.002, tools });
+  assert.equal(third.level, "reconciled", third.gap);
+  assert.equal(signoffStatus(ws, "ok_rate")[0].level, "reconciled");
+  assert.equal(readState(ws)!.status_log.filter((c) => c.subject === "kpi:ok_rate").at(-1)!.to, "reconciled");
   assert.equal(signoffStatus(ws, "ok_rate")[0].checks.find((c) => c.id === total.id)!.source, "the weekly report");
 });
 
-test("flagging a number keeps a KPI from verified until it is sorted out", async () => {
+test("flagging a number keeps a KPI from reconciled until it is sorted out", async () => {
   const { ws, tools } = await workspace();
   const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
   const [total, slice, grain] = ["total", "slice", "grain"].map((k) => p.proposals.find((x) => x.kind === k)!);
@@ -150,40 +219,57 @@ test("flagging a number keeps a KPI from verified until it is sorted out", async
   const sc = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === slice.id)!;
   const [c, v] = Object.entries(sc.scope)[0];
   const r = await confirmNumber({ workspace: ws, kpi: "ok_rate", check: slice.id, expected: truth(LAST_WEEK.from, LAST_WEEK.to, (x) => (x as unknown as Record<string, string>)[c] === v).rate, source: "a report", tolerance: 0.002, tools });
-  assert.equal(r.level, "provisional");
+  assert.equal(r.level, "draft");
   assert.match(r.gap, /a number is flagged/);
 });
 
 test("a change to a KPI drops it, its expert goes back to draft, and run_checks restores it only if the stored numbers still match", async () => {
   const { ws, tools } = await workspace();
-  const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
-  const [total, slice] = ["total", "slice"].map((k) => p.proposals.find((x) => x.kind === k)!);
-  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: total.id, expected: truth(LAST_WEEK.from, LAST_WEEK.to).rate, source: "a report", tolerance: 0.002, tools });
-  const sc = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === slice.id)!;
-  const [c, v] = Object.entries(sc.scope)[0];
-  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: slice.id, expected: truth(LAST_WEEK.from, LAST_WEEK.to, (x) => (x as unknown as Record<string, string>)[c] === v).rate, source: "a report", tolerance: 0.002, tools });
-  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "verified");
-  // an expert that had been verified on this KPI
-  const file = join(ws, "agents", "ok-rate-deep-rca.yaml");
-  writeFileSync(file, stringify({ ...loadAgents(ws)[0], status: "verified" }), "utf-8");
+  await reconcileAll(ws, tools);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
+  // the expert stands where its KPI stands
+  assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.status, "reconciled");
+  assert.ok(readState(ws)!.status_log.some((c) => c.subject === "expert:ok-rate-deep-rca" && c.to === "reconciled"));
 
   // the same meaning written another way: it is a change, so the KPI drops and the expert is a draft again
   const same = await savePack({ workspace: ws, ontology, data: data("ok * 1") });
   assert.deepEqual(same.needs_reconciling.sort(), ["ok_rate"]);
-  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "provisional", "confirmed numbers stay on record but are no longer vouched for");
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "draft", "confirmed numbers stay on record but are no longer vouched for");
   assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.status, "draft");
+  assert.ok(readState(ws)!.status_log.some((c) => c.subject === "expert:ok-rate-deep-rca" && c.from === "reconciled" && c.to === "draft"));
   const again = await runChecks({ workspace: ws, kpi: "ok_rate", tools: new SqliteTools(ws) });
   assert.equal(again.restored, true, JSON.stringify(again));
-  assert.equal(again.after, "verified");
+  assert.equal(again.after, "reconciled");
   assert.ok(again.rechecked.every((r) => r.match));
+  assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.status, "reconciled", "the expert follows its KPI back up");
 
   // a different meaning: the stored numbers no longer match and nothing is restored
   await savePack({ workspace: ws, ontology, data: data("1 - ok") });
   const broken = await runChecks({ workspace: ws, kpi: "ok_rate", tools: new SqliteTools(ws) });
   assert.equal(broken.restored, false);
-  assert.notEqual(broken.after, "verified");
+  assert.notEqual(broken.after, "reconciled");
   assert.ok(broken.rechecked.every((r) => !r.match && /no longer matches/.test(r.note ?? "")));
   assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "draft", "nothing is confirmed any more");
+});
+
+test("a number accepted as plausible counts toward nothing, and the KPI and its expert say the numbers were not confirmed", async () => {
+  const { ws, tools } = await workspace();
+  const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
+  const sample = p.proposals.filter((x) => x.kind === "slice")[1];
+  const r = acceptSample({ workspace: ws, kpi: "ok_rate", check: sample.id });
+  assert.equal(r.state, "plausible");
+  assert.equal(r.level, "draft");
+  const sc = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === sample.id)!;
+  const [c, v] = Object.entries(sc.scope)[0];
+  assert.ok(Math.abs(r.got - truth(LAST_WEEK.from, LAST_WEEK.to, (x) => (x as unknown as Record<string, string>)[c] === v).rate) < 1e-9, "the person is shown our number to judge");
+  assert.equal(signoffStatus(ws, "ok_rate")[0].unconfirmed, true);
+  assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.unconfirmed_numbers, true);
+  assert.ok(readState(ws)!.status_log.every((c) => c.subject !== "kpi:ok_rate" || c.to !== "reconciled"), "no rung was earned");
+  // real numbers later reconcile it, and the flag goes
+  await reconcileAll(ws, tools);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
+  assert.equal(signoffStatus(ws, "ok_rate")[0].unconfirmed, false);
+  assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.unconfirmed_numbers, false);
 });
 
 test("a join that repeats rows is caught by the automatic checks, and parts that do not add up are too", async () => {
@@ -251,14 +337,9 @@ test("a window the person has a report for counts as the kind its shape says, so
 test("a number far off for one KPI puts those days in doubt for the others on the same data, and a match brings them back", async () => {
   const { ws, tools } = await workspace();
   const week = { from: LAST_WEEK.from, to: LAST_WEEK.to };
-  // ok_rate is verified from two angles in the last week
-  const p = await proposeChecks({ workspace: ws, kpi: "ok_rate", tools });
-  const [total, slice] = ["total", "slice"].map((k) => p.proposals.find((x) => x.kind === k)!);
-  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: total.id, expected: truth(week.from, week.to).rate, source: "a report", tolerance: 0.002, tools });
-  const sc = readState(ws)!.kpis.ok_rate.checks.find((c) => c.id === slice.id)!;
-  const [c, v] = Object.entries(sc.scope)[0];
-  await confirmNumber({ workspace: ws, kpi: "ok_rate", check: slice.id, expected: truth(week.from, week.to, (x) => (x as unknown as Record<string, string>)[c] === v).rate, source: "a report", tolerance: 0.002, tools });
-  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "verified");
+  // ok_rate is reconciled from three numbers in the last week
+  await reconcileAll(ws, tools);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
 
   // the person's count for the same week is far from ours: that week's data is in doubt, so ok_rate's numbers for it are set aside
   const h = await proposeChecks({ workspace: ws, kpi: "handled", tools });
@@ -268,7 +349,7 @@ test("a number far off for one KPI puts those days in doubt for the others on th
   assert.equal(off.confirmed, false);
   const after = readState(ws)!.kpis.ok_rate;
   assert.equal(levelOf(after), "draft", "its only numbers are for the days in doubt");
-  assert.match(levelGap(after), /2 confirmed numbers are set aside because handled does not match the user's number for the same days/);
+  assert.match(levelGap(after), /3 confirmed numbers are set aside because handled does not match the user's number for the same days/);
   assert.equal(signoffStatus(ws, "ok_rate")[0].level, "draft");
   assert.equal((await runChecks({ workspace: ws, kpi: "ok_rate", tools })).after, "draft", "re-running the stored numbers does not bring them back");
 
@@ -276,7 +357,7 @@ test("a number far off for one KPI puts those days in doubt for the others on th
   const fixed = await confirmNumber({ workspace: ws, kpi: "handled", check: handledTotal.id, expected: real, source: "the live site", tolerance: 0.002, tools });
   assert.equal(fixed.confirmed, true);
   assert.equal(readState(ws)!.kpis.ok_rate.suspect, undefined);
-  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "verified");
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
 });
 
 test("the newest periods are set aside when they hold far less than usual, as when the data was still arriving", () => {

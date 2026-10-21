@@ -138,7 +138,7 @@ test("route and scan_kpis over stdio: a plain question reaches the right expert,
     const r = asked.structuredContent;
     assert.equal(r.strategy, "expert");
     assert.deepEqual([r.options[0].kpi, r.options[0].task, r.options[0].expert, r.options[0].playbook, r.options[0].inputs.period], ["service_level", "deep_rca", "service-level-deep-rca", "metric_change", "2026-W07"]);
-    assert.equal(r.options[0].status, "verified");
+    assert.equal(r.options[0].status, "reconciled");
     assert.equal(r.needs, null);
 
     const missing = (await client.callTool({ name: "route", arguments: { question: "How was service level?" } })) as any;

@@ -4,7 +4,7 @@ import { stringify } from "yaml";
 import { generateForPack } from "@causeline/generate";
 import { AgentDef, DataDefs, Ontology, isRatioFormula, loadAgents, loadPack, validatePack, type PackDefinition } from "@causeline/schema";
 import { openData, type BuilderData } from "./data.js";
-import { dropForChange, readState, updateState } from "./state.js";
+import { dropForChange, levelOf, logChange, readState, updateState, type Level } from "./state.js";
 import { testFact, testFormula } from "./testfact.js";
 
 export interface SaveResult {
@@ -16,7 +16,7 @@ export interface SaveResult {
   /** BigQuery: what saving read (every statement is tried on the data), and the budget set for one question. */
   cost?: { queries: number; bytes: number; estimated_usd: number };
   budget_gb?: number;
-  /** KPIs whose formula is new or changed: they drop to provisional (or draft) until their stored numbers are checked again. */
+  /** KPIs whose formula is new or changed: they drop back to draft until their stored numbers are checked again. */
   needs_reconciling: string[];
 }
 
@@ -121,26 +121,38 @@ async function save(opts: { workspace: string; ontology: unknown; data: unknown;
   mkdirSync(join(opts.workspace, "agents"), { recursive: true });
   writeFileSync(join(opts.workspace, "ontology.yaml"), stringify(opts.ontology, { lineWidth: 0 }), "utf-8");
   writeFileSync(join(opts.workspace, "data.yaml"), stringify(rawData, { lineWidth: 0 }), "utf-8");
-  // an expert is only ever `verified` by verify_expert: a saved draft cannot claim it, and cannot take it away
-  // from an expert whose KPI is unchanged
+  // an expert only ever stands where its KPI's checks put it: a saved file cannot claim a rung, and cannot take one away from an
+  // expert whose KPI is unchanged
   const earlier = new Map(loadAgents(opts.workspace).map((a) => [a.name, a]));
+  const lost: { name: string; from: Level }[] = [];
   for (const a of agents) {
-    const keep = earlier.get(a.name)?.status === "verified" && !changed.includes(a.kpi);
-    if (earlier.get(a.name)?.status === "verified" && !keep) warnings.push(`expert "${a.name}" is a draft again because ${a.kpi} changed; check it again`);
-    writeFileSync(join(opts.workspace, "agents", `${a.name}.yaml`), stringify({ ...a, status: keep ? "verified" : "draft" }, { lineWidth: 0 }), "utf-8");
+    const was = earlier.get(a.name)?.status ?? "draft";
+    const keep = was !== "draft" && !changed.includes(a.kpi);
+    if (was !== "draft" && !keep) {
+      warnings.push(`expert "${a.name}" is a draft again because ${a.kpi} changed; check it again`);
+      lost.push({ name: a.name, from: was });
+    }
+    writeFileSync(join(opts.workspace, "agents", `${a.name}.yaml`), stringify({ ...a, status: keep ? was : "draft", unconfirmed_numbers: false }, { lineWidth: 0 }), "utf-8");
   }
-  // an expert not mentioned this time but built on a KPI that changed loses its verification too
+  // an expert not mentioned this time but built on a KPI that changed falls back too
   for (const [name, a] of earlier) {
-    if (!agents.some((x) => x.name === name) && a.status === "verified" && changed.includes(a.kpi)) {
+    if (!agents.some((x) => x.name === name) && a.status !== "draft" && changed.includes(a.kpi)) {
       writeFileSync(join(opts.workspace, "agents", `${name}.yaml`), stringify({ ...a, status: "draft" }, { lineWidth: 0 }), "utf-8");
       warnings.push(`expert "${name}" is a draft again because ${a.kpi} changed; check it again`);
+      lost.push({ name, from: a.status });
     }
   }
   const gen = generateForPack(opts.workspace);
 
   updateState(opts.workspace, (s) => {
     for (const k of Object.keys(s.kpis)) if (!d.data.metrics[k]) delete s.kpis[k];
-    for (const k of Object.keys(d.data.metrics)) if (changed.includes(k) || !s.kpis[k]) s.kpis[k] = dropForChange(s.kpis[k]);
+    for (const k of Object.keys(d.data.metrics)) {
+      if (!(changed.includes(k) || !s.kpis[k])) continue;
+      const was = levelOf(s.kpis[k]);
+      s.kpis[k] = dropForChange(s.kpis[k]);
+      logChange(s, `kpi:${k}`, was, s.kpis[k].level, "its formula or fact was saved with a change", "save_pack");
+    }
+    for (const l of lost) logChange(s, `expert:${l.name}`, l.from, "draft", "its KPI changed", "save_pack");
     // once the analysis has been run, what the description says about repeating patterns is a decision
     if (s.seasonalityAnalysed) s.seasonality = o.data.time.seasonality === "none" ? "none" : "confirmed";
   });
