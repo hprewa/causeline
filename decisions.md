@@ -257,3 +257,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Recovery is judged on the periods after the one asked about, against the same baseline, and only the newest of them decides.** Why: a node that dipped back and forth is not recovered; the question a person has is "is it still a problem now".
 - **Interactions moved to a later sprint.** Why: they need a search over pairs of nodes with its own multiplicity control; doing it with the time left would have been a guess.
 
+### Close-out (commit see `PROGRESS.md`)
+- **The branch-coverage gate is on by default; a branch the pack cannot reach is "not applicable".** Why: a default that fails an honest label (complaints) would be switched off by everyone; inventing a KPI tree to reach the branch would be a fiction. Supersedes the "opt-in flag" decision of sprint 4 step 5.
+- **A live agent run is only meaningful on a freshly bundled plugin.** Why: the first run read stale results and looked like agent errors.
+- **The skill tells the agent to round to nearest and not to subtract figures.** Why: two checks failed on numbers the agent had derived.
+

@@ -7,6 +7,14 @@ import type { CaseOutcome } from "../src/table.js";
 const pack = resolve("..", "..", "packs", "contact-centre");
 const ok = (id: string, branches: string[], extra: Partial<CaseOutcome> = {}): CaseOutcome => ({ id, playbook: "metric_change", branches, runner: { pass: true, checks: [] }, runnerMs: 0, steps: 0, ...extra });
 
+test("a hand-off branch is not applicable to a pack whose KPIs have no parts", () => {
+  const complaints = resolve("..", "..", "packs", "complaints");
+  const [c] = branchCoverage([ok("a", [])], complaints);
+  assert.deepEqual(c.notApplicable, ["parts:when:run"]);
+  assert.ok(!c.untested.includes("parts:when:run"));
+  assert.match(renderCoverage([c], []), /not applicable to this pack: parts:when:run/);
+});
+
 test("branches taken by passing cases are covered; the rest are listed as untested", () => {
   const [c] = branchCoverage([ok("a", ["contributors:when:run", "parts:when:skipped"])], pack);
   assert.equal(c.playbook, "metric_change");

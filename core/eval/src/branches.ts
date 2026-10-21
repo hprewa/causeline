@@ -1,5 +1,5 @@
 import { branchesOf, loadPlaybook } from "@causeline/runner";
-import { loadAgents } from "@causeline/schema";
+import { loadAgents, loadPack } from "@causeline/schema";
 import type { CaseOutcome } from "./table.js";
 
 const passed = (o: CaseOutcome) => !!o.runner && "pass" in o.runner && o.runner.pass;
@@ -10,15 +10,21 @@ export interface BranchCoverage {
   /** Branches some passing case took. */
   covered: string[];
   untested: string[];
+  /** Branches this pack cannot reach, and so cannot test (for example the hand-off when no KPI declares parts). */
+  notApplicable: string[];
 }
 
 /** Which branches of each playbook the pack's passing cases take. A case that fails or has a known gap proves nothing. */
 export function branchCoverage(outcomes: CaseOutcome[], packDir: string, coreDir?: string): BranchCoverage[] {
   const names = [...new Set(outcomes.map((o) => o.playbook).filter((p): p is string => !!p))];
   return names.map((playbook) => {
-    const all = branchesOf(loadPlaybook(playbook, packDir, coreDir));
+    const book = loadPlaybook(playbook, packDir, coreDir);
+    const hasParts = Object.values(loadPack(packDir).ontology.metrics).some((m) => (m.children?.length ?? 0) > 0);
+    // a hand-off step only runs when some KPI has parts to hand over to
+    const unreachable = new Set(hasParts ? [] : book.steps.filter((s) => s.compute === "handoff" && s.when).map((s) => `${s.id}:when:run`));
+    const all = branchesOf(book).filter((b) => !unreachable.has(b));
     const taken = new Set(outcomes.filter((o) => o.playbook === playbook && !o.gap && passed(o)).flatMap((o) => o.branches ?? []));
-    return { playbook, total: all.length, covered: all.filter((b) => taken.has(b)), untested: all.filter((b) => !taken.has(b)) };
+    return { playbook, total: all.length, covered: all.filter((b) => taken.has(b)), untested: all.filter((b) => !taken.has(b)), notApplicable: [...unreachable] };
   });
 }
 
@@ -34,7 +40,7 @@ export function expertsWithUntestedBranches(coverage: BranchCoverage[], packDir:
 }
 
 export function renderCoverage(coverage: BranchCoverage[], flagged: ReturnType<typeof expertsWithUntestedBranches>): string {
-  const lines = coverage.map((c) => `branches of ${c.playbook}: ${c.covered.length}/${c.total} taken by a passing case${c.untested.length > 0 ? `; never taken: ${c.untested.join(", ")}` : ""}`);
+  const lines = coverage.map((c) => `branches of ${c.playbook}: ${c.covered.length}/${c.total} taken by a passing case${c.untested.length > 0 ? `; never taken: ${c.untested.join(", ")}` : ""}${c.notApplicable.length > 0 ? `; not applicable to this pack: ${c.notApplicable.join(", ")}` : ""}`);
   for (const f of flagged) lines.push(`  ${f.expert} is marked verified, but ${f.untested.length} branch(es) of ${f.playbook} are never taken by a passing case`);
   return lines.join("\n");
 }

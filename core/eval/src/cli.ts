@@ -16,7 +16,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
   --max-turns <n>         agent turn limit (default 12)
   --routing               score the pack's routing eval (evals/routing.yaml) instead of its cases; needs at least 90%
   --intents               score the pack's intent eval (evals/intents.yaml): conversations to resolved intents; needs all of them (add --agent claude-code for a live attempt at each)
-  --require-branches      fail the run when an expert marked verified has a playbook branch that no passing case takes
+  --no-branch-gate        do not fail the run when an expert marked verified has a playbook branch that no passing case takes (it is reported either way)
   --reuse                 reuse a case's prepared pack when its setup has not changed
   --toolbox <path>        Toolbox binary (default: CAUSELINE_TOOLBOX, PATH, or ./toolbox.exe)
   --work-dir <dir>        where per-case packs are built (default: runs/eval-work/<pack name>)
@@ -24,7 +24,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
 
 /** Parse `--flag value` pairs and bare switches. */
 function parse(argv: string[]): { flags: Map<string, string>; switches: Set<string> } {
-  const switches = new Set(["reuse", "no-bare", "routing", "intents", "require-branches"]);
+  const switches = new Set(["reuse", "no-bare", "routing", "intents", "no-branch-gate"]);
   const flags = new Map<string, string>();
   const on = new Set<string>();
   for (let i = 0; i < argv.length; i++) {
@@ -111,7 +111,7 @@ export async function runEvalCli(argv: string[]): Promise<number> {
     const coverage = branchCoverage(outcomes, resolve(pack));
     const flagged = expertsWithUntestedBranches(coverage, resolve(pack));
     if (coverage.length > 0) console.log("\n" + renderCoverage(coverage, flagged));
-    branchesFailed = switches.has("require-branches") && flagged.length > 0;
+    branchesFailed = !switches.has("no-branch-gate") && flagged.length > 0;
   }
   return runnerFailed || branchesFailed ? 1 : 0;
 }
