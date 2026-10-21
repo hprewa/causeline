@@ -183,8 +183,11 @@ added in step 5, not step 1.
 - The `causeline-investigate` skill reads the new result fields: contributions (lead with `new` / `unusual`, `usual` is context, `unknown` is said as such, state the explained share), `role: contributor`, and the stop `data_still_arriving`. README and `PROGRESS.md` (later sprints renumbered: 4 branching playbooks and hand-offs, 5 Explorer, 6 easy setup, 7 non-coder test) updated.
 - All local gates at the end of step 6: runner and every package's tests, contact-centre eval 22/22 with no known gaps, routing 27/27, intents 16/16, integration 7/7, purity OK.
 
-**Not shown (pending Google re-authentication: `gcloud auth application-default login`)**
-- The complaints eval was last complete at step 3 (6/6). After step 4 its first three cases passed (Equifax volume, Wells Fargo, Equifax timely rate); the three quiet-week cases and `week_after_the_data_ends` have **not been run since steps 4 to 6**. So it is not shown that steps 5 and 6 leave them passing, nor whether the quiet-week cases can be tightened to "no findings".
-- Contact-centre parity between SQLite and BigQuery after the depth changes, and cost per case, were not re-measured.
-- A live agent answering both incident weeks with the contributions table was not run.
+**BigQuery, after re-authentication (project `yukti-dev`, after step 6):**
+- Complaints eval **7/7**: Equifax volume (45 queries), Wells Fargo (43), Equifax timely rate (32), the three quiet weeks (28, 29, 27) and `week_after_the_data_ends` (2). The Wells Fargo case now takes 43 queries, up from 25 before step 5 (the added dispersion history is not the cause; I did not find out why, so cost per case is not shown).
+- **The quiet-week cases cannot be tightened to "no findings"**: with a non-significant headline they still report 2, 3 and 1 findings. Step 5 removed the planted-data version of this but not the real one, so they stay at `significant: false`. This is open work, not shown to be fixed.
 
+**Not shown**
+- Contact-centre parity between SQLite and BigQuery after the depth changes, and cost per case.
+- A live agent answering both incident weeks with the contributions table.
+- Why the Wells Fargo case grew from 25 to 43 queries.
