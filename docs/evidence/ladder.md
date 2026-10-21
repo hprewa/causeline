@@ -28,11 +28,11 @@ An expert stands exactly where its KPI stands. Every change of rung (KPI or expe
 ## Run after the migration
 - Contact-centre eval **25/25** with all 4 playbook branches taken (and the gate on); routing **27/27**; intents **16/16**.
 - Scripted end-to-end tests (`CAUSELINE_INTEGRATION=1`) **7/7**: raw files to a reconciled expert through the Builder tools, and through the MCP tools with the sign-off page agreeing with the chat (three numbers, the third through the chat; the incident found; the expert stays reconciled because it is not calibrated; a change drops it and a re-run restores it); the bundled plugin server from a copy of the plugin directory.
+- **Complaints eval on BigQuery: 7/7** after the migration (Equifax volume 45 queries, Wells Fargo 43, Equifax timely rate 32, the three quiet weeks 28, 29 and 27, the week after the data ends 2); the branch gate passes with 3/3 applicable branches (the hand-off is not applicable to this pack). The three complaints experts are now reconciled.
 - Two things the run found, both mine: the end-to-end test took the slice's number for the wrong week (the slice check has its own week), and the plugin bundle was out of date (see below).
 - **A stale plugin bundle breaks on the new files.** `clients/claude-code` is built by `npm run bundle:plugin` and is not rebuilt by `npm run build`. An old bundle rejects an expert file whose status is `reconciled`. Rebuild it after any schema change before running the integration tests or a live agent.
 
 ## Not shown
-- The complaints eval on BigQuery was not re-run after the migration (the complaints experts changed from `verified`/`draft` to `reconciled`; the branch gate now covers them).
 - Nothing can reach `calibrated` or `verified` yet: no calibration or fault-injection code exists, so those two rungs are only defined and tested as rules.
 - The sign-off screen was not opened in a browser after the change.
 - The deviation from the planning note: an old `provisional` KPI is a draft **without** the "numbers not confirmed" flag. In the code, provisional meant one number genuinely matched, not a plausible sample; the flag now belongs only to numbers accepted as plausible.
