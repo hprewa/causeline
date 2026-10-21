@@ -243,3 +243,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **At most 40 steps and `max_visits` per step, default 1.** Why: a playbook can loop, so the runner bounds it and says which bound was hit.
 - **`metric_change` does not stop early when the headline is quiet.** Why: offsetting siblings and masked time slots have a flat headline and must still be drilled; only the quiet-week noise is wrong, and step 5 of sprint 3 is where that is handled.
 
+### Step 4: hand-off between KPIs (commit see `PROGRESS.md`)
+- **The KPI tree lives in the ontology (`children`), the rule to use it in the core playbook.** Why: which KPIs depend on which is vocabulary; "look at the parts when nothing explains a real change" is generic.
+- **A hand-off runs the same analysis for the part and keeps a short account, not the whole result.** Why: result.json stays readable; the part's own full run is one call away.
+- **Chain limit of two KPIs deep, never back to a KPI above, at most three parts.** Why: a loop or a fan-out of full analyses is expensive and unreadable.
+- **The step runs only when nothing explained a real change.** Why: when the data's splits do explain it, the parts are noise and cost.
+

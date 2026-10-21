@@ -24,6 +24,8 @@ metrics:
     synonyms: [SLA, answer rate, calls answered in time]
     direction: higher_is_better
     min_volume: 100
+    children: [calls_offered]         # how busy the centre is drives how many calls are answered in time
+    relation: driver
   aht:
     type: ratio
     description: Average handle time, in seconds per call.

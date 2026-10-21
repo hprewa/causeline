@@ -1,4 +1,4 @@
-import type { Comparison, Contribution, Evidence, Explained, FactValue, Headline, Trend, MaskingFlag, Ontology, PathNode, TraceEntry } from "@causeline/schema";
+import type { Comparison, Contribution, Evidence, Explained, FactValue, Handoff, Headline, Trend, MaskingFlag, Ontology, PathNode, TraceEntry } from "@causeline/schema";
 import type { Decomposition } from "./decompose.js";
 import type { Dispersion } from "./dispersion.js";
 import type { ResolvedThresholds } from "./masking.js";
@@ -85,6 +85,12 @@ export interface RunContext {
   stop?: { reason: string; detail: string };
   /** Facts published by the steps so far, keyed `<step>.<name>`. */
   facts: Record<string, FactValue>;
+  /** Analyses of other KPIs this run handed over to. */
+  handoffs: Handoff[];
+  /** What the current step did not do, for its trace entry. */
+  notes: string[];
+  /** Analyse another KPI on the same period; absent when the chain of hand-offs is already as long as it may be. */
+  analyse?: (metric: string) => Promise<import("@causeline/schema").Result>;
   trace: TraceEntry[];
   /** What each executed step was, so `within` can tell a hierarchy drill from a dimension ranking. */
   stepKinds: Map<string, { compute: string; over?: string }>;

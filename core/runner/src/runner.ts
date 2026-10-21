@@ -10,12 +10,15 @@ import { ToolIndex } from "./toolindex.js";
 import { VERSION } from "./version.js";
 import { RunStop, type ToolCaller } from "./types.js";
 import { publishFacts, snapshotOf } from "./facts.js";
+import { handOver, MAX_HANDOFF_DEPTH } from "./handoff.js";
 import { routeAfter, shouldRun, STEP_BUDGET, traceSkipped } from "./route.js";
 import { parseScope, ScopedToolCaller } from "./scope.js";
 
 export type RunInputs = Record<string, string | number | boolean>;
 
 export interface RunOptions {
+  /** The KPIs already being analysed above this run (a hand-off never returns to one of them). */
+  chain?: string[];
   playbook: Playbook;
   ontology: Ontology;
   tools: ToolCaller;
@@ -196,6 +199,9 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     stepKinds: new Map(),
     facts: {},
     trace: [],
+    handoffs: [],
+    notes: [],
+    ...((opts.chain?.length ?? 0) < MAX_HANDOFF_DEPTH ? { analyse: (to: string) => runPlaybook({ ...opts, chain: [...(opts.chain ?? []), metric], inputs: { ...inputs, metric: to } }) } : {}),
   };
 
   const visits = new Map<string, number>();
@@ -232,7 +238,11 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     if (ctx.stop) break;
     const route = routeAfter(ctx, playbook, i);
     if ("stop" in route) ctx.stop = route.stop;
-    else if ("handoff" in route) ctx.stop = { reason: "handoff_unavailable", detail: `the playbook hands over to "${route.handoff}", which this run cannot do` };
+    else if ("handoff" in route) {
+      await handOver(ctx, [route.handoff], "the playbook hands over");
+      ctx.trace[ctx.trace.length - 1].notes.push(...ctx.notes.splice(0));
+      break;
+    }
     else i = route.to;
   }
 
@@ -252,6 +262,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     evidence: ctx.stop ? [] : ctx.evidence,
     path: ctx.path,
     trace: ctx.trace,
+    handoffs: ctx.stop ? [] : ctx.handoffs,
     masking_flags: ctx.flags,
     steps: tools.log,
     stopped_reason: ctx.stop?.reason ?? null,

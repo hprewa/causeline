@@ -27,6 +27,7 @@ Faults are planted by name, by name (repeat --fault to combine):
   funnel:agent_007:wk7:0.45[:0.99]         that share of every other agent's calls go to that agent (answered at its own rate, or at the rate given)
   noisy_volume:0.08[:queue|team]           each week's volume moves by a random factor (sd 8%), for everything or for each queue or team on its own
   noisy_rate:0.02[:queue|team]             each week's service level moves by a random amount (sd 2 points), for everything or for each queue or team
+  degrade:wk7:0.12                         every answered call may instead go unanswered in time: a thin worsening across every node
   ramp_down:wk10:0.35                      the newest weeks hold only that share of their calls (data still arriving)
 
 Pure mix = slow_queue + reroute. Simpson's paradox = slow_queue + improve + reroute.
@@ -438,6 +439,19 @@ def plant_noisy_rate(calls, args, rng):
     return calls, {"name": "noisy_rate", "args": {"sd": sd, "by": by or "all", "shifts": {f"{w}/{k}" if k else str(w): round(d, 4) for (w, k), d in shift.items()}}, "rows_affected": n}
 
 
+def plant_degrade(calls, args, rng):
+    """degrade:wkN:share -- each call answered in time becomes late with probability `share`: the service level falls everywhere alike."""
+    week_spec, share_s = args
+    w0, w1 = _parse_week_range(week_spec)
+    share = float(share_s)
+    n = 0
+    for c in calls:
+        if w0 <= week_of(c.ts) <= w1 and c.answered and rng.random() < share:
+            c.answered = False
+            n += 1
+    return calls, {"name": "degrade", "args": {"weeks": [w0, w1], "share": share}, "rows_affected": n}
+
+
 def plant_ramp_down(calls, args, rng):
     """ramp_down:wkN:keep -- the newest weeks hold only `keep` of their calls: the data was still arriving when it was copied."""
     week_spec, keep_s = args
@@ -469,6 +483,7 @@ FAULTS: dict[str, Plant] = {
     "funnel": plant_funnel,
     "noisy_volume": plant_noisy_volume,
     "noisy_rate": plant_noisy_rate,
+    "degrade": plant_degrade,
     "ramp_down": plant_ramp_down,
 }
 

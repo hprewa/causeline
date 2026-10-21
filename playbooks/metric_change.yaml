@@ -33,6 +33,9 @@ steps:
   - id: contributors
     compute: contributors             # a change no single node explains still names who carries it, when they are unusual
     when: headline.significant        # only a real change has contributors (the step itself would find none otherwise)
+  - id: parts
+    compute: handoff                  # nothing in the data explains a real change: look at the KPIs this one depends on
+    when: headline.significant and where.found == 0 and flat.found == 0 and contributors.found == 0
   - id: evidence
     evidence: "*"                     # whatever the pack records about the culprit (incident logs, scans), if it has any
 output: result.json

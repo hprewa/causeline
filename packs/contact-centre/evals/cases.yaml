@@ -12,6 +12,7 @@
   expect:
     top_finding: { dimension: team, value: team_05 }
     must_mention: [team_05]
+    no_handoffs: true                  # the data explains it; nothing is handed over
 
 # 2. most of a site's calls are missing from the data: the data is wrong, not the operation
 - id: missing_logs_site
@@ -202,3 +203,14 @@
   inputs: { metric: calls_offered, period: 2026-W10 }
   expect:
     stopped_reason: data_still_arriving
+
+# 23. every call is a little less likely to be answered in time, on every queue, team and agent alike, while volume rises: nothing in the
+#     data's splits explains the fall, so the analysis hands over to the KPI the service level depends on (call volume) and says that is where the
+#     change is. (Before sprint 4 the answer was "nothing found".)
+- id: service_level_falls_when_load_rises
+  setup: "--weeks 10 --calls 120000 --fault surge_all:wk7:0.3 --fault degrade:wk7:0.12"
+  question: "Why did the service level fall in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    handoffs_include: [{ metric: calls_offered }]
+

@@ -159,8 +159,23 @@ export const TraceEntry = z.object({
   because: z.string().optional(),
   /** Rules of this step that did not fire. */
   skipped: z.array(z.string()).default([]),
+  /** Things the step did not do, and why (for example a hand-over it could not make). */
+  notes: z.array(z.string()).default([]),
 });
 export type TraceEntry = z.infer<typeof TraceEntry>;
+
+/** The analysis of another KPI that this run handed over to, kept in short: its headline, what it found, who contributed. */
+export const Handoff = z.object({
+  metric: z.string().min(1),
+  /** Why the run looked at this KPI, in words. */
+  reason: z.string().min(1),
+  status: z.enum(["complete", "stopped", "error"]),
+  stopped_reason: z.string().nullable().default(null),
+  headline: Headline.nullable().default(null),
+  findings: z.array(Finding).default([]),
+  contributions: z.array(Contribution).default([]),
+});
+export type Handoff = z.infer<typeof Handoff>;
 
 export const MaskingFlagType = z.enum(["offsetting", "dispersion", "mix_vs_rate", "small_cells"]);
 export type MaskingFlagType = z.infer<typeof MaskingFlagType>;
@@ -248,6 +263,8 @@ export const Result = z.object({
   path: z.array(PathNode).default([]),
   /** Every step run in order, with the facts it published and the rule that chose the next one. */
   trace: z.array(TraceEntry).default([]),
+  /** KPIs this run handed over to (a KPI made of parts), each analysed on the same period. */
+  handoffs: z.array(Handoff).default([]),
   masking_flags: z.array(MaskingFlag).default([]),
   steps: z.array(StepLog).default([]),
   stopped_reason: z.string().nullable().default(null),

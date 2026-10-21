@@ -16,7 +16,7 @@ export function shouldRun(ctx: RunContext, step: Playbook["steps"][number]): boo
 
 /** Note on the trace that a step was skipped, and why. */
 export function traceSkipped(ctx: RunContext, step: Playbook["steps"][number], compute: string): void {
-  ctx.trace.push({ step: step.id, compute, facts: {}, rule: `skipped: when ${step.when}`, because: reads(ctx, step.when!), skipped: [] });
+  ctx.trace.push({ step: step.id, compute, facts: {}, rule: `skipped: when ${step.when}`, because: reads(ctx, step.when!), skipped: [], notes: [] });
 }
 
 function resolve(target: Target, index: Map<string, number>): Route {

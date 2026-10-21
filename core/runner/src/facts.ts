@@ -26,6 +26,7 @@ export const FACTS: Record<string, string[]> = {
   contributions: ["count", "unusual"],
   contributors: ["found"],
   evidence: ["records"],
+  handoff: ["count", "significant"],
   trend: ["change_points"],
   compare: ["significant"],
 };
@@ -50,6 +51,8 @@ function factsOf(ctx: RunContext, compute: string, before: Snapshot): Facts {
       return { count: ctx.contributions.length, unusual: ctx.contributions.filter((c) => c.verdict === "unusual" || c.verdict === "new").length };
     case "contributors":
       return { found };
+    case "handoff":
+      return { count: ctx.handoffs.length, significant: ctx.handoffs.filter((h) => h.headline?.significant).length };
     case "evidence":
       return { records: ctx.evidence.slice(before.evidence).reduce((a, e) => a + e.rows, 0) };
     case "trend":
@@ -65,5 +68,5 @@ function factsOf(ctx: RunContext, compute: string, before: Snapshot): Facts {
 export function publishFacts(ctx: RunContext, stepId: string, compute: string, before: Snapshot): void {
   const facts = factsOf(ctx, compute, before);
   for (const [name, value] of Object.entries(facts)) ctx.facts[`${stepId}.${name}`] = value;
-  ctx.trace.push({ step: stepId, compute, facts, skipped: [] });
+  ctx.trace.push({ step: stepId, compute, facts, skipped: [], notes: ctx.notes.splice(0) });
 }

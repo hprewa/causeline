@@ -54,3 +54,23 @@ Design: `docs/audit/playbook-language.md`. Each step is a commit; what was and w
 - The step budget (40) has no test of its own beyond the loop limit; the longest real run is 13 steps.
 - BigQuery evals were not re-run for this step (the runner change is database-independent).
 
+## Step 4: hand-off from one KPI to the KPIs it depends on
+
+**Question:** when a real change is explained by nothing in the data's splits, can the analysis look at the KPIs the changed KPI is made of or driven by, instead of reporting nothing?
+
+**What was built**
+- The ontology's existing `children` (a KPI tree, declared since sprint 1 but unused) now has a use. A `handoff` step (`core/runner/src/handoff.ts`) analyses up to three of the KPI's `children` on the same period, scope and baseline, by running the same analysis again for each; a short account of each (headline, up to 5 findings, up to 5 contributions) goes into `result.json` as `handoffs[]`. A KPI already being analysed higher up is never analysed again; a hand-off goes at most two KPIs deep; an unknown KPI is skipped and the trace notes why. A rule `then: {handoff: <kpi>}` in a playbook does the same for one named KPI and ends the run.
+- `metric_change` gains the step `parts`, run `when: headline.significant and where.found == 0 and flat.found == 0 and contributors.found == 0`: only when the change is real and nothing explained it.
+- Contact-centre pack: `service_level` declares `children: [calls_offered]` (relation `driver`). New fault `degrade` (every call answered in time may go late: a uniform fall). Eval cases gain `handoffs_include` and `no_handoffs`.
+
+**Evidence**
+- **Planted case `service_level_falls_when_load_rises`** (call volume rises 30% and every call is a little less likely to be answered in time, alike on every queue, team and agent): the splits find nothing; the run hands over to `calls_offered` whose own change is real. Before this step nothing existed to express it.
+- `understaffed_team` now asserts `no_handoffs` (the data explains it, so nothing is handed over) and passes.
+- 3 unit tests for the hand-over (keeps an account; parts only, not an unknown KPI or itself; the chain limit). Contact-centre eval 23/23, routing 27/27, intents 16/16, integration 7/7, all unit tests, purity OK.
+
+**Not shown**
+- Only one planted shape (volume as a driver of a rate). No product-type KPI or complaints case uses it: the complaints pack declares no `children`, so its runs are unchanged; BigQuery evals were not re-run for this step.
+- A hand-off costs a full analysis per part (about 20 queries each); there is no budget check for it yet beyond the database's own budget.
+- The hand-off says where to look; it does not test that the part explains the change in the whole (no attribution of the whole's change to the part).
+- The agent has not been run against a hand-off result; the skill text for it is untested.
+

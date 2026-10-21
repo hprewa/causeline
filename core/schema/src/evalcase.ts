@@ -28,6 +28,10 @@ export const Expectation = z
     top_finding: TopFindingExpectation.optional(),
     /** Each of these must be among the reported findings, in any position (the culprit and a finding that describes the same records another way can tie for first). */
     findings_include: z.array(TopFindingExpectation).optional(),
+    /** KPIs the run must have handed over to; `significant` (default true) says whether that KPI's own change must be real. */
+    handoffs_include: z.array(z.object({ metric: z.string().min(1), significant: z.boolean().optional() })).optional(),
+    /** The run must not have handed over to any other KPI. */
+    no_handoffs: z.boolean().optional(),
     must_mention: z.array(z.string().min(1)).optional(),
     must_not_claim: z.array(z.string().min(1)).optional(),
     stopped_reason: z.string().min(1).optional(),
@@ -50,6 +54,8 @@ export const Expectation = z
     (e) =>
       e.top_finding !== undefined ||
       (e.findings_include?.length ?? 0) > 0 ||
+      (e.handoffs_include?.length ?? 0) > 0 ||
+      e.no_handoffs === true ||
       (e.must_mention?.length ?? 0) > 0 ||
       (e.must_not_claim?.length ?? 0) > 0 ||
       e.stopped_reason !== undefined ||

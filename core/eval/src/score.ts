@@ -65,6 +65,13 @@ export function scoreRunner(result: Result, expect: Expectation): Score {
     );
     checks.push({ name: `finding_included:${want.dimension}=${want.value}`, ok: hit, detail: `findings: ${result.findings.map((f) => `${f.dimension}=${f.value}`).join("; ") || "none"}` });
   }
+  for (const want of expect.handoffs_include ?? []) {
+    const h = result.handoffs.find((x) => x.metric === want.metric);
+    checks.push({ name: `handoff:${want.metric}`, ok: !!h && h.headline?.significant === (want.significant ?? true), detail: h ? `handed over to ${h.metric}; its change is ${h.headline?.significant ? "real" : "not real"}` : `hand-offs: ${result.handoffs.map((x) => x.metric).join(", ") || "none"}` });
+  }
+  if (expect.no_handoffs) {
+    checks.push({ name: "no_handoffs", ok: result.handoffs.length === 0, detail: `hand-offs: ${result.handoffs.map((x) => x.metric).join(", ") || "none"}` });
+  }
   if (expect.stopped_reason) {
     checks.push({ name: "stopped_reason", ok: result.stopped_reason === expect.stopped_reason, detail: `expected ${expect.stopped_reason}, got ${result.stopped_reason ?? "none"}` });
   }
