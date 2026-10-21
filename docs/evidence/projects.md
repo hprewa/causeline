@@ -54,3 +54,18 @@ Aim: whatever the person builds is saved in a **project** they can open by name 
 - Nothing teaches the model to offer these pages yet (step 4: the skills).
 - Long result lists show only the latest 40.
 
+## Step 4: the skills, the plugin setting and the README teach the project flow
+
+**What changed**
+- `causeline-build`: every session starts with `list_projects`; the user's own project is opened by name and what it reports (a stored number that no longer matches, then where it stands) is said first; a new piece of work asks for a name and creates the project; the model never asks for a folder or shows a path; `open_project_page` is offered when the user asks where things stand or wants the evidence. The BigQuery step no longer says "use a new, empty folder".
+- `causeline-investigate`: a new rule to open the right project first, to say the drift outcome before answering, and to offer the read-only page for evidence.
+- `.mcp.json` of the plugin passes `CAUSELINE_HOME`; the README describes projects, the home folder, the drift check and the page.
+- The test of the build skill now requires it to name the four project tools.
+
+**Evidence**
+- All unit tests pass in every package; purity and the ladder-name guard pass.
+
+**Not shown**
+- No live assistant was run through the project flow (create a project, build into it, close, open it again by name, ask for the page), and the plugin was not reinstalled into Claude Desktop or Codex: those are the spikes' packagings and are not built.
+- The scripted end-to-end tests and the evals were not re-run after this block; they set `CAUSELINE_PACK`, which still pins a pack.
+

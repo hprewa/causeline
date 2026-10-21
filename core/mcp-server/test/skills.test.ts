@@ -13,7 +13,7 @@ test("every tool the build skill names exists, and the sign-off tools are all ta
   const skill = readFileSync(resolve(repo, "skills", "causeline-build", "SKILL.md"), "utf-8");
   const named = new Set([...skill.matchAll(/`([a-z]+(?:_[a-z]+)+)`/g)].map((m) => m[1]));
   const tools = [...named].filter((n) => registered.has(n));
-  for (const must of ["build_status", "play_back", "propose_checks", "confirm_number", "open_signoff", "run_checks", "verify_expert"]) assert.ok(tools.includes(must), `the skill never names ${must}`);
+  for (const must of ["build_status", "play_back", "propose_checks", "confirm_number", "open_signoff", "run_checks", "verify_expert", "list_projects", "create_project", "open_project", "open_project_page"]) assert.ok(tools.includes(must), `the skill never names ${must}`);
 });
 
 test("the skill no longer teaches that one matched number makes a KPI matched", () => {

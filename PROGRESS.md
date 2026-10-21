@@ -105,7 +105,7 @@ One folder per project under a home folder, a registry, and read-only localhost 
 | 1 | Registry in the home folder; `list_projects`, `create_project`, `open_project`, `project_summary`; the server finds its project; switching restarts the data connection and clears the question | done |
 | 2 | Drift check on opening a project (stored numbers re-run quietly; a difference lowers the rung and is said first) | done |
 | 3 | One local site with pages: overview, sign-off (the only page with buttons), how the steps decide, results; `open_project_page` | done |
-| 4 | Skills, README, plugin settings: the project flow instead of an environment variable | not started |
+| 4 | Skills, README, plugin settings: the project flow instead of an environment variable | done |
 
 ## Parked from sprint 3 (not done, by decision)
 

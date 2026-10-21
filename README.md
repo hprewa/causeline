@@ -48,7 +48,11 @@ To start a new use case, copy `packs/_template` or let the Builder write it with
 
 You need Node.js, the pinned [MCP Toolbox](https://github.com/googleapis/mcp-toolbox) binary (below) and Claude Code
 with this repo's plugin (`clients/claude-code`, assembled by `npm run bundle:plugin`). After that no Python, YAML or
-command line is needed. Point the plugin at an empty folder (`CAUSELINE_PACK`) and talk:
+command line is needed. Everything you build is saved in a **project** with a name you give it, kept in a `Causeline` folder in your home
+folder (or wherever `CAUSELINE_HOME` points), so you can open it by name from any session or client and it is still there. Opening a
+project works its stored numbers out again and tells you first if the data no longer matches them. Ask the assistant to
+"open my project page" for a link to a page on your own computer that shows where the project stands, how each kind of question
+is decided step by step, and every answer given so far (it is read-only; your numbers are confirmed on its Sign-off page). Talk:
 
 1. **Connect:** "I have these CSV files" (or a BigQuery table). The Builder loads them locally and says in plain words what it found.
 2. **Describe the business:** you say what you watch and how it is worked out; the agent writes it down, tests that it

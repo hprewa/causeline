@@ -4,6 +4,7 @@
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/server/causeline-mcp.mjs"],
       "env": {
+        "CAUSELINE_HOME": "${CAUSELINE_HOME:-}",
         "CAUSELINE_PACK": "${CAUSELINE_PACK:-}",
         "CAUSELINE_TOOLBOX": "${CAUSELINE_TOOLBOX:-}",
         "CAUSELINE_TOOLBOX_URL": "${CAUSELINE_TOOLBOX_URL:-}",
