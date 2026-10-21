@@ -33,11 +33,14 @@ is in `docs/evidence/`.
 | Sign-off ladder: draft, provisional, verified from automatic checks and the user's numbers from different angles with named sources; suspect windows; re-run after a change | done |
 | Sign-off screen (a local page served by the MCP server) | done (not yet used by a person) |
 | Builder on BigQuery: connect, metered profile, test and save, per-pack budget | done |
-| Example pack: complaints (the CFPB's public table), built by conversation, signed off against the CFPB's published counts | done (5 of 7 real incidents pass; 2 recorded as known gaps) |
+| Example pack: complaints (the CFPB's public table), built by conversation, signed off against the CFPB's published counts | done (all 7 real-incident cases pass on BigQuery) |
+| Contributions judged against history (new / unusual / usual), explained share, contributors when no single node dominates, stable rate and mix split, overdispersion-aware tests, incomplete-tail stop | done (sprint 3) |
+| Playbooks that branch: named facts, safe conditions, `when` / `next` / bounded loops, a full trace, branch coverage in the eval | done (sprint 4) |
+| Hand-off to the KPIs a changed KPI depends on; recovery of a culprit in later periods | done (sprint 4, planted data only) |
 
-Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 18/18 (and 18/18 on
-BigQuery, identical), routing 27/27, intent eval 16/16 (also on BigQuery), integration 7/7, core purity check OK; complaints eval
-on BigQuery 6/6 (one further real incident in `packs/complaints/evals/known-gaps.md`).
+Measured on the last run (SQLite unless stated): unit tests green in every package, contact-centre eval 25/25 (it was 18/18 identical on
+BigQuery before sprint 3; parity since is not re-measured), routing 27/27, intent eval 16/16, integration 7/7, core purity check OK;
+complaints eval on BigQuery 7/7.
 
 ## Sprint 2: step by step
 
@@ -65,7 +68,7 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 4 | Stabilise the rate and mix split for thin baselines; mix gate direction; culprit by contribution | done | see `git log` (message starts "Sprint 3 step 4") | Step 4 |
 | 5 | Overdispersion-aware tests and the data-quality guard | done | see `git log` (message starts "Sprint 3 step 5") | Step 5 |
 | 6 | Incomplete tail of the data | done | see `git log` (message starts "Sprint 3 step 6") | Step 6 |
-| 7 | Proof and docs | partly done | docs and skill in the commit starting "Sprint 3 step 7"; the BigQuery proof is pending re-authentication | Step 7 |
+| 7 | Proof and docs | partly done | complaints eval 7/7 on BigQuery; the rest is parked (below) | Step 7 |
 
 ## Sprint 4: step by step
 
@@ -124,13 +127,19 @@ re-covered by new packs before they count again:
 
 ## Next
 
-| # | Sprint | Done when |
+The sprint list that followed sprint 4 (Explorer, easy setup, a non-coder test) is replaced by a phased plan built around one aim:
+from raw tables to a verified "why did this change?" expert in an afternoon, and it stays correct. **Proposed, awaiting approval**;
+nothing below is started. Existing features all stay.
+
+| Phase | Theme | Done when |
 |---|---|---|
-| P0 | Privacy clean-up, rename, fresh repository, playbook audit (`docs/audit/playbook-language.md`) | done when this repository is pushed and verified from a fresh clone |
-| 1 | BigQuery foundation, standard tool parameters, intent-first questions, running intent across messages (steps above) | the example pack runs on BigQuery; natural periods and follow-ups pass a new intent eval set. All eight steps done |
-| 2 | Multi-point sign-off with a sign-off screen, Builder on BigQuery, the complaints showcase pack (the alerts example pack moves to sprint 3, where the depth upgrades need it) | a pack built by conversation reaches `verified` through the status ladder. **All seven steps done**; see `docs/evidence/sprint-2.md` for what was and was not shown |
-| 3 | Analysis depth (step table above): contributions vs history, contributors when none dominates, a stable rate and mix split, overdispersion-aware tests, an incomplete-tail check. *Branching playbooks, hand-offs, interactions and recovery moved to sprint 4.* Original wording: Depth: branching playbooks, contributions vs history, KPI-tree hand-offs, interactions, recovery. **Added by sprint 2's real data:** report the largest contributors when none passes the drill share (the Wells Fargo case); attribute a mix effect to the node that moved the share (the Equifax mix case); a statistical test in the data-quality guard; a firmer test for an incomplete tail of the data | branching playbooks with full branch coverage; new depth evals pass; the two known gaps pass |
-| 4 | Branching playbooks, hand-offs between KPIs (a KPI made of parts), interactions, recovery | branching playbooks with full branch coverage; the alerts pack's cross-table and two-cause cases pass |
-| 5 | Minimal Explorer with guardrails | out-of-catalogue questions answered, labelled and within budget |
-| 6 | Easy setup, projects and sessions, companion view, demo | fresh machine to first answer with no terminal steps |
-| 7 | Real non-coder test and fixes | one analyst, own question, timed, observed |
+| Close-out | Four small proofs left from sprints 3 and 4: parity and cost on both databases, a live agent reading the new result fields, why one real case runs 43 queries, branch coverage enforced for verified experts | each has its evidence and its "not shown" list |
+| 1 | Easy, safe access: spikes first (sign-in verification, a no-install analyst path, a second AI client), then analyst install, discovery scoped to one KPI, read-only sign-in with a message for an admin, cost caps, a prep card, resumable setup, an engineer install path, a second client | a non-coder reaches a `draft` pack on their own BigQuery data from a fresh machine |
+| 2 | Trust: a longer status ladder (draft, reconciled, calibrated, verified) with migration; multi-point reconciliation; calibration (false-alarm and hit rates, with a default of one false alarm in twenty quiet periods); held-out incidents; fault injection on a user's own data; confidence labels; a synthetic alerts pack with planted truth | one pack reaches `verified` through the full ladder; false-alarm and hit rates published for two packs |
+| 2b | Open benchmark with faults not tuned for, run on more than one model | results table and write-up published |
+| 3 | Design partners (3 to 5), support bundle, guided fixes | partners reach `verified` on their own data; time to verified measured |
+| 4 | Scale setup and routine: semantic-layer import, incident import, monitoring, report formats | one partner team uses it weekly unprompted |
+| 5 | Remaining depth: interactions and combination search, peer comparison, lagged effects, numeric drivers, level-shift baselines, parallel branches, decision steps, non-additive metrics, an explorer | two-cause and decoy-event evals pass |
+| 6 | Stay correct: drift detection, feedback to eval cases, run log, case studies | status drops correctly on drift |
+
+Parked: the Explorer (not needed for the first usable version).

@@ -23,3 +23,4 @@ HANDOFF.md
 # BigQuery variants are generated per dataset when a pack is prepared
 packs/*/toolbox.bigquery/tools.generated.yaml
 packs/*/tools.meta.bigquery.yaml
+docs/NEXT-PHASE*.md
