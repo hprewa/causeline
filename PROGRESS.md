@@ -67,6 +67,16 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 6 | Incomplete tail of the data | done | see `git log` (message starts "Sprint 3 step 6") | Step 6 |
 | 7 | Proof and docs | partly done | docs and skill in the commit starting "Sprint 3 step 7"; the BigQuery proof is pending re-authentication | Step 7 |
 
+## Parked from sprint 3 (not done, by decision)
+
+| Item | Why it matters |
+|---|---|
+| SQLite against BigQuery parity and cost per contact-centre case after the depth changes | shows the depth steps behave the same on both databases |
+| Live agent answering both incident weeks with the contributions table | shows the skill reads the table well |
+| Why the Wells Fargo case grew from 25 to 43 queries | cost per question |
+| Quiet-week complaints cases still report 1 to 3 findings with a non-significant headline | they cannot be tightened to "no findings" yet |
+| Time-bucket z-scores and `standsOut` not dispersion-adjusted; Benjamini-Hochberg deferred | possible source of the quiet-week findings |
+
 ## Coverage debt
 
 An earlier example pack (a different domain) was retired from this repository. The trap types it covered must be
