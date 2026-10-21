@@ -75,7 +75,7 @@ Playbooks that branch, and hand-offs between KPIs (design: `docs/audit/playbook-
 |---|---|---|---|---|
 | 1 | Fact registry and a full trace (no behaviour change) | done | see `git log` (message starts "Sprint 4 step 1") | Step 1 |
 | 2 | Safe condition language and load-time validation | done | see `git log` (message starts "Sprint 4 step 2") | Step 2 |
-| 3 | Branching: `next` rules, `when`, bounds and a step budget; `metric_change` uses it | not started | | |
+| 3 | Branching: `next` rules, `when`, bounds and a step budget | done | see `git log` (message starts "Sprint 4 step 3") | Step 3 |
 | 4 | Hand-off from one KPI's playbook to another (a KPI made of parts) | not started | | |
 | 5 | Branch coverage in the eval report, and the `verified` gate | not started | | |
 | 6 | Recovery (a change that has since reversed) and interactions between findings | not started | | |

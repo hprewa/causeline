@@ -237,3 +237,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Conditions may read only facts from earlier steps (or the step's own, in `next`).** Why: a forward reference could never hold a value; loops are allowed only into a step with `max_visits`.
 - **A `next` list must close with an `else`.** Why: every run must have somewhere to go; "no rule matched" is not an outcome.
 
+### Step 3: branching (commit see `PROGRESS.md`)
+- **A skipped step goes on to the following step; a step with `next` follows its rules.** Why: it keeps the four existing playbooks, which have neither, running exactly as before.
+- **A rule's `stop` ends the run as stopped, so findings are not reported.** Why: a stop is for "this cannot be answered"; a branch that only wants to skip work uses `when` or a rule to a later step.
+- **At most 40 steps and `max_visits` per step, default 1.** Why: a playbook can loop, so the runner bounds it and says which bound was hit.
+- **`metric_change` does not stop early when the headline is quiet.** Why: offsetting siblings and masked time slots have a flat headline and must still be drilled; only the quiet-week noise is wrong, and step 5 of sprint 3 is where that is handled.
+

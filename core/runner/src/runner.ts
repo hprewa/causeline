@@ -10,6 +10,7 @@ import { ToolIndex } from "./toolindex.js";
 import { VERSION } from "./version.js";
 import { RunStop, type ToolCaller } from "./types.js";
 import { publishFacts, snapshotOf } from "./facts.js";
+import { routeAfter, shouldRun, STEP_BUDGET, traceSkipped } from "./route.js";
 import { parseScope, ScopedToolCaller } from "./scope.js";
 
 export type RunInputs = Record<string, string | number | boolean>;
@@ -197,10 +198,28 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     trace: [],
   };
 
-  for (const step of playbook.steps) {
+  const visits = new Map<string, number>();
+  let ran = 0;
+  for (let i = 0; i < playbook.steps.length && !ctx.stop; ) {
+    const step = playbook.steps[i];
     const name = step.evidence ? "evidence" : step.compute!;
     const fn = COMPUTE[name];
     if (!fn) throw new Error(`step "${step.id}" uses unknown compute "${name}" (have: ${Object.keys(COMPUTE).join(", ")})`);
+    if (!shouldRun(ctx, step)) {
+      traceSkipped(ctx, step, name);
+      i++;
+      continue;
+    }
+    const seen = (visits.get(step.id) ?? 0) + 1;
+    visits.set(step.id, seen);
+    if (seen > (step.max_visits ?? 1)) {
+      ctx.stop = { reason: "loop_limit", detail: `step "${step.id}" would run a ${seen}th time; the playbook allows ${step.max_visits ?? 1}` };
+      break;
+    }
+    if (++ran > STEP_BUDGET) {
+      ctx.stop = { reason: "step_budget", detail: `the run would execute more than ${STEP_BUDGET} steps` };
+      break;
+    }
     ctx.stepKinds.set(step.id, { compute: name, over: step.over });
     const before = snapshotOf(ctx);
     try {
@@ -211,6 +230,10 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     }
     publishFacts(ctx, step.id, name, before);
     if (ctx.stop) break;
+    const route = routeAfter(ctx, playbook, i);
+    if ("stop" in route) ctx.stop = route.stop;
+    else if ("handoff" in route) ctx.stop = { reason: "handoff_unavailable", detail: `the playbook hands over to "${route.handoff}", which this run cannot do` };
+    else i = route.to;
   }
 
   return Result.parse({
