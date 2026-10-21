@@ -133,7 +133,8 @@ nothing below is started. Existing features all stay.
 
 | Phase | Theme | Done when |
 |---|---|---|
-| Close-out | Four small proofs left from sprints 3 and 4: parity and cost on both databases, a live agent reading the new result fields, why one real case runs 43 queries, branch coverage enforced for verified experts | each has its evidence and its "not shown" list |
+| Close-out | Four small proofs left from sprints 3 and 4 (`docs/evidence/close-out.md`): SQLite 25/25 done, BigQuery parity not run (machine ran out of memory); the 43-query case traced (a flat-parent test disagrees with the headline; goes to calibration); live agent run and the branch-coverage default still open | each has its evidence and its "not shown" list |
+| 1a | Access spikes done, report only (`docs/evidence/phase-1-spikes.md`): own OAuth client as the analyst sign-in, a Claude Desktop extension with Toolbox fetched on first run, Codex needs a self-contained server executable | go / no-go per item recorded |
 | 1 | Easy, safe access: spikes first (sign-in verification, a no-install analyst path, a second AI client), then analyst install, discovery scoped to one KPI, read-only sign-in with a message for an admin, cost caps, a prep card, resumable setup, an engineer install path, a second client | a non-coder reaches a `draft` pack on their own BigQuery data from a fresh machine |
 | 2 | Trust: a longer status ladder (draft, reconciled, calibrated, verified) with migration; multi-point reconciliation; calibration (false-alarm and hit rates, with a default of one false alarm in twenty quiet periods); held-out incidents; fault injection on a user's own data; confidence labels; a synthetic alerts pack with planted truth | one pack reaches `verified` through the full ladder; false-alarm and hit rates published for two packs |
 | 2b | Open benchmark with faults not tuned for, run on more than one model | results table and write-up published |
