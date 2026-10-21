@@ -57,6 +57,7 @@ If a run cannot connect to the data (a cloud warehouse sign-in, a missing projec
   - `scope`: the finding holds only inside that node (for example a queue that is bad only at one location). Always include the scope when you name it.
   - `effect: "mix"`: the metric moved because **volume shifted between groups**, not because any group got worse. Say that plainly.
   - `role: "contributor"`: no single node explained the change, but this one carries an unusual part of it. Say "carries X% of the rise", not that it caused it.
+  - `after`: what the periods after the one asked about show for this node. `recovered`: it is no longer off in the same direction in the newest of them (say it has since gone back to normal, and give `detail`); `ongoing`: it still is (say the problem has not gone away). Absent: there were no later periods to judge; say nothing about the weeks after.
   - `persistence`: `persistent` means bad across the whole window; `single_slot` means bad in only part of it, so treat it as less certain.
 - **`contributions`** (a table, not findings): who contributed how much to the change, in the metric's own units, with `share` of the change, the part from `rate_effect` (the node itself changed) and `mix_effect` (volume moved toward or away from it), and `history` (what it contributed in up to eight earlier periods) with a `verdict`:
   - `new` or `unusual`: lead with these; this is more than that node usually contributes.

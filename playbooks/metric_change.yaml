@@ -28,6 +28,8 @@ steps:
     within: where
   - id: cross_check
     compute: persistence               # culprit bad all window, or one slot?
+  - id: recovery
+    compute: recovery                  # has the culprit gone back to normal in the periods after this one?
   - id: contributions
     compute: contributions            # who contributed how much to the change, and is that usual for them?
   - id: contributors

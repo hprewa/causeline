@@ -7,6 +7,7 @@ import { seasonalExpectation } from "./expectation.js";
 import { resolveWindow } from "./window.js";
 import { rate, zScore, zSum } from "./stats.js";
 import { handOverToParts } from "./handoff.js";
+import { recoveryStep } from "./recovery.js";
 import { medianOf, settledEnd } from "./tail.js";
 import { compareStep, trendStep } from "./tasks.js";
 
@@ -213,10 +214,12 @@ const EVIDENCE_SAMPLE = 10;
 const contributions: StepFn = async (ctx, step) => contributionsStep(ctx, step.id);
 const contributors: StepFn = async (ctx, step) => contributorsStep(ctx, step.id);
 
+const recovery: StepFn = async (ctx, step) => recoveryStep(ctx, step.id);
 const handoff: StepFn = async (ctx) => handOverToParts(ctx);
 
 export const COMPUTE: Record<string, StepFn> = {
   handoff,
+  recovery,
   evidence: evidenceStep,
   trend: trendStep,
   compare: compareStep,

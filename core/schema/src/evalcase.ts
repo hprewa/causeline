@@ -10,6 +10,8 @@ export const TopFindingExpectation = z.object({
   effect: z.enum(["rate", "mix"]).optional(),
   /** The metric the finding is about (a driver, for a product metric). */
   metric: z.string().min(1).optional(),
+  /** What the periods after the one asked about must show for this finding. */
+  after: z.enum(["recovered", "ongoing"]).optional(),
 });
 export type TopFindingExpectation = z.infer<typeof TopFindingExpectation>;
 

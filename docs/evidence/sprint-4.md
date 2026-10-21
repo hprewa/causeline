@@ -92,3 +92,24 @@ Design: `docs/audit/playbook-language.md`. Each step is a commit; what was and w
 - A "branch" is a rule or a condition's two outcomes; it does not say the case took it for the right reason.
 - No flowchart view or Builder capture of branching rules (the audit's step 6).
 
+## Step 6: recovery (has the culprit gone back to normal?)
+
+**Question:** when asked about a past period, can the analysis say whether the node it blames has since recovered, or is still off?
+
+**What was built** (`core/runner/src/recovery.ts`, a `recovery` step in `metric_change` after `cross_check`)
+- For each finding that names a node, the node's own series at the top time level for up to four periods after the one asked about, each judged against the baseline the finding was judged against (the same significance as the headline's, `parent_z`). The newest of those no longer off in the direction of the change: `after.status: recovered`; still off: `ongoing`. `after` carries the number of periods and a plain sentence. Nothing is said when the period is the newest or the later ones are too small to judge.
+- Eval expectations can assert `after: recovered | ongoing` on a finding.
+- `FACTS` gains `recovery.recovered` and `recovery.ongoing`, so later rules can branch on them.
+
+**Evidence**
+- 3 runner tests: recovered; ongoing; nothing said for the newest period.
+- **Planted cases** `understaffed_team_since_recovered` (a team poor for one week, three normal weeks after: `recovered`) and `understaffed_team_still_going` (poor for weeks 7 to 10: `ongoing`): pass, and differ only in the data after the period.
+- Contact-centre eval **25/25, 4/4 branches**; unit tests 154/154 in the runner; routing 27/27; intents 16/16; integration 7/7; purity OK. Complaints on BigQuery **7/7**, unchanged (Wells Fargo still 43 queries, Equifax 45 and 32).
+- Purity: the new word `branch` is allow-listed (generic in a playbook language, and a word in the template pack). Step 5 was committed without a purity run and this was missing there.
+
+**Not shown**
+- Recovery is judged for a finding's node alone, ignoring the scope it was found in (as the persistence check does), so a node bad only in one place could read as recovered or ongoing from its whole series.
+- It is not checked on the real complaints incidents: those weeks sit in the middle of a long series and the findings that reached the check are not recorded in the evals; no complaints case asserts `after`.
+- A recovered node says nothing about whether the cause was removed or merely paused.
+- **Interactions between findings (two nodes that matter only together) are not built**; they move to a later sprint.
+

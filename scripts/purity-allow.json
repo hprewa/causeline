@@ -6,5 +6,6 @@
   "category": "generic English; also a level name in one pack",
   "network": "generic English (network, as in a Toolbox server); also a level name in one pack",
   "state": "generic English and programming (build state, session state, a state machine); also a dimension name in one pack",
-  "issue": "generic English and programming (a validation issue, an issue found); also a hierarchy level name in one pack"
+  "issue": "generic English and programming (a validation issue, an issue found); also a hierarchy level name in one pack",
+  "branch": "a way a playbook can go (a rule fired or not); also a word in the template pack"
 }

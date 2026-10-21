@@ -21,6 +21,7 @@ export interface FindingDraft {
   /** Which column/value to filter on, and its baseline, for the persistence check (absent for time-slot findings). */
   persist?: { col: string; value: string; base: Components };
   persistence?: "persistent" | "single_slot";
+  after?: { status: "recovered" | "ongoing"; periods: number; detail: string };
 }
 
 /** Deepest informative node a hierarchy drill reached; refine ranks dimensions inside it. */

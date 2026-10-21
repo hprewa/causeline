@@ -214,3 +214,20 @@
   expect:
     handoffs_include: [{ metric: calls_offered }]
 
+# 24. a team's service level is poor for one week only; the data holds three later weeks. Asked about the bad week, the analysis says the team
+#     has since recovered. (Before sprint 4 the answer could not say anything about the weeks after.)
+- id: understaffed_team_since_recovered
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7, and is it still a problem?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: team, value: team_05, after: recovered }
+
+# 25. the same team stays poor for three weeks: asked about the first, the analysis says it is still going on.
+- id: understaffed_team_still_going
+  setup: "--fault understaffed:team_05:wk7-10"
+  question: "Why did service level drop in week 7, and is it still a problem?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: team, value: team_05, after: ongoing }
+

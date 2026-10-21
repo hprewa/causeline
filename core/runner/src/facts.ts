@@ -27,6 +27,7 @@ export const FACTS: Record<string, string[]> = {
   contributors: ["found"],
   evidence: ["records"],
   handoff: ["count", "significant"],
+  recovery: ["recovered", "ongoing"],
   trend: ["change_points"],
   compare: ["significant"],
 };
@@ -51,6 +52,8 @@ function factsOf(ctx: RunContext, compute: string, before: Snapshot): Facts {
       return { count: ctx.contributions.length, unusual: ctx.contributions.filter((c) => c.verdict === "unusual" || c.verdict === "new").length };
     case "contributors":
       return { found };
+    case "recovery":
+      return { recovered: ctx.drafts.filter((d) => d.after?.status === "recovered").length, ongoing: ctx.drafts.filter((d) => d.after?.status === "ongoing").length };
     case "handoff":
       return { count: ctx.handoffs.length, significant: ctx.handoffs.filter((h) => h.headline?.significant).length };
     case "evidence":

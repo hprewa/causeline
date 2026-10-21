@@ -55,13 +55,16 @@ export function scoreRunner(result: Result, expect: Expectation): Score {
     if (want.effect) {
       checks.push({ name: "top_finding.effect", ok: top?.effect === want.effect, detail: `expected ${want.effect}, got ${top?.effect ?? "none"}` });
     }
+    if (want.after) {
+      checks.push({ name: "top_finding.after", ok: top?.after?.status === want.after, detail: `expected ${want.after}, got ${top?.after?.status ?? "nothing said"}` });
+    }
     if (want.metric) {
       checks.push({ name: "top_finding.metric", ok: top?.metric === want.metric, detail: `expected ${want.metric}, got ${top?.metric ?? "none"}` });
     }
   }
   for (const want of expect.findings_include ?? []) {
     const hit = result.findings.some(
-      (f) => f.dimension === want.dimension && f.value === want.value && Object.entries(want.scope ?? {}).every(([k, v]) => f.scope?.[k] === v) && (want.effect === undefined || f.effect === want.effect) && (want.metric === undefined || f.metric === want.metric),
+      (f) => f.dimension === want.dimension && f.value === want.value && Object.entries(want.scope ?? {}).every(([k, v]) => f.scope?.[k] === v) && (want.effect === undefined || f.effect === want.effect) && (want.metric === undefined || f.metric === want.metric) && (want.after === undefined || f.after?.status === want.after),
     );
     checks.push({ name: `finding_included:${want.dimension}=${want.value}`, ok: hit, detail: `findings: ${result.findings.map((f) => `${f.dimension}=${f.value}`).join("; ") || "none"}` });
   }

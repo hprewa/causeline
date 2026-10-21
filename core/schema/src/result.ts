@@ -44,6 +44,8 @@ export const Finding = z.object({
   /** `contributor`: reported because it carries a large and unusual part of the change although no single node dominated; absent for a culprit the drill followed. */
   role: z.enum(["contributor"]).optional(),
   persistence: z.enum(["persistent", "single_slot"]).optional(),
+  /** What the periods after the one asked about show: the node went back to normal, or is still off. Absent when there are none to judge. */
+  after: z.object({ status: z.enum(["recovered", "ongoing"]), periods: z.number().int().positive(), detail: z.string() }).optional(),
   /** The metric this finding is about: the drilled driver when the headline metric is a product. */
   metric: z.string().min(1).optional(),
 });

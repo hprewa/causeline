@@ -253,3 +253,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A branch is covered only by a passing case that is not a known gap.** Why: a failing case shows nothing about the branch.
 - **The `verified` gate is a flag (`--require-branches`), not a default.** Why: the complaints expert is verified and cannot reach the hand-off branch without a KPI tree in its pack; making the gate default would break a honest label. It is reported either way.
 
+### Step 6: recovery (commit see `PROGRESS.md`)
+- **Recovery is judged on the periods after the one asked about, against the same baseline, and only the newest of them decides.** Why: a node that dipped back and forth is not recovered; the question a person has is "is it still a problem now".
+- **Interactions moved to a later sprint.** Why: they need a search over pairs of nodes with its own multiplicity control; doing it with the time left would have been a guess.
+

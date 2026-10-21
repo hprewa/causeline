@@ -109,6 +109,7 @@ function rankFindings(drafts: FindingDraft[], metric: string, hierarchies: Recor
     ...(d.scope ? { scope: d.scope } : {}),
     ...(d.effect ? { effect: d.effect } : {}),
     ...(d.role ? { role: d.role } : {}),
+    ...(d.after ? { after: d.after } : {}),
     ...(d.persistence ? { persistence: d.persistence } : {}),
   }));
 }
