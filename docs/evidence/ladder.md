@@ -25,8 +25,14 @@ An expert stands exactly where its KPI stands. Every change of rung (KPI or expe
 - Unit tests in every package pass, including: the rung rule one case at a time (one number, three numbers from one period, three of one kind, a missing source, a flagged number, a failing automatic check, no automatic run); calibration and verification cannot skip a rung; a plausible sample counts toward nothing and sets the flag, and real numbers clear it; a version 1 and a version 2 build file are upgraded with the right log entries and read back unchanged; a change drops the KPI and its expert and a re-run restores them and the log shows both; an old expert file is migrated and a new one is kept; router and intent notes carry the rung's sentence.
 - `check:purity` and `check:ladder` pass.
 
+## Run after the migration
+- Contact-centre eval **25/25** with all 4 playbook branches taken (and the gate on); routing **27/27**; intents **16/16**.
+- Scripted end-to-end tests (`CAUSELINE_INTEGRATION=1`) **7/7**: raw files to a reconciled expert through the Builder tools, and through the MCP tools with the sign-off page agreeing with the chat (three numbers, the third through the chat; the incident found; the expert stays reconciled because it is not calibrated; a change drops it and a re-run restores it); the bundled plugin server from a copy of the plugin directory.
+- Two things the run found, both mine: the end-to-end test took the slice's number for the wrong week (the slice check has its own week), and the plugin bundle was out of date (see below).
+- **A stale plugin bundle breaks on the new files.** `clients/claude-code` is built by `npm run bundle:plugin` and is not rebuilt by `npm run build`. An old bundle rejects an expert file whose status is `reconciled`. Rebuild it after any schema change before running the integration tests or a live agent.
+
 ## Not shown
-- **The evals and the integration suite were not re-run after the migration.** The runs were stopped twice because the machine ran low on memory. So the contact-centre eval (25 cases), the routing eval (27), the intent eval (16) and the scripted end-to-end tests of the Builder and the MCP server (which were rewritten for the new rule: three numbers, a third one through the chat) are unproven on the new ladder, and the complaints eval on BigQuery was not re-run. The unit tests cover the logic; the end-to-end tests have been edited but not run.
+- The complaints eval on BigQuery was not re-run after the migration (the complaints experts changed from `verified`/`draft` to `reconciled`; the branch gate now covers them).
 - Nothing can reach `calibrated` or `verified` yet: no calibration or fault-injection code exists, so those two rungs are only defined and tested as rules.
 - The sign-off screen was not opened in a browser after the change.
 - The deviation from the planning note: an old `provisional` KPI is a draft **without** the "numbers not confirmed" flag. In the code, provisional meant one number genuinely matched, not a plausible sample; the flag now belongs only to numbers accepted as plausible.

@@ -96,8 +96,7 @@ test("from raw CSVs to a reconciled expert whose incident is found, step by step
     let qOk = 0;
     for (const l of readFileSync(join(dir, "raw", "calls.csv"), "utf-8").trim().split("\n").slice(1)) {
       const c = l.split(",");
-      const t = new Date(c[1].replace(" ", "T") + "Z").getTime();
-      if (t < start || t >= start + 7 * 86_400_000 || c[3] !== slice.scope.queue) continue;
+      if (c[1].slice(0, 10) < slice.window.start || c[1].slice(0, 10) > slice.window.end || c[3] !== slice.scope.queue) continue;
       qTotal++;
       qOk += Number(c[5]);
     }

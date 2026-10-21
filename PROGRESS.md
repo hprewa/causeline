@@ -93,7 +93,7 @@ New ladder (draft, reconciled, calibrated, verified; flag "numbers not confirmed
 | Builder rule (three numbers, two periods, two kinds), experts follow their KPI, `accept_sample` | done |
 | Router, intent run, MCP tool texts, sign-off screen, branch gate, shipped experts, skills, README, guard in CI | done |
 | Unit tests in every package | pass |
-| Contact-centre, routing, intent evals and the scripted end-to-end tests after the change | **not run** (machine ran out of memory twice) |
+| Contact-centre 25/25, routing 27/27, intents 16/16, scripted end-to-end tests 7/7 after the change | pass; the complaints eval on BigQuery not re-run |
 | Calibration and fault injection (the two rungs above reconciled) | not started: phase 2 |
 
 ## Parked from sprint 3 (not done, by decision)
