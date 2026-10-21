@@ -249,3 +249,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Chain limit of two KPIs deep, never back to a KPI above, at most three parts.** Why: a loop or a fan-out of full analyses is expensive and unreadable.
 - **The step runs only when nothing explained a real change.** Why: when the data's splits do explain it, the parts are noise and cost.
 
+### Step 5: branch coverage (commit see `PROGRESS.md`)
+- **A branch is covered only by a passing case that is not a known gap.** Why: a failing case shows nothing about the branch.
+- **The `verified` gate is a flag (`--require-branches`), not a default.** Why: the complaints expert is verified and cannot reach the hand-off branch without a KPI tree in its pack; making the gate default would break a honest label. It is reported either way.
+

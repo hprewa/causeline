@@ -26,6 +26,9 @@ export interface CaseOutcome {
   gap?: string;
   /** What the run found, for comparing databases. */
   summary?: RunSummary;
+  /** The playbook the case ran, and the branches of it the run took (see `branchesOf`). */
+  playbook?: string;
+  branches?: string[];
   runner: Score | { error: string };
   runnerMs: number;
   steps: number;

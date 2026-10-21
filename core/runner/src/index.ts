@@ -14,6 +14,7 @@ export { runProductMetric } from "./product.js";
 export * from "./seasonal.js";
 export * from "./expectation.js";
 export { medianOf, settledEnd } from "./tail.js";
+export { branchesOf } from "./route.js";
 export * from "./rows.js";
 export * from "./toolindex.js";
 export { resolveWindow, hasRange, type WindowArgs } from "./window.js";

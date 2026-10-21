@@ -2,6 +2,7 @@ export * from "./score.js";
 export * from "./cases.js";
 export * from "./prepare.js";
 export * from "./table.js";
+export * from "./branches.js";
 export * from "./agent.js";
 export * from "./run.js";
 export { runEvalCli } from "./cli.js";

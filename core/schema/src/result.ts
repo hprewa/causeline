@@ -154,6 +154,8 @@ export const TraceEntry = z.object({
   step: z.string().min(1),
   compute: z.string().min(1),
   facts: z.record(z.string(), FactValue).default({}),
+  /** Which branch of the playbook this was (`step:when:run`, `step:when:skipped`, `step:next:<rule number>`), so an eval can tell which branches its cases take. */
+  branch: z.string().optional(),
   /** The rule that sent the run on from this step, and why (absent when the run simply went to the next step). */
   rule: z.string().optional(),
   because: z.string().optional(),

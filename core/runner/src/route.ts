@@ -14,9 +14,14 @@ export function shouldRun(ctx: RunContext, step: Playbook["steps"][number]): boo
   return !step.when || !!evaluate(parseCondition(step.when), ctx.facts);
 }
 
+/** Every branch a playbook has: each conditional step runs or is skipped, and each rule of each `next` can fire. */
+export function branchesOf(playbook: Playbook): string[] {
+  return playbook.steps.flatMap((s) => [...(s.when ? [`${s.id}:when:run`, `${s.id}:when:skipped`] : []), ...(s.next ?? []).map((_, k) => `${s.id}:next:${k}`)]);
+}
+
 /** Note on the trace that a step was skipped, and why. */
 export function traceSkipped(ctx: RunContext, step: Playbook["steps"][number], compute: string): void {
-  ctx.trace.push({ step: step.id, compute, facts: {}, rule: `skipped: when ${step.when}`, because: reads(ctx, step.when!), skipped: [], notes: [] });
+  ctx.trace.push({ step: step.id, compute, facts: {}, branch: `${step.id}:when:skipped`, rule: `skipped: when ${step.when}`, because: reads(ctx, step.when!), skipped: [], notes: [] });
 }
 
 function resolve(target: Target, index: Map<string, number>): Route {
@@ -36,14 +41,16 @@ export function routeAfter(ctx: RunContext, playbook: Playbook, i: number): Rout
   if (!step.next) return { to: i + 1 };
   const entry = ctx.trace[ctx.trace.length - 1];
   const skipped: string[] = [];
-  for (const rule of step.next) {
+  for (const [k, rule] of step.next.entries()) {
     if (rule.else !== undefined) {
+      entry.branch = `${step.id}:next:${k}`;
       entry.rule = `else ${JSON.stringify(rule.else)}`;
       entry.because = skipped.length > 0 ? "no earlier rule held" : "no condition";
       entry.skipped = skipped;
       return resolve(rule.else, index);
     }
     if (evaluate(parseCondition(rule.if!), ctx.facts)) {
+      entry.branch = `${step.id}:next:${k}`;
       entry.rule = `if ${rule.if} then ${JSON.stringify(rule.then)}`;
       entry.because = reads(ctx, rule.if!);
       entry.skipped = skipped;

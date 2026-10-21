@@ -74,3 +74,21 @@ Design: `docs/audit/playbook-language.md`. Each step is a commit; what was and w
 - The hand-off says where to look; it does not test that the part explains the change in the whole (no attribution of the whole's change to the part).
 - The agent has not been run against a hand-off result; the skill text for it is untested.
 
+## Step 5: branch coverage in the eval, and the `verified` gate
+
+**Question:** can the eval say which branches of a playbook its cases actually take, and which expert is marked `verified` while some branch has never been tested?
+
+**What was built**
+- Every trace entry now names its branch: `step:when:run`, `step:when:skipped` or `step:next:<rule number>` (`branchesOf` lists all of a playbook's). The eval records the branches each case took and, after the table, prints per playbook how many branches passing cases take and which they never take. A case that fails or carries a known `gap` proves nothing.
+- It then names every expert marked `verified` whose playbook has a never-taken branch. With `--require-branches` that fails the run (exit code 1); without it the report is information only.
+
+**Evidence**
+- 3 unit tests: covered and untested are listed; a failing or gapped case covers nothing; a verified expert with an untested branch is flagged and not flagged once all four are taken.
+- Contact-centre pack: `metric_change` **4/4 branches taken** by passing cases; `--require-branches` passes (23/23).
+- **Complaints pack on BigQuery: 7/7 pass, but `metric_change` is 3/4 and `complaint-volume-deep-rca` (verified) is flagged**: the hand-off branch (`parts:when:run`) was never taken, because no complaints KPI declares `children` and no case can reach it. With `--require-branches` the complaints run exits 1.
+
+**Not shown**
+- The gate is opt-in and is not part of the default run or of the `verified` label in the Builder; nothing stops an expert from keeping `verified` today. The complaints expert stays `verified` with a documented untested branch rather than a weakened rule.
+- A "branch" is a rule or a condition's two outcomes; it does not say the case took it for the right reason.
+- No flowchart view or Builder capture of branching rules (the audit's step 6).
+

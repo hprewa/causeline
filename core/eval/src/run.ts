@@ -65,6 +65,8 @@ async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
       outcome.runner = scoreRunner(result, c.expect);
       outcome.steps = result.steps.length;
       outcome.summary = summarise(result);
+      outcome.playbook = c.inputs.playbook;
+      outcome.branches = [...new Set(result.trace.map((t) => t.branch).filter((b): b is string => !!b))];
     } catch (e) {
       outcome.runner = { error: (e as Error).message };
     } finally {

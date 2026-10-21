@@ -235,6 +235,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
       ctx.stop = { reason: e.reason, detail: e.detail };
     }
     publishFacts(ctx, step.id, name, before);
+    if (step.when) ctx.trace[ctx.trace.length - 1].branch = `${step.id}:when:run`;
     if (ctx.stop) break;
     const route = routeAfter(ctx, playbook, i);
     if ("stop" in route) ctx.stop = route.stop;

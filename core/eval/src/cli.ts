@@ -5,6 +5,7 @@ import { defaultWorkRoot, runEvals } from "./run.js";
 import { renderIntents, runIntentEval } from "./intents.js";
 import { renderRouting, runRoutingEval } from "./routing.js";
 import { renderTable, runnerOk } from "./table.js";
+import { branchCoverage, expertsWithUntestedBranches, renderCoverage } from "./branches.js";
 
 const USAGE = `usage: causeline eval --pack <dir> [options]
   --case <id[,id...]>     run only these cases
@@ -15,6 +16,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
   --max-turns <n>         agent turn limit (default 12)
   --routing               score the pack's routing eval (evals/routing.yaml) instead of its cases; needs at least 90%
   --intents               score the pack's intent eval (evals/intents.yaml): conversations to resolved intents; needs all of them (add --agent claude-code for a live attempt at each)
+  --require-branches      fail the run when an expert marked verified has a playbook branch that no passing case takes
   --reuse                 reuse a case's prepared pack when its setup has not changed
   --toolbox <path>        Toolbox binary (default: CAUSELINE_TOOLBOX, PATH, or ./toolbox.exe)
   --work-dir <dir>        where per-case packs are built (default: runs/eval-work/<pack name>)
@@ -22,7 +24,7 @@ const USAGE = `usage: causeline eval --pack <dir> [options]
 
 /** Parse `--flag value` pairs and bare switches. */
 function parse(argv: string[]): { flags: Map<string, string>; switches: Set<string> } {
-  const switches = new Set(["reuse", "no-bare", "routing", "intents"]);
+  const switches = new Set(["reuse", "no-bare", "routing", "intents", "require-branches"]);
   const flags = new Map<string, string>();
   const on = new Set<string>();
   for (let i = 0; i < argv.length; i++) {
@@ -103,7 +105,15 @@ export async function runEvalCli(argv: string[]): Promise<number> {
   console.log(`\nresults: ${file}`);
 
   const runnerFailed = outcomes.some((o) => !runnerOk(o));
-  return runnerFailed ? 1 : 0;
+  // which branches of the playbooks the cases take; only meaningful when every case ran
+  let branchesFailed = false;
+  if (!flags.get("case")) {
+    const coverage = branchCoverage(outcomes, resolve(pack));
+    const flagged = expertsWithUntestedBranches(coverage, resolve(pack));
+    if (coverage.length > 0) console.log("\n" + renderCoverage(coverage, flagged));
+    branchesFailed = switches.has("require-branches") && flagged.length > 0;
+  }
+  return runnerFailed || branchesFailed ? 1 : 0;
 }
 
 if (process.argv[1] && /cli\.js$/.test(process.argv[1])) {
