@@ -2,7 +2,7 @@ import { statusSentence, type Handoff, type Result, type Rung } from "@causeline
 import type { ProjectSummary } from "@causeline/builder";
 
 /**
- * The read-only pages of the local companion site: the project's overview, how each playbook decides what to do next, and the results of
+ * The read-only pages of the local companion pages: the project's overview, how each playbook decides what to do next, and the results of
  * past runs. They are built on the server as HTML with every value escaped, carry no script at all, and have no form or button: the only
  * page that takes input is the sign-off page.
  */
@@ -49,7 +49,7 @@ const NAV: [Section, string, string][] = [
   ["results", "results", "Results"],
 ];
 
-/** The page around a body: the same menu and look on every page. `base` is the site's own path (with the secret), ending in a slash. */
+/** The page around a body: the same menu and look on every page. `base` is the path all the pages share (with the secret), ending in a slash. */
 export function shell(opts: { title: string; nonce: string; base: string; active: Section; body: string }): string {
   const links = NAV.map(([s, path, label]) => `<a href="${esc(opts.base + path)}"${s === opts.active ? ' aria-current="page"' : ""}>${esc(label)}</a>`).join("");
   return `<!doctype html>
