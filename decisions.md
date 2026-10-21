@@ -274,3 +274,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The shipped contact-centre experts are reconciled on synthetic data.** Why: totals are checked against totals recomputed from the files; there is no person's report, and the file says so.
 - **A guard fails the build if the retired name returns.** Why: renames rot unless something checks them.
 
+## Projects (commit see `PROGRESS.md`)
+- **Projects live under one home folder with a registry; the person names them and never sees a path.** Why: Claude Desktop and Codex desktop have no useful working folder, and a user who opens a new session must find their work by name.
+- **The server starts on the project it finds, and tools can switch it while it runs.** Why: one long-lived server process serves the whole conversation; restarting it to change project would lose the question being built.
+- **Switching clears the question and restarts the data connection.** Why: both belong to the old project; carrying either over would answer about the wrong data.
+- **`CAUSELINE_PACK` still pins a pack.** Why: engineers and the test suite rely on it; opening a project still works.
+- **With no project the tools say so and how to create one, instead of guessing a folder.** Why: a random working folder (a desktop app's) must never become someone's project.
+

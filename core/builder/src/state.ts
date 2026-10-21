@@ -88,6 +88,8 @@ export interface BuildState {
   kpis: Record<string, KpiRecord>;
   /** Every change of rung, for a KPI or an expert: when, from what to what, why, and by which step. */
   status_log: StatusChange[];
+  /** The last time the stored numbers were worked out again on opening the project, and what it found. */
+  drift?: { at: string; ok: boolean; detail: string };
   seasonality: "not_run" | "confirmed" | "none";
   /** The seasonality analysis has been run, so what the saved description says about repeating patterns is a decision. */
   seasonalityAnalysed?: boolean;

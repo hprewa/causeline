@@ -13,13 +13,16 @@ import type { ServerConfig } from "./config.js";
 /** Hands out a ToolCaller for a run; the real one starts Toolbox, tests pass a fake. */
 export interface Callers {
   caller(): Promise<ToolCaller>;
+  /** Let go of what was started for the open project (the open project is changing). */
+  reset?(): Promise<void>;
 }
 
 const coreDir = (cfg: ServerConfig) => cfg.corePlaybooksDir ?? defaultPlaybooksDir();
 
 function needPackDir(cfg: ServerConfig) {
+  if (cfg.packDir === "") throw new Error("no project is open. Ask the user what to call theirs and call create_project, or call list_projects and open_project.");
   if (!existsSync(join(cfg.packDir, "ontology.yaml"))) {
-    throw new Error(`no ontology.yaml in ${cfg.packDir}. Point CAUSELINE_PACK at a pack directory (one holding ontology.yaml, data.yaml and toolbox/).`);
+    throw new Error(`the open project has no description saved yet (no ontology.yaml in ${cfg.packDir}). Set it up first with the Builder (connect_files or connect_bigquery, describe_data, save_pack), or open another project.`);
   }
 }
 

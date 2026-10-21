@@ -67,7 +67,7 @@ after(async () => {
 
 test("exposes exactly the causeline-mcp tools, with read-only hints where they apply", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "confirm_number", "connect_bigquery", "connect_files", "describe_data", "generate_tools", "get_intent", "list_playbooks", "open_signoff", "play_back", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "confirm_number", "connect_bigquery", "connect_files", "create_project", "describe_data", "generate_tools", "get_intent", "list_playbooks", "list_projects", "open_project", "open_signoff", "play_back", "project_summary", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
   const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
   assert.equal(byName.list_playbooks.annotations?.readOnlyHint, true);
   assert.equal(byName.generate_tools.annotations?.readOnlyHint, false);
@@ -141,7 +141,7 @@ test("a server pointed at a directory with no ontology explains what to do", asy
   try {
     const res = await call(c, "list_playbooks");
     assert.equal(res.isError, true);
-    assert.match(res.content[0].text, /CAUSELINE_PACK/);
+    assert.match(res.content[0].text, /no description saved yet/);
   } finally {
     await c.close();
   }
@@ -157,3 +157,44 @@ test("the pack falls back to CLAUDE_PROJECT_DIR when CAUSELINE_PACK is empty (as
     await c.close();
   }
 });
+
+test("projects: with none open the tools say so; create and open switch what every tool works on; the last one opened comes back next time", async () => {
+  const home = mkdtempSync(join(tmpdir(), "mcp-home-"));
+  const env = { CAUSELINE_HOME: home, CAUSELINE_PACK: "", CLAUDE_PROJECT_DIR: "" };
+  const c = await connect(env);
+  try {
+    const none = await call(c, "list_projects");
+    assert.deepEqual([none.structuredContent.open, none.structuredContent.projects], [null, []]);
+    const noPack = await call(c, "list_playbooks");
+    assert.equal(noPack.isError, true);
+    assert.match(noPack.content[0].text, /no project is open/);
+
+    const alpha = await call(c, "create_project", { name: "Alpha" });
+    assert.equal(alpha.structuredContent.created, "Alpha");
+    assert.match(alpha.structuredContent.next, /Connect/);
+    await call(c, "create_project", { name: "Beta" });
+    const both = (await call(c, "list_projects")).structuredContent;
+    assert.equal(both.open, "Beta");
+    assert.deepEqual(both.projects.map((p: { name: string }) => p.name).sort(), ["Alpha", "Beta"]);
+    assert.ok(!JSON.stringify(both).includes(home), "no folder path is handed to the model");
+
+    assert.equal((await call(c, "open_project", { name: "alpha" })).structuredContent.opened, "Alpha");
+    assert.equal((await call(c, "project_summary")).structuredContent.name, "Alpha");
+    assert.equal((await call(c, "project_summary", { name: "Beta" })).structuredContent.name, "Beta");
+    const unknown = await call(c, "open_project", { name: "Gamma" });
+    assert.equal(unknown.isError, true);
+    assert.match(unknown.content[0].text, /no project called "Gamma" \(there are: /);
+    assert.equal((await call(c, "create_project", { name: "alpha" })).isError, true, "a name is used once");
+  } finally {
+    await c.close();
+  }
+
+  // a new session in the same home opens the project that was opened last
+  const again = await connect(env);
+  try {
+    assert.equal((await call(again, "list_projects")).structuredContent.open, "Alpha");
+  } finally {
+    await again.close();
+  }
+});
+

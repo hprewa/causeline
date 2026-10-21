@@ -36,4 +36,9 @@ export class ToolboxManager {
     await this.process?.stop();
     this.process = undefined;
   }
+
+  /** The open project changed: the next call starts a Toolbox for the new one. */
+  async reset(): Promise<void> {
+    await this.stop();
+  }
 }

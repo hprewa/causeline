@@ -10,5 +10,6 @@ export * from "./playback.js";
 export * from "./savepack.js";
 export * from "./checks.js";
 export * from "./verify.js";
+export * from "./projects.js";
 export * from "./sqlite-tools.js";
 export * from "./data.js";

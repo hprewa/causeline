@@ -19,7 +19,7 @@ test("every tool the build skill names exists, and the sign-off tools are all ta
 test("the skill no longer teaches that one matched number makes a KPI matched", () => {
   const skill = readFileSync(resolve(repo, "skills", "causeline-build", "SKILL.md"), "utf-8");
   assert.ok(!/is "matched" only after/.test(skill));
-  assert.match(skill, /two numbers of different kinds/);
+  assert.match(skill, /at least three numbers/);
   assert.match(skill, /Ask before you show anything of ours/);
   assert.match(skill, /gcloud auth application-default login/);
 });

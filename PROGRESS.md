@@ -96,6 +96,17 @@ New ladder (draft, reconciled, calibrated, verified; flag "numbers not confirmed
 | Contact-centre 25/25, routing 27/27, intents 16/16, scripted end-to-end tests 7/7 after the change | pass; complaints eval on BigQuery 7/7 |
 | Calibration and fault injection (the two rungs above reconciled) | not started: phase 2 |
 
+## Projects and the companion page
+
+One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).
+
+| Step | What | State |
+|---|---|---|
+| 1 | Registry in the home folder; `list_projects`, `create_project`, `open_project`, `project_summary`; the server finds its project; switching restarts the data connection and clears the question | done |
+| 2 | Drift check on opening a project (stored numbers re-run quietly; a difference lowers the rung and is said first) | not started |
+| 3 | One local link with pages: overview, sign-off (the only page with buttons), playbook view, results | not started |
+| 4 | Skills, README, plugin settings: the project flow instead of an environment variable | not started |
+
 ## Parked from sprint 3 (not done, by decision)
 
 | Item | Why it matters |

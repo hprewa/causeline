@@ -37,7 +37,7 @@ const brief = (h: HistoryEntry) => ({ n: h.n, at: h.at, playback: h.playback, su
  * here is deterministic, so the same intent on the same data runs the same analysis.
  */
 export class IntentService {
-  readonly session = new IntentSession();
+  session = new IntentSession();
   private env: { at: number; value: IntentEnv } | undefined;
 
   constructor(
@@ -45,6 +45,12 @@ export class IntentService {
     private readonly callers: Callers,
     private readonly now: () => Date = () => new Date(),
   ) {}
+
+  /** A different project was opened: the question being built and what the data covers belong to the old one. */
+  reset(): void {
+    this.session = new IntentSession();
+    this.env = undefined;
+  }
 
   private async environment(): Promise<IntentEnv> {
     if (this.env && this.now().getTime() - this.env.at < ENV_TTL_MS) return this.env.value;
