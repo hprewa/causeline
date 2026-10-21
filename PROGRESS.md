@@ -67,6 +67,19 @@ Analysis depth: contributions judged against history, and the two real incidents
 | 6 | Incomplete tail of the data | done | see `git log` (message starts "Sprint 3 step 6") | Step 6 |
 | 7 | Proof and docs | partly done | docs and skill in the commit starting "Sprint 3 step 7"; the BigQuery proof is pending re-authentication | Step 7 |
 
+## Sprint 4: step by step
+
+Playbooks that branch, and hand-offs between KPIs (design: `docs/audit/playbook-language.md`; evidence: `docs/evidence/sprint-4.md`).
+
+| Step | What | State | Commit | Evidence |
+|---|---|---|---|---|
+| 1 | Fact registry and a full trace (no behaviour change) | done | see `git log` (message starts "Sprint 4 step 1") | Step 1 |
+| 2 | Safe condition language and load-time validation | not started | | |
+| 3 | Branching: `next` rules, `when`, bounds and a step budget; `metric_change` uses it | not started | | |
+| 4 | Hand-off from one KPI's playbook to another (a KPI made of parts) | not started | | |
+| 5 | Branch coverage in the eval report, and the `verified` gate | not started | | |
+| 6 | Recovery (a change that has since reversed) and interactions between findings | not started | | |
+
 ## Parked from sprint 3 (not done, by decision)
 
 | Item | Why it matters |

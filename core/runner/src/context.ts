@@ -1,4 +1,4 @@
-import type { Comparison, Contribution, Evidence, Explained, Headline, Trend, MaskingFlag, Ontology, PathNode } from "@causeline/schema";
+import type { Comparison, Contribution, Evidence, Explained, FactValue, Headline, Trend, MaskingFlag, Ontology, PathNode, TraceEntry } from "@causeline/schema";
 import type { Decomposition } from "./decompose.js";
 import type { Dispersion } from "./dispersion.js";
 import type { ResolvedThresholds } from "./masking.js";
@@ -83,6 +83,9 @@ export interface RunContext {
   contributions: Contribution[];
   explained?: Explained;
   stop?: { reason: string; detail: string };
+  /** Facts published by the steps so far, keyed `<step>.<name>`. */
+  facts: Record<string, FactValue>;
+  trace: TraceEntry[];
   /** What each executed step was, so `within` can tell a hierarchy drill from a dimension ranking. */
   stepKinds: Map<string, { compute: string; over?: string }>;
 }

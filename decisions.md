@@ -225,3 +225,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The Builder's rule is shared, not copied.** Why: the sign-off and the analysis must agree on what counts as settled.
 - **A real drop in the newest period is stopped too.** Why: it cannot be told from data arriving; stopping and asking is the safer error, and the message says so.
 
+## Sprint 4: playbooks that branch
+
+### Step 1: facts and trace (commit see `PROGRESS.md`)
+- **Facts are published by the runner from what the step did, under a fixed list per compute step, not declared by each playbook.** Why: the playbook names no computation; the list is what conditions are checked against at load.
+- **The trace records every step, not only drill moves.** Why: with branching, the route taken must be auditable; `path` stays as the drill detail.
+

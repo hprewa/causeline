@@ -145,6 +145,23 @@ export const PathNode = z.object({
 });
 export type PathNode = z.infer<typeof PathNode>;
 
+/** A fact a step published, readable by name in later conditions: a number, a word, a yes/no, or nothing. */
+export const FactValue = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+export type FactValue = z.infer<typeof FactValue>;
+
+/** One step the run executed: what it published, so the route taken through the playbook can be audited. */
+export const TraceEntry = z.object({
+  step: z.string().min(1),
+  compute: z.string().min(1),
+  facts: z.record(z.string(), FactValue).default({}),
+  /** The rule that sent the run on from this step, and why (absent when the run simply went to the next step). */
+  rule: z.string().optional(),
+  because: z.string().optional(),
+  /** Rules of this step that did not fire. */
+  skipped: z.array(z.string()).default([]),
+});
+export type TraceEntry = z.infer<typeof TraceEntry>;
+
 export const MaskingFlagType = z.enum(["offsetting", "dispersion", "mix_vs_rate", "small_cells"]);
 export type MaskingFlagType = z.infer<typeof MaskingFlagType>;
 
@@ -229,6 +246,8 @@ export const Result = z.object({
   evidence: z.array(Evidence).default([]),
   /** Ordered nodes visited during the guided drill, with the decision and numbers at each step. */
   path: z.array(PathNode).default([]),
+  /** Every step run in order, with the facts it published and the rule that chose the next one. */
+  trace: z.array(TraceEntry).default([]),
   masking_flags: z.array(MaskingFlag).default([]),
   steps: z.array(StepLog).default([]),
   stopped_reason: z.string().nullable().default(null),

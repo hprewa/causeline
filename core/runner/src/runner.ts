@@ -9,6 +9,7 @@ import { LoggingToolCaller } from "./toolcaller.js";
 import { ToolIndex } from "./toolindex.js";
 import { VERSION } from "./version.js";
 import { RunStop, type ToolCaller } from "./types.js";
+import { publishFacts, snapshotOf } from "./facts.js";
 import { parseScope, ScopedToolCaller } from "./scope.js";
 
 export type RunInputs = Record<string, string | number | boolean>;
@@ -192,6 +193,8 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     dispersion: NO_DISPERSION,
     contributions: [],
     stepKinds: new Map(),
+    facts: {},
+    trace: [],
   };
 
   for (const step of playbook.steps) {
@@ -199,12 +202,14 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     const fn = COMPUTE[name];
     if (!fn) throw new Error(`step "${step.id}" uses unknown compute "${name}" (have: ${Object.keys(COMPUTE).join(", ")})`);
     ctx.stepKinds.set(step.id, { compute: name, over: step.over });
+    const before = snapshotOf(ctx);
     try {
       await fn(ctx, step);
     } catch (e) {
       if (!(e instanceof RunStop)) throw e;
       ctx.stop = { reason: e.reason, detail: e.detail };
     }
+    publishFacts(ctx, step.id, name, before);
     if (ctx.stop) break;
   }
 
@@ -223,6 +228,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     ...(ctx.explained && !ctx.stop ? { explained: ctx.explained } : {}),
     evidence: ctx.stop ? [] : ctx.evidence,
     path: ctx.path,
+    trace: ctx.trace,
     masking_flags: ctx.flags,
     steps: tools.log,
     stopped_reason: ctx.stop?.reason ?? null,
