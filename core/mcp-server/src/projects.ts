@@ -1,5 +1,5 @@
 import { basename, join, resolve } from "node:path";
-import { createProject, findProject, listProjects, openProject, projectsHome, projectSummary } from "@causeline/builder";
+import { createProject, driftCheck, findProject, listProjects, openProject, projectsHome, projectSummary, readState } from "@causeline/builder";
 import type { ServerConfig } from "./config.js";
 import type { Callers } from "./handlers.js";
 
@@ -46,10 +46,23 @@ export class ProjectService {
     return { created: entry.name, ...this.summary() };
   }
 
+  /** Open a project, and work its stored numbers out again before anything is answered from it. */
   async open(name: string) {
     const entry = openProject(this.home, name);
     await this.switchTo(entry.folder);
-    return { opened: entry.name, ...this.summary() };
+    const drift = await this.drift(entry.folder);
+    return { opened: entry.name, ...(drift ? { drift } : {}), ...this.summary() };
+  }
+
+  private async drift(folder: string): Promise<{ ok: boolean; detail: string; changed?: { kpi: string; before: string; after: string }[] } | undefined> {
+    const kpis = Object.values(readState(folder)?.kpis ?? {});
+    if (!kpis.some((k) => k.checks.some((c) => c.state === "confirmed" && c.window.start !== ""))) return undefined;
+    try {
+      const r = await driftCheck({ workspace: folder, tools: await this.callers.caller() });
+      return { ok: r.ok, detail: r.detail, ...(r.changed.length > 0 ? { changed: r.changed.map((c) => ({ kpi: c.kpi, before: c.before, after: c.after })) } : {}) };
+    } catch (e) {
+      return { ok: false, detail: `the stored numbers could not be worked out again (${e instanceof Error ? e.message.split("\n")[0] : String(e)}); nothing was changed` };
+    }
   }
 
   /** The open project, or the one named. */

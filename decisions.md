@@ -280,4 +280,6 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Switching clears the question and restarts the data connection.** Why: both belong to the old project; carrying either over would answer about the wrong data.
 - **`CAUSELINE_PACK` still pins a pack.** Why: engineers and the test suite rely on it; opening a project still works.
 - **With no project the tools say so and how to create one, instead of guessing a folder.** Why: a random working folder (a desktop app's) must never become someone's project.
+- **Opening a project re-runs the confirmed numbers, not the automatic checks.** Why: the numbers are what the person vouched for; the automatic checks are about the definition, which has not changed unless the person changed it. It keeps the cost of opening small.
+- **A check that cannot run lowers nothing and says so.** Why: an expired sign-in is not evidence that the numbers moved; lowering the rung for it would punish the person for a connection problem.
 

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import { loadAgents } from "@causeline/schema";
 import type { Row, ToolCaller } from "@causeline/runner";
-import { acceptSample, autoChecks, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, settledEnd, signoffStatus } from "../src/checks.js";
+import { acceptSample, autoChecks, driftCheck, confirmNumber, decide, dayWords, proposeChecks, recordNumber, runChecks, settledEnd, signoffStatus } from "../src/checks.js";
 import { connectFiles } from "../src/connect.js";
 import { savePack } from "../src/savepack.js";
 import { levelGap, levelOf, readState, unconfirmedNumbers, writeState, type KpiRecord } from "../src/state.js";
@@ -53,6 +53,15 @@ async function workspace() {
   const saved = await savePack({ workspace: ws, ontology, data: data(), agents: [{ name: "ok-rate-deep-rca", kpi: "ok_rate", task: "deep_rca", examples: ["Why did the ok rate drop?"] }] });
   assert.equal(saved.saved, true, saved.errors.join("; "));
   return { ws, tools: new SqliteTools(ws), dir };
+}
+
+/** After a drift: give the numbers again so the KPI is reconciled once more. */
+async function reconcileAllAgain(ws: string, tools: SqliteTools) {
+  await runChecks({ workspace: ws, kpi: "ok_rate", tools });
+  const rec = readState(ws)!.kpis.ok_rate;
+  for (const c of rec.checks.filter((x) => x.state === "pending" && x.expected !== undefined)) {
+    await confirmNumber({ workspace: ws, kpi: "ok_rate", check: c.id, expected: c.got, source: c.source ?? "a report", tolerance: 0.002, tools });
+  }
 }
 
 /** Confirm the three proposed kinds of number (the whole business last week, one slice of it, one day): enough for the first rung. */
@@ -270,6 +279,39 @@ test("a number accepted as plausible counts toward nothing, and the KPI and its 
   assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
   assert.equal(signoffStatus(ws, "ok_rate")[0].unconfirmed, false);
   assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.unconfirmed_numbers, false);
+});
+
+test("opening a project works the stored numbers out again: a number that no longer matches lowers the rung and is said; a failure to check changes nothing", async () => {
+  const { ws, tools } = await workspace();
+  await reconcileAll(ws, tools);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
+
+  const fine = await driftCheck({ workspace: ws, tools });
+  assert.equal(fine.ok, true, fine.detail);
+  assert.equal(fine.checked, 3);
+  assert.match(fine.detail, /all 3 stored numbers still match/);
+  assert.equal(readState(ws)!.drift!.ok, true);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "reconciled");
+
+  // the data moves underneath a stored number: simulate it by changing what the person once gave
+  const s = readState(ws)!;
+  s.kpis.ok_rate.checks.find((c) => c.state === "confirmed")!.expected = 0.123;
+  writeState(ws, s);
+  const drifted = await driftCheck({ workspace: ws, tools });
+  assert.equal(drifted.ok, false);
+  assert.equal(drifted.changed[0].kpi, "ok_rate");
+  assert.deepEqual([drifted.changed[0].before, drifted.changed[0].after], ["reconciled", "draft"]);
+  assert.match(drifted.detail, /1 stored number no longer match.*ok_rate fell back to draft/);
+  assert.equal(levelOf(readState(ws)!.kpis.ok_rate), "draft");
+  assert.equal(loadAgents(ws).find((a) => a.name === "ok-rate-deep-rca")!.status, "draft", "the expert follows");
+  assert.ok(readState(ws)!.status_log.some((c) => c.subject === "kpi:ok_rate" && c.to === "draft" && c.by === "opening the project"));
+
+  // a check that cannot run says so and lowers nothing
+  await reconcileAllAgain(ws, tools);
+  const broken = { call: async () => { throw new Error("the sign-in has expired"); } } as unknown as typeof tools;
+  const failed = await driftCheck({ workspace: ws, tools: broken });
+  assert.equal(failed.ok, false);
+  assert.match(failed.detail, /could not be worked out again \(the sign-in has expired\); nothing was changed/);
 });
 
 test("a join that repeats rows is caught by the automatic checks, and parts that do not add up are too", async () => {

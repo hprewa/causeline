@@ -103,7 +103,7 @@ One folder per project under a home folder, a registry, and read-only localhost 
 | Step | What | State |
 |---|---|---|
 | 1 | Registry in the home folder; `list_projects`, `create_project`, `open_project`, `project_summary`; the server finds its project; switching restarts the data connection and clears the question | done |
-| 2 | Drift check on opening a project (stored numbers re-run quietly; a difference lowers the rung and is said first) | not started |
+| 2 | Drift check on opening a project (stored numbers re-run quietly; a difference lowers the rung and is said first) | done |
 | 3 | One local link with pages: overview, sign-off (the only page with buttons), playbook view, results | not started |
 | 4 | Skills, README, plugin settings: the project flow instead of an environment variable | not started |
 

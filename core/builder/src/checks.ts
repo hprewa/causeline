@@ -477,16 +477,16 @@ export interface RunChecksResult {
  * back to pending (with the new figure beside it); only when all still match, and the automatic checks pass, does
  * a KPI that had fallen back to draft stand as reconciled again.
  */
-export async function runChecks(opts: { workspace: string; kpi: string; tools: ToolCaller }): Promise<RunChecksResult> {
+export async function runChecks(opts: { workspace: string; kpi: string; tools: ToolCaller; /** Only the confirmed numbers: the automatic checks are not run again and their stored result is kept. */ quick?: boolean; why?: string; by?: string }): Promise<RunChecksResult> {
   const ctx = await open(opts.workspace, opts.kpi, opts.tools);
   const rec0 = readState(opts.workspace)?.kpis[opts.kpi];
   if (!rec0) throw new Error(`${opts.kpi} has no checks yet; propose some first`);
-  const auto = await autoChecks({ workspace: opts.workspace, kpi: opts.kpi, tools: opts.tools, ctx });
+  const auto = opts.quick ? (rec0.auto?.results ?? []) : await autoChecks({ workspace: opts.workspace, kpi: opts.kpi, tools: opts.tools, ctx });
   const results: RunChecksResult["rechecked"] = [];
   const now = new Map<string, number | null>();
   for (const c of rec0.checks.filter((x) => x.state === "confirmed")) now.set(c.id, c.window.start === "" ? null : (await windowValue(ctx, c.scope, c.window)).value);
   const { before, after, rec } = settle(opts.workspace, opts.kpi, (rec) => {
-    rec.auto = { at: new Date().toISOString(), pass: auto.every((r) => r.ok), results: auto };
+    if (!opts.quick) rec.auto = { at: new Date().toISOString(), pass: auto.every((r) => r.ok), results: auto };
     for (const c of rec.checks.filter((x) => x.state === "confirmed")) {
       const got = now.get(c.id);
       if (got === null || got === undefined) {
@@ -503,8 +503,54 @@ export async function runChecks(opts: { workspace: string; kpi: string; tools: T
         results.push({ id: c.id, label: c.label, expected: c.expected!, got, match: false, note: c.note });
       }
     }
-  });
+  }, opts.why ?? "the stored numbers were worked out again", opts.by ?? "run_checks");
   return { kpi: opts.kpi, before, after, restored: !atLeast(before, "reconciled") && atLeast(after, "reconciled"), rechecked: results, auto, gap: levelGap(rec) };
+}
+
+export interface DriftResult {
+  at: string;
+  /** Stored numbers worked out again. */
+  checked: number;
+  /** True when every one still matches and nothing stopped the check. */
+  ok: boolean;
+  /** KPIs with a number that no longer matches, and the rung they fell to. */
+  changed: { kpi: string; before: Level; after: Level; off: string[] }[];
+  /** One sentence for the person. */
+  detail: string;
+}
+
+/**
+ * On opening a project: work the confirmed numbers out again (not the automatic checks) and compare them with what the person gave. A number
+ * that no longer matches goes back to pending and the KPI drops a rung, so nobody relies on an answer the data no longer supports. If the
+ * numbers cannot be worked out at all (no connection, expired sign-in) nothing is lowered and the result says it could not check.
+ */
+export async function driftCheck(opts: { workspace: string; tools: ToolCaller }): Promise<DriftResult> {
+  const state = readState(opts.workspace);
+  const kpis = Object.entries(state?.kpis ?? {}).filter(([, r]) => r.checks.some((c) => c.state === "confirmed" && c.window.start !== ""));
+  const changed: DriftResult["changed"] = [];
+  let checked = 0;
+  let failure: string | undefined;
+  for (const [kpi] of kpis) {
+    try {
+      const r = await runChecks({ workspace: opts.workspace, kpi, tools: opts.tools, quick: true, why: "the stored numbers no longer match the data", by: "opening the project" });
+      checked += r.rechecked.length;
+      const off = r.rechecked.filter((x) => !x.match).map((x) => x.label);
+      if (off.length > 0) changed.push({ kpi, before: r.before, after: r.after, off });
+    } catch (e) {
+      failure = e instanceof Error ? e.message.split("\n")[0] : String(e);
+      break;
+    }
+  }
+  const detail = failure
+    ? `the stored numbers could not be worked out again (${failure}); nothing was changed`
+    : changed.length > 0
+      ? `${changed.reduce((a, c) => a + c.off.length, 0)} stored number${changed.reduce((a, c) => a + c.off.length, 0) === 1 ? "" : "s"} no longer match the data (${changed.map((c) => `${c.kpi}: ${c.off.join("; ")}`).join(" | ")}); ${changed.map((c) => c.kpi).join(", ")} fell back to ${[...new Set(changed.map((c) => c.after))].join(" or ")}`
+      : kpis.length === 0
+        ? "there are no stored numbers to check yet"
+        : `all ${checked} stored number${checked === 1 ? "" : "s"} still match the data`;
+  const result: DriftResult = { at: new Date().toISOString(), checked, ok: !failure && changed.length === 0, changed, detail };
+  if (state) updateState(opts.workspace, (s) => void (s.drift = { at: result.at, ok: result.ok, detail: result.detail }));
+  return result;
 }
 
 // --- where things stand --------------------------------------------------------------------------
