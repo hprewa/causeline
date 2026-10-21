@@ -3,6 +3,12 @@ import { createProject, driftCheck, findProject, listProjects, openProject, proj
 import type { ServerConfig } from "./config.js";
 import type { Callers } from "./handlers.js";
 
+/** The registered name of the open project, if it is one. */
+export function openProjectName(cfg: ServerConfig): string | undefined {
+  if (cfg.packDir === "") return undefined;
+  return listProjects(cfg.home ?? projectsHome()).find((p) => resolve(p.folder) === resolve(cfg.packDir))?.name;
+}
+
 /**
  * The projects the person has, and which one is open. Opening or creating one changes what every other tool works on: the server's
  * folder, where results go, the data connection that was started for the old one, and the question being built.
@@ -18,10 +24,8 @@ export class ProjectService {
     return this.cfg.home ?? projectsHome();
   }
 
-  /** The registered name of the open project, if it is one. */
   private openName(): string | undefined {
-    if (this.cfg.packDir === "") return undefined;
-    return listProjects(this.home).find((p) => resolve(p.folder) === resolve(this.cfg.packDir))?.name;
+    return openProjectName(this.cfg);
   }
 
   list() {

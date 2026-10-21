@@ -282,4 +282,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **With no project the tools say so and how to create one, instead of guessing a folder.** Why: a random working folder (a desktop app's) must never become someone's project.
 - **Opening a project re-runs the confirmed numbers, not the automatic checks.** Why: the numbers are what the person vouched for; the automatic checks are about the definition, which has not changed unless the person changed it. It keeps the cost of opening small.
 - **A check that cannot run lowers nothing and says so.** Why: an expired sign-in is not evidence that the numbers moved; lowering the rung for it would punish the person for a connection problem.
+- **One site, one secret: the new pages are served by the same local server as the sign-off screen.** Why: one link to give, one set of safety checks (secret in the address, this machine as Host and Origin) to keep right.
+- **The read-only pages are built on the server with no script at all.** Why: a page that cannot run code and has nothing to press cannot be turned into an editor, and escaping on the server is the only escaping there is.
+- **The sign-off page stays where it was and the menu links to the rest.** Why: its address is already in tests, docs and people's heads; moving it would break them for no gain.
+- **A project not built here shows its experts' rungs as written and says its checks are not tracked.** Why: showing it as draft contradicts its experts, and showing it as reconciled without records would claim checks nobody can see.
 

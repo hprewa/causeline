@@ -2,11 +2,16 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { decide, proposeChecks, recordNumber, runChecks, signoffStatus } from "@causeline/builder";
+import { basename } from "node:path";
+import { decide, projectSummary, proposeChecks, recordNumber, runChecks, signoffStatus } from "@causeline/builder";
 import { loadPack } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 import type { Callers } from "./handlers.js";
 import { signoffPage } from "./signoff-page.js";
+import { homeBody, playbookBody, playbooksBody, resultBody, resultsBody, shell, type Section } from "./companion-pages.js";
+import { listResults, playbookView, readResult } from "./companion-data.js";
+import { allPlaybooks } from "./handlers.js";
+import { openProjectName } from "./projects.js";
 
 const MAX_BODY = 64 * 1024;
 
@@ -65,7 +70,7 @@ export class SignoffScreen {
   ) {}
 
   /** Start listening (once) and return the address of the page. */
-  async address(kpi?: string): Promise<string> {
+  async address(kpi?: string, page = ""): Promise<string> {
     if (!this.server) {
       this.server = createHttpServer((req, res) => void this.handle(req, res));
       await new Promise<void>((resolve, reject) => {
@@ -75,12 +80,12 @@ export class SignoffScreen {
       this.server.unref();
       this.port = (this.server.address() as AddressInfo).port;
     }
-    return `http://127.0.0.1:${this.port}/${this.token}/${kpi ? `?kpi=${encodeURIComponent(kpi)}` : ""}`;
+    return `http://127.0.0.1:${this.port}/${this.token}/${page}${kpi ? `?kpi=${encodeURIComponent(kpi)}` : ""}`;
   }
 
   /** Show the page: returns its address, and whether a browser was started for it. */
-  async open(kpi?: string): Promise<{ url: string; opened: boolean }> {
-    const url = await this.address(kpi);
+  async open(kpi?: string, page = ""): Promise<{ url: string; opened: boolean }> {
+    const url = await this.address(kpi, page);
     return { url, opened: openBrowser(url) };
   }
 
@@ -108,9 +113,16 @@ export class SignoffScreen {
       const rest = this.authentic(url.pathname);
       if (rest === null) throw new Refusal(404, "not found");
 
+      if (req.method === "GET") {
+        const nonce = randomBytes(16).toString("base64");
+        const html = this.readOnlyPage(rest, nonce);
+        if (html !== null) {
+          return send(200, html, "text/html; charset=utf-8", { "content-security-policy": `default-src 'none'; style-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'` });
+        }
+      }
       if (req.method === "GET" && rest === "") {
         const nonce = randomBytes(16).toString("base64");
-        return send(200, signoffPage(nonce, url.searchParams.get("kpi") ?? ""), "text/html; charset=utf-8", {
+        return send(200, signoffPage(nonce, url.searchParams.get("kpi") ?? "", `/${this.token}/`), "text/html; charset=utf-8", {
           "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
         });
       }
@@ -124,6 +136,36 @@ export class SignoffScreen {
       // anything a Builder function says is already plain words
       send(400, JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
     }
+  }
+
+  /** The read-only pages (overview, how it decides, results), or null when the path is not one of them. They hold no script and no form. */
+  private readOnlyPage(rest: string, nonce: string): string | null {
+    const base = `/${this.token}/`;
+    const page = (title: string, active: Section, body: string) => shell({ title, nonce, base, active, body });
+    const [section, ...tail] = rest.split("/");
+    const name = tail.join("/");
+    try {
+      if (section === "home" && tail.length === 0) {
+        if (this.cfg.packDir === "") return page("Overview", "home", `<h1>No project is open</h1><p class="lede">Ask the assistant to create a project or open one of yours by name.</p>`);
+        return page("Overview", "home", homeBody(projectSummary(this.cfg.packDir, openProjectName(this.cfg) ?? basename(this.cfg.packDir))));
+      }
+      if (section === "playbooks") {
+        if (this.cfg.packDir === "") return page("How it decides", "playbooks", `<h1>No project is open</h1>`);
+        const books = allPlaybooks(this.cfg).map((p) => playbookView(p.playbook, p.source));
+        if (tail.length === 0) return page("How it decides", "playbooks", playbooksBody(books, base));
+        const one = books.find((b) => b.name === decodeURIComponent(name));
+        return page(one ? one.name : "Not found", "playbooks", one ? playbookBody(one, base) : `<h1>No such playbook</h1><p><a href="${base}playbooks">All playbooks</a></p>`);
+      }
+      if (section === "results") {
+        if (tail.length === 0) return page("Results", "results", resultsBody(listResults(this.cfg.runsDir), base));
+        const file = decodeURIComponent(name);
+        const r = readResult(this.cfg.runsDir, file);
+        return page("Result", "results", r ? resultBody(r, file, base) : `<h1>That result cannot be shown</h1><p class="lede">It is not in this project's results, or it was made by another version.</p><p><a href="${base}results">All results</a></p>`);
+      }
+    } catch (e) {
+      return page("Cannot show", "home", `<h1>This page cannot be shown</h1><p class="lede">${(e instanceof Error ? e.message : String(e)).replace(/[&<>"']/g, "")}</p>`);
+    }
+    return null;
   }
 
   private status() {

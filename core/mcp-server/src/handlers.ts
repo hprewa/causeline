@@ -39,15 +39,19 @@ function playbooksIn(dir: string, source: "pack" | "core") {
     .map((f) => ({ source, playbook: Playbook.parse(parse(readFileSync(join(dir, f), "utf-8"))) }));
 }
 
+/** Every playbook the open project can run; a project's own hides a core one of the same name. */
+export function allPlaybooks(cfg: ServerConfig) {
+  const found = [...playbooksIn(join(cfg.packDir, "playbooks"), "pack"), ...playbooksIn(coreDir(cfg), "core")];
+  const seen = new Set<string>();
+  return found.filter((p) => !seen.has(p.playbook.name) && !!seen.add(p.playbook.name));
+}
+
 /** What an agent needs to pick a playbook and fill in its inputs. */
 export function listPlaybooks(cfg: ServerConfig) {
   needPackDir(cfg);
   const { ontology: ont, data } = loadPack(cfg.packDir);
   const experts = effectiveExperts(ont, loadAgents(cfg.packDir));
-  const found = [...playbooksIn(join(cfg.packDir, "playbooks"), "pack"), ...playbooksIn(coreDir(cfg), "core")];
-  const seen = new Set<string>();
-  const playbooks = found
-    .filter((p) => !seen.has(p.playbook.name) && !!seen.add(p.playbook.name)) // a pack's playbook hides a core one of the same name
+  const playbooks = allPlaybooks(cfg)
     .map((p) => ({ name: p.playbook.name, description: p.playbook.description, source: p.source, inputs: p.playbook.inputs }));
   return {
     pack: cfg.packDir,

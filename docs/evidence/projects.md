@@ -33,3 +33,24 @@ Aim: whatever the person builds is saved in a **project** they can open by name 
 - It was not run through the MCP server over stdio against a real data connection, only at the Builder level and through the typed service.
 - The skill text that tells the model to say the drift outcome first is not written yet (step 4).
 
+## Step 3: one local site with read-only pages next to the sign-off screen
+
+**Question:** can a person see where the project stands, how the analysis decides, and the facts behind each answer, from one link, without anything on those pages able to change anything?
+
+**What was built**
+- The local server that serves the sign-off screen (same secret in the address, same machine-only checks) now also serves, under the same address: **Overview** (`home`: the KPIs and how far each is trusted, the experts and what each can honestly say, the data, the drift check, recent changes of rung), **How it decides** (`playbooks`: each playbook as steps in plain words, the condition on a step, what it records, and the rules that choose what follows), and **Results** (every kept answer newest first, and one page per answer: headline, where it changed, who contributed how much against their usual, the KPIs it handed over to, patterns that can hide a problem, supporting records, how each step went, cost). The sign-off page keeps its address and gains the same menu.
+- The new pages are built on the server with every value escaped, carry **no script, no form, no button and no input**, and their policy allows none. The only page that takes input is the sign-off page. A result is read only by a plain file name that is inside the project's results folder.
+- A tool `open_project_page` opens the overview and returns the link; `open_signoff` is unchanged.
+- A project that was not built here (a shipped example pack) shows its experts' rungs as written and says its checks are not tracked, instead of showing draft KPIs under reconciled experts (found by looking at the picture).
+
+**Evidence**
+- 7 tests over HTTP: the overview shows KPIs, rung and the plain sentence, and refuses a missing secret or another site as origin; every read-only page has no script, form, button or input, a policy with no script, and nothing from elsewhere; the sign-off page carries the menu and the menu reaches every page; how it decides shows the plain labels, the `when` condition and the facts; results are listed newest first, opened by name, and a hostile value (`<script>alert(1)</script>`) is shown as text; six path tricks (`..%2F`, backslashes, encoded dots, a name not in the folder, a slash) all say "cannot be shown" and never return the file outside the folder; escaping covers the five characters.
+- **Looked at, in a real browser, light and dark** (headless Edge, over the complaints pack and its saved results): `docs/evidence/projects/` holds the overview (light and dark), how the steps decide, one result, and the list of results. Looking found three things, all fixed: the overview of a shipped pack said "connect the user's files" and showed KPIs as draft under reconciled experts; the data line said "none connected"; the list of "patterns that can hide a problem" was dominated by "groups too small to judge" notes, now folded away; and the results list now says which period each answer was about.
+- All unit tests pass in every package.
+
+**Not shown**
+- The pages were not opened through the real MCP server by a live assistant: the pictures are of the pages served by the same code over a pack on disk.
+- The sign-off page itself (with its buttons) was not re-shot after getting the menu; its own tests pass.
+- Nothing teaches the model to offer these pages yet (step 4: the skills).
+- Long result lists show only the latest 40.
+

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { loadAgents, loadPack, type Rung, type StatusChange } from "@causeline/schema";
+import { atLeast, loadAgents, loadPack, type Rung, type StatusChange } from "@causeline/schema";
 import { buildStatus, levelGap, levelOf, readState, unconfirmedNumbers } from "./state.js";
 
 /**
@@ -136,6 +136,8 @@ export function lastProject(home: string): ProjectEntry | null {
 export interface ProjectSummary {
   name: string;
   folder: string;
+  /** False for a project that was not built here (a shipped example): its checks are not tracked, so its experts' rungs are shown as they are written. */
+  tracked: boolean;
   /** Where the setup stands, in the Builder's own words. */
   next: string;
   data: { dialect: string; tables: { name: string; rows: number }[] };
@@ -160,13 +162,21 @@ export function projectSummary(folder: string, name?: string): ProjectSummary {
       return { kpi, type: m.type, level: levelOf(rec), unconfirmed: unconfirmedNumbers(rec), gap: levelGap(rec) };
     });
     experts = loadAgents(folder).map((a) => ({ name: a.name, kpi: a.kpi, task: a.task, status: a.status, unconfirmed_numbers: a.unconfirmed_numbers }));
+    // a project not built here has no checks of its own on record: a KPI stands where its best expert is written to stand
+    if (!state) {
+      kpis = kpis.map((k) => {
+        const best = experts.filter((e) => e.kpi === k.kpi).map((e) => e.status).reduce<Rung>((a, b) => (atLeast(b, a) ? b : a), "draft");
+        return { ...k, level: best, gap: best === "draft" ? "no checks are recorded for it here" : "its numbers were checked outside this Builder (see the experts below)" };
+      });
+    }
   } catch {
     // no description saved yet: the summary says where the setup is
   }
   return {
     name: name ?? folder,
     folder,
-    next: buildStatus(folder).next,
+    tracked: !!state,
+    next: state ? buildStatus(folder).next : kpis.length > 0 ? "Ready for questions. This project was not built here, so its numbers and checks are not tracked." : buildStatus(folder).next,
     data: { dialect: state?.dialect ?? "sqlite", tables: (state?.tables ?? []).map((t) => ({ name: t.name, rows: t.rows })) },
     kpis,
     experts,

@@ -13,6 +13,26 @@ export const snapshotOf = (ctx: RunContext): Snapshot => ({ paths: ctx.path.leng
 
 type Facts = Record<string, FactValue>;
 
+/** What each kind of step does, in words for a person (the playbook view and the result page use them). */
+export const STEP_WORDS: Record<string, string> = {
+  coverage_and_counts: "Check the data is complete",
+  change_vs_baseline: "Compare with what was expected",
+  rank_dimensions: "Look at other ways to split it",
+  persistence: "Check it lasted the whole period",
+  recovery: "Check whether it has gone back to normal",
+  contributions: "Work out who contributed how much",
+  contributors: "Name the unusual contributors",
+  handoff: "Look at the KPIs it depends on",
+  evidence: "Look up supporting records",
+  trend: "Follow the KPI over time",
+  compare: "Compare two periods",
+};
+
+export function stepWords(compute: string, over?: string): string {
+  if (compute === "guided_drill") return over === "time" ? "Find when it changed" : "Find where it changed";
+  return STEP_WORDS[compute] ?? compute.replace(/_/g, " ");
+}
+
 /**
  * The facts each kind of step publishes, by the step's compute name. Conditions in a playbook may read only these (as `<step>.<name>`),
  * so the list is also what a playbook is checked against when it is loaded.

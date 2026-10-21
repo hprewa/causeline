@@ -1,8 +1,10 @@
+import { NAV_CSS, navFor } from "./companion-pages.js";
+
 /**
  * The sign-off page: one HTML file, no external scripts, fonts or images. Everything it shows from the server is put
  * on the page as text (never as markup). `focus` is the KPI to put first (taken from the address, used only as text).
  */
-export function signoffPage(nonce: string, focus: string): string {
+export function signoffPage(nonce: string, focus: string, base = ""): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -10,6 +12,7 @@ export function signoffPage(nonce: string, focus: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign-off</title>
 <style nonce="${nonce}">
+${NAV_CSS}
 :root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --muted:#5b6672; --line:#d9dee4; --accent:#1f5fbf; --ok:#1a7f4b; --okbg:#e3f4ea; --warn:#9a5b00; --warnbg:#fdf0d8; --bad:#b3261e; --badbg:#fbe4e2; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#14171b; --card:#1d2227; --ink:#e8ebee; --muted:#9aa5b1; --line:#323a43; --accent:#6ea3f2; --ok:#6fd09a; --okbg:#163626; --warn:#f0b867; --warnbg:#3a2c12; --bad:#f2a29c; --badbg:#3d1d1a; } }
 * { box-sizing: border-box; }
@@ -47,6 +50,7 @@ details { margin:6px 0; } summary { cursor:pointer; color:var(--muted); }
 </head>
 <body>
 <main>
+${base ? navFor(base, "signoff") : ""}
 <h1>Sign-off</h1>
 <p class="lede">Check each number against a report of your own, from somewhere else. Your number comes first; ours is shown after, so yours is not shaped by it. Nothing here changes the model or the data.</p>
 <div id="err" class="err" hidden></div>
