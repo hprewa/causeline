@@ -27,3 +27,17 @@
 - { question: "What's the capital of France?", expect: { strategy: explorer } }
 - { question: "How many agents do we have?", expect: { strategy: explorer } }
 - { question: "Which team should I promote?", expect: { strategy: explorer } }
+# ranking, top lists and breakdowns that name a KPI: no expert covers them, so they go to the explorer, with the first read it suggests
+- { question: "Which team had the lowest service level in week 7?", expect: { strategy: explorer, kpi: service_level, op: rank, period: 2026-W07 } }
+- { question: "Which queue has the highest handle time?", expect: { strategy: explorer, kpi: aht, op: rank } }
+- { question: "Which site got the most calls last week?", expect: { strategy: explorer, kpi: calls_offered, op: rank, period: 2026-W10 } }
+- { question: "Which team had the worst service level last week?", expect: { strategy: explorer, kpi: service_level, op: rank, period: 2026-W10 } }
+- { question: "Top 5 queues by call volume in week 7", expect: { strategy: explorer, kpi: calls_offered, op: rank, period: 2026-W07 } }
+- { question: "Show service level by site for last week", expect: { strategy: explorer, kpi: service_level, op: breakdown, period: 2026-W10 } }
+- { question: "Break down average handle time by queue", expect: { strategy: explorer, kpi: aht, op: breakdown } }
+- { question: "What was the service level per team in week 5?", expect: { strategy: explorer, kpi: service_level, op: breakdown, period: 2026-W05 } }
+# look-alikes that an expert already covers must not move
+- { question: "Why did the team with the lowest service level fall in week 7?", expect: { kpi: service_level, task: deep_rca, period: 2026-W07 } }
+- { question: "How is service level trending by team?", expect: { kpi: service_level, task: trend } }
+- { question: "What was the service level in the most recent week?", expect: { kpi: service_level, task: value } }
+

@@ -36,3 +36,17 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 - The record's `queries` and bytes are zero on a database that does not report them (SQLite).
 - The router does not send questions here yet (step 3), and nothing on a page shows an exploration yet (step 4).
 
+## Step 3: routing: rankings, top lists and breakdowns go to the Explorer
+
+**What was built**
+- `core/router/src/explore-shape.ts`: a question that names a KPI and asks for a ranking ("which ... had the highest/lowest/most/least ..."; "worst" and "best" read through the KPI's own direction, so the worst of a higher-is-better KPI is its lowest), a top or bottom list ("top 5", "bottom three"), "rank", or a breakdown by a concept the pack has ("by", "per", "each", "break down") is routed to the Explorer. The route carries the KPI and a first read as a hint (`op`, `by`, `order`, `top`, `period`) and an announcement that says no expert covers it and the answer is exploratory. A "why" question is never taken, and neither is a question the router already reads as a comparison or a trend; a time word ("the most recent week") is not a concept, so it is not a ranking.
+- The routing eval can check the KPI, the suggested first read and the period of an explorer route (`expect.op`).
+
+**Evidence**
+- 4 new router tests over a neutral vocabulary: nine ranking, top-list and breakdown questions each route to the Explorer with exactly the inputs expected (including "worst" read both ways by direction); seven look-alikes that an expert covers stay with the expert (a why question about the lowest zone, a plain value, a trend by zone, a comparison, "the most recent week"); the shape rules; a question with no KPI still goes to the Explorer with none named.
+- Contact-centre routing eval **38/38** (the 27 earlier cases unchanged, 8 explorer cases and 3 look-alikes added); intents 16/16; all unit tests pass; purity passes.
+
+**Not shown**
+- The shape is read from words: a ranking asked in other words ("what is the busiest ...", "who is doing worst") is only caught when it uses one of the listed words and names a concept. A question that misses goes where it went before (an expert's value answer), not to a wrong place.
+- Only the contact-centre pack has routing cases for this; the complaints pack has no routing eval.
+

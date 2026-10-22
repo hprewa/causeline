@@ -31,7 +31,12 @@ export function scoreRouting(r: Route, e: RoutingCase["expect"]): { pass: boolea
     if (want !== undefined && want !== got) misses.push(`${what}: expected ${want}, got ${got ?? "none"}`);
   };
   check("strategy", e.strategy ?? "expert", r.strategy);
-  if (r.strategy === "explorer" && e.strategy === "explorer") return { pass: misses.length === 0, misses };
+  if (r.strategy === "explorer" && e.strategy === "explorer") {
+    check("kpi", e.kpi, top?.kpi);
+    check("op", e.op, top?.inputs.op);
+    check("period", e.period, top?.inputs.period);
+    return { pass: misses.length === 0, misses };
+  }
   check("kpi", e.kpi, top?.kpi);
   check("task", e.task, top?.task);
   check("expert", e.expert, top?.expert);

@@ -296,4 +296,6 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **One exploration at a time, continued by default, and written after every step.** Why: a question is explored in a few steps; the page must be able to show one under way, and a stopped conversation must not lose what was read.
 - **A request that cannot be done is an answer with a reason, not an error.** Why: an error is something the assistant retries or hides; a refusal with an alternative is something it tells the person.
 - **Values are rounded to six decimals in the answer.** Why: the answer is read by people and quoted by a model; the tests compare to that precision.
+- **Routing to the Explorer is a hint, and only for a question an expert does not cover.** Why: a wrong route to an expert is caught by its checks; a wrong route to the Explorer would hide an expert's better answer. So a why question, a comparison and a trend are never taken.
+- **"Worst" and "best" are read through the KPI's own direction.** Why: the worst service level is its lowest and the worst handle time is its highest; guessing one way would rank backwards half the time.
 

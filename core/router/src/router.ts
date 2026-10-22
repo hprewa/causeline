@@ -1,3 +1,4 @@
+import { explorationShape } from "./explore-shape.js";
 import { statusSentence, type AgentDef, type Ontology, type Route, type RouteOption, type Task } from "@causeline/schema";
 
 /**
@@ -201,6 +202,23 @@ export function route(input: RouterInput): Route {
       };
     }
     return explorer("No KPI I know matches that question.");
+  }
+
+  // --- a KPI, asked for in a way no expert covers: a ranking, a top list, a breakdown ----------------------------
+  if (taskGuess.task === null || taskGuess.task === "value") {
+    const shape = explorationShape(question, ont, hits[0].kpi);
+    if (shape) {
+      const kpi = hits[0].kpi;
+      const inputs: Record<string, string | number | boolean> = { metric: kpi, op: shape.op, ...(shape.by ? { by: shape.by } : {}), ...(shape.order ? { order: shape.order } : {}), ...(shape.top ? { top: shape.top } : {}), ...(refs[0] ? { period: refs[0] } : {}) };
+      const what = shape.op === "rank" ? `a ranking of ${plain(kpi)}${shape.by ? ` by ${plain(shape.by)}` : ""}` : `${plain(kpi)}${shape.by ? ` by ${plain(shape.by)}` : " broken down"}`;
+      return {
+        question,
+        strategy: "explorer",
+        options: [{ kpi, task: null, expert: "explorer", playbook: null, inputs, status: "exploratory", confidence: 0.7, reasons: [`"${hits[0].via}" matches the KPI ${kpi}`, `${what} is not something an expert covers; it can be read from the data in a fixed way`] }],
+        needs: null,
+        announce: `I will read ${what}${refs[0] ? ` for ${refs[0]}` : ""} from your data in a fixed way. No expert covers this, so the answer is exploratory: it says what the data shows and makes no claim about cause.`,
+      };
+    }
   }
 
   // --- a KPI --------------------------------------------------------------------------------------------------

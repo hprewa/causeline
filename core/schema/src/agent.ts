@@ -80,6 +80,8 @@ export const RoutingCase = z.object({
     period: z.string().optional(),
     /** The router must ask this one thing instead of guessing. */
     needs: z.string().optional(),
+    /** For an explorer route that names a KPI: the first read it suggests (rank, breakdown). */
+    op: z.string().optional(),
   }),
 });
 export type RoutingCase = z.infer<typeof RoutingCase>;
