@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { withCostControl } from "@causeline/connect-bigquery";
-import { SdkToolCaller, ToolboxProcess, type ToolCaller } from "@causeline/runner";
+import { causelineHome, findToolboxBinary, SdkToolCaller, ToolboxInstaller, ToolboxProcess, type ToolCaller } from "@causeline/runner";
 import type { ServerConfig } from "./config.js";
 
 /**
@@ -13,12 +13,33 @@ export class ToolboxManager {
   private process: ToolboxProcess | undefined;
   private starting: Promise<ToolboxProcess> | undefined;
 
-  constructor(private readonly config: ServerConfig) {}
+  /** Fetches the data connection software the first time it is needed. */
+  readonly installer: ToolboxInstaller;
+
+  constructor(
+    private readonly config: ServerConfig,
+    installer?: ToolboxInstaller,
+    /** How the program is looked for (the tests replace it). */
+    private readonly locate: (explicit?: string) => string = findToolboxBinary,
+  ) {
+    this.installer = installer ?? new ToolboxInstaller({ home: config.home ?? causelineHome() });
+  }
+
+  /** The program to start: one already on the machine, else the fetched copy; when neither is there the download is started and the person is told. */
+  private binary(): string {
+    try {
+      return this.locate(this.config.toolboxBinary);
+    } catch {
+      const r = this.installer.ensure();
+      if ("path" in r) return r.path;
+      throw new Error(r.notReady);
+    }
+  }
 
   private async url(): Promise<string> {
     if (this.config.toolboxUrl) return this.config.toolboxUrl;
     if (this.process?.running) return this.process.url;
-    this.starting ??= ToolboxProcess.start({ cwd: this.config.packDir, configDir: "toolbox", binary: this.config.toolboxBinary }).finally(() => {
+    this.starting ??= ToolboxProcess.start({ cwd: this.config.packDir, configDir: "toolbox", binary: this.binary() }).finally(() => {
       this.starting = undefined;
     });
     this.process = await this.starting;

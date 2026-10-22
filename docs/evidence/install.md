@@ -14,6 +14,21 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - All unit tests pass in every package; the purity guard passes.
 
 **Not shown**
-- Nothing here has downloaded the real 294 MB file through the installer yet (step 2 does, through the server). The other three platforms' fingerprints were computed but those files were never run: no macOS or Linux machine was available.
+- The other three platforms' fingerprints were computed but those files were never run: no macOS or Linux machine was available.
 - A company proxy that Node's `fetch` does not use (it does not read `HTTPS_PROXY`) will fail the download; the message sends the person to the manual route. This was not tested.
-- The installer is not wired into the server's tools yet (step 2).
+
+## Step 2: wired into the server, with a plain-words readiness check
+
+**What was built**
+- `ToolboxManager` (the one place the server starts the data connection) now looks for the program as before and, if there is none, starts the download and answers the tool call with the plain-words message instead of an error about a missing file. A machine with no build says so. Tests can replace how the program is looked for.
+- A `check_setup` tool (`core/mcp-server/src/setup-check.ts`): one plain line each for the version, the Causeline folder (can be written to), the data connection software (ready, or how far along the download is; the first check starts the download), the sign-in when the open project is on a cloud database (the existing connection check), and the open project; each with what to do when it is not ready. It never puts a folder path in a line. The tool is marked read-only: its only side effect is the cache of the software it fetches.
+- `scripts/install-proof.mjs`: a clean-machine run that can be done here.
+
+**Evidence**
+- 4 tests in the server package: the first use with nothing on the machine starts the download and says so; a machine with no build says so; a machine where the program is already present does not fetch; the check's lines, its refusal to show a path, an unwritable folder, a running Toolbox counting as ready, and the sign-in line.
+- **A clean-machine run, for real.** The bundled server was copied to a place with nothing of the repository around it, given a new Causeline home, a PATH holding only Node and the system folder (checked: no Toolbox on it), and no Toolbox variable. A question that needs the data connection was answered at once with "I am preparing the data connection for the first time (about 294 MB, 0% done)..." (0.4 s). `check_setup` then showed progress from 0% to 94% every five seconds, and the software was **ready after 76 seconds**; the fetched file was there, its SHA-256 equalled the pinned one, and no `.part` or progress file was left. The same question was then answered by the analysis (the planted fault, `team_05`, first), 90 seconds from the start.
+- All unit tests pass in every package; purity passes.
+
+**Not shown**
+- One download on one connection (about 4 MB a second here); a slow connection is slower and the person is told to wait, which was not timed. The first question that does not need the data connection (the list of playbooks) answers at once, as intended.
+- Not run through Claude Desktop, Codex or a live assistant; the plugin's bundle is what ran. The `.mcpb` and the executable are the next steps.

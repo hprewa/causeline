@@ -314,4 +314,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **No tool call waits for the download.** Why: a call that blocks for minutes is given up on by the client; the first use starts the download and says how far along it is, and the person asks again.
 - **A bad or partial file is deleted, never run; a failed try is tried again.** Why: a half-installed program that is run is worse than a delay.
 - **One definition of where the Causeline home is.** Why: projects and the fetched software must agree, from every client.
+- **The first check of a new machine starts the download.** Why: the person asked "is it ready?"; saying no and doing nothing wastes the few minutes they would otherwise spend waiting; the line says how far along it is.
+- **`check_setup` is marked read-only although it can start a download.** Why: its only effect is the cache of the software, which the next question would fetch anyway; asking permission for it in every client would put friction on the very first step.
+- **A tool call that needs the data connection while it downloads is answered, not queued.** Why: the person is told in plain words and asks again; a held call would be given up on and the download's progress would be invisible.
 

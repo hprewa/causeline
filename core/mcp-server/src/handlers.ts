@@ -6,7 +6,7 @@ import { acceptSample, addIncident, buildStatus, markSeasonalityAnalysed, confir
 import { connectBigQuery } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
-import { defaultPlaybooksDir, loadPackForRun, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
+import { defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
 import { loadAgents, loadPack, Playbook, validatePack, type Result } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 
@@ -15,6 +15,8 @@ export interface Callers {
   caller(): Promise<ToolCaller>;
   /** Let go of what was started for the open project (the open project is changing). */
   reset?(): Promise<void>;
+  /** Fetches the data connection software on first use (absent for a fake). */
+  installer?: ToolboxInstaller;
 }
 
 const coreDir = (cfg: ServerConfig) => cfg.corePlaybooksDir ?? defaultPlaybooksDir();
