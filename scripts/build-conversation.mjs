@@ -2,6 +2,7 @@
 // A live build conversation: a Claude Code agent (with the Causeline plugin) talks to a simulated user until the pack is
 // built, or the turns run out. The simulated user is a second, tool-less model call that is told only what the persona file says.
 //   node scripts/build-conversation.mjs --persona packs/complaints/evals/build-persona.md [--folder <empty dir>] [--turns 30] [--model <m>]
+//   --no-pack   start every turn with no project open (as a new session does), so the assistant must open the project it made; needs CAUSELINE_HOME set
 //   node scripts/build-conversation.mjs --persona <file> --continue runs/build-conversation-<time>.json   carry on a conversation that stopped (for example at a usage limit)
 // Needs `claude` on the PATH and a sign-in; spends model tokens (each turn's cost is printed). Writes the transcript to runs/.
 import { spawn } from "node:child_process";
@@ -74,7 +75,7 @@ for (let i = first; i <= maxTurns; i++) {
     bare: false,
     model,
     resume: session,
-    env: { CAUSELINE_NO_BROWSER: "1" },
+    env: { CAUSELINE_NO_BROWSER: "1", ...(process.argv.includes("--no-pack") ? { CAUSELINE_PACK: "" } : {}) },
     maxTurns: 40,
     timeoutMs: 20 * 60_000,
   });

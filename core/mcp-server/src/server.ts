@@ -58,7 +58,7 @@ const cardInput = fromJsonSchema<CardAnswers>(
     },
     incidents: { type: "array", description: "Past incidents with a known cause, in their words.", items: obj({ text: { type: "string" } }, ["text"]) },
     no_incidents: { type: "boolean", description: "True when they say there are none." },
-    access: obj({ confirmed: { type: "boolean" }, admin: { type: "string", description: "Who to ask for access, if not confirmed." } }, ["confirmed"]),
+    access: obj({ confirmed: { type: "boolean", description: "Do not set this true from what the user says: connect_bigquery records it when the connection works. Use false with admin when they need to ask someone." }, admin: { type: "string", description: "Who to ask for access, if not confirmed." } }, ["confirmed"]),
   }),
 );
 const goAheadInput = fromJsonSchema<{ go_ahead?: boolean }>(obj({ go_ahead: { type: "boolean", description: "True only after the user has agreed to the cost they were told." } }));

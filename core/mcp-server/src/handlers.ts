@@ -220,9 +220,24 @@ export async function connectFilesTool(cfg: ServerConfig, args: { files: string[
   return connectFiles({ workspace: cfg.packDir, files: args.files });
 }
 
+/** The cost limit in force, said in words, with an instruction to offer the person a different one until they have chosen. */
+export function limitNote(cfg: ServerConfig) {
+  const chosen = costCap(cfg.packDir);
+  const say = sayCap(chosen ?? defaultCapGb(), chosen === undefined ? "default" : "chosen");
+  return chosen === undefined
+    ? { say, ask_user: "Tell the user this limit in plain words and ask once whether they want a different one (for example 'about $1'); set it with cost_limit. They have not chosen one yet." }
+    : { say };
+}
+
 export async function connectBigQueryTool(cfg: ServerConfig, args: { table?: string; dataset?: string; project?: string; location?: string }) {
   const result = await connectBigQuery({ workspace: cfg.packDir, ...args });
-  return { ...result, next: result.connected ? "Call describe_data to look at the tables (it reads a little, and says how much), then describe the business as for files." : "Fix that and connect again." };
+  // a connection that worked is the evidence of read access; what the person says about it is not
+  if (result.connected && readCard(cfg.packDir)) saveCard(cfg.packDir, { access: { confirmed: true } });
+  return {
+    ...result,
+    ...(result.connected ? { cost_limit: limitNote(cfg) } : {}),
+    next: result.connected ? "Say the cost limit to the user and ask once if they want a different one (cost_limit). With several tables, use discover_for_kpi to pick the ones the KPI needs; with one, call describe_data (it reads a little, and says how much). Then describe the business as for files." : "Fix that and connect again.",
+  };
 }
 
 /**
@@ -235,12 +250,13 @@ export async function describeDataTool(cfg: ServerConfig, args?: { go_ahead?: bo
     const data = await openData(cfg.packDir);
     try {
       const est = setupReadEstimate((await data.tables()).map((t) => t.bytes), budgetBytes());
-      if (est.needs_go_ahead) return { needs_go_ahead: true, say: est.say, next: "Tell the user this in plain words. If they agree, call describe_data again with go_ahead set to true; if not, narrow what is connected (one table instead of a dataset)." };
+      if (est.needs_go_ahead) return { needs_go_ahead: true, say: est.say, cost_limit: limitNote(cfg), next: "Tell the user this in plain words. If they agree, call describe_data again with go_ahead set to true; if not, narrow what is connected (one table instead of a dataset)." };
     } finally {
       await data.close();
     }
   }
-  return describeData(cfg.packDir);
+  const description = await describeData(cfg.packDir);
+  return readState(cfg.packDir)?.dialect === "bigquery" ? { ...description, cost_limit: limitNote(cfg) } : description;
 }
 
 /** What one question may read, set in money or GB and read back in both; with nothing given, what is in force. */

@@ -71,3 +71,23 @@ Evidence for each piece, written as it is done. Plan: prep card and resumable se
 - `access_help` was not needed and not used.
 
 **Conclusion:** the prep card and the go-ahead work with a live assistant; the cost-limit instruction was ignored and the KPI-shortlist path is untested with a model. Next: make the cost-limit step part of the flow the assistant cannot skip (for example, have `describe_data` and `connect_bigquery` say the limit in force and offer to change it), and run again on a multi-table dataset.
+
+## Two fixes from the live run, and a second live run on a several-table dataset
+
+**Fixes.** (1) `connect_bigquery` and `describe_data` (including its go-ahead answer) now return the cost limit in force as `cost_limit`, with an `ask_user` instruction while the person has not chosen one; the guide says to do that before looking at data. (2) Read access on the prep card is recorded by `connect_bigquery` **when the connection works** (if a card exists), not from what the person says; the card tool's description and the guide forbid setting it from talk. 3 tests (the limit note before and after a choice; access only through saving).
+
+**Second live run** (`packs/complaints/evals/setup-persona-shop.md`: an analyst at a small shop; `bigquery-public-data.thelook_ecommerce`, 7 tables; `--no-pack`, so each turn starts with no project open as a new session does). 14 turns, **$1.09 for the assistant**, $0.35 for the simulated user. Transcript: `runs/build-conversation-2026-10-22T20-41-22-488Z.json` (not committed).
+- **The cost limit was said and offered** right after connecting ("each question may read up to 5 GB, around 3 cents at most; would you like a tighter limit?"); the person said about a dollar and the assistant set it with `cost_limit` and said "capped at about $1".
+- **`discover_for_kpi` was used**: first call shortlisted `orders` and `order_items` (and named `events` as not what they want), the person confirmed, the second call looked at `orders` only (under a cent). It surfaced the several date columns as a question, and noticed that today's data was thin (34 orders against about 250 a day) and said not to read the current week as a fall.
+- **Access** was recorded as confirmed on the card by the connection, not asked about or taken from talk.
+- **The project was kept and picked up across turns without a folder being handed to the server**: each turn is a new server process, and the work (card, build record, description, limit) was in the project's own folder.
+- It then went on to a saved description read back as sentences, a sample number accepted as plausible (so the KPI is a draft with unconfirmed numbers, and the answers said so), and answered "why did orders change recently?" with findings from the analysis.
+
+**What still fell short**
+- **The incident question was skipped**: the card ends with incidents unanswered (the assistant moved on after the person said they had no report numbers).
+- **A number the assistant derived**: it told the person orders run "roughly 900 to 1,000 a day" from a four-day total, which does not fit the same answer's weekly baseline of about 1,451; this is the known weakness of stating derived figures, and no tool produced it.
+- The person never gave a trusted number, so the card's three-number item stayed at 0 and the KPI stayed a draft (correct, and said).
+
+**A harness finding, not a product fault.** The first rerun used the harness's fixed starting folder (`CAUSELINE_PACK`), which every new server process reopens, so the work landed there and the new project folder stayed empty. In real use the server reopens the last project instead. `scripts/build-conversation.mjs --no-pack` avoids the fixed folder; use it for any setup conversation.
+
+**Not shown:** one run each, so no rates; one dataset of each kind; the second run did not cover the access-help message or the go-ahead (the shop data is under 1 GB); the derived-number and skipped-incident faults are not fixed.
