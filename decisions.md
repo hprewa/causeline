@@ -352,3 +352,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Two roles are named, split by what fails.** Why: a refusal to run queries and a refusal to read are fixed on different resources; asking for one broad role would be both riskier and wrong.
 - **The message never mentions scopes.** Why: read-only comes from the role; naming scopes invites an administrator to approve something broader.
 - **The analyst sign-in without a terminal is documented, not built.** Why: it needs a real Google Cloud console to build and prove; claiming it would be a fiction.
+
+### Guided setup step 4: discovery from a KPI
+- **Two calls: shortlist for free, then look at only what the person confirmed.** Why: reading a whole dataset to find three tables is the cost and the noise this is meant to avoid; the person knows which tables are theirs.
+- **Plain word matching, no model call in the tool.** Why: it can be explained to the person ("its name has complaint"), tested exactly, and costs nothing.
+- **Related tables are offered, not picked.** Why: a lookup of places or products is often needed but never matches the KPI's words; silently adding it would hide a join.
+- **Risks are questions, not fixes.** Why: whether test rows should count or a number is a percent is the person's call; the tool only notices.

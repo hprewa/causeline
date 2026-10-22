@@ -118,7 +118,7 @@ Plan: prep card and resume, cost caps in plain words, admin message and sign-in,
 | 1 | The prep card and resumable setup | done |
 | 2 | Cost caps in plain words | done (not yet run on real BigQuery) |
 | 3 | The message to your admin; clearer sign-in | done (analyst OAuth client not built) |
-| 4 | KPI-scoped discovery | not started |
+| 4 | KPI-scoped discovery | done (not yet run on real BigQuery) |
 | 5 | Proof on BigQuery and regression | not started |
 
 ## Projects and the companion page

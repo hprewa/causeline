@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { accessMessage, bigQueryProject, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
@@ -310,4 +310,27 @@ export function accessHelpTool(cfg: ServerConfig, args?: { project?: string; dat
   const cap = costCap(cfg.packDir);
   const m = accessMessage({ project, dataset: args?.dataset ?? bq?.dataset, account: args?.account, problem: args?.problem, ...(cap !== undefined && cap > 0 ? { cap_gb: cap } : {}) });
   return { ...m, next: "Show the user the message and offer to adjust it. They send it themselves; you cannot. Afterwards, call check_connection to see if it worked." };
+}
+
+/**
+ * Discovery that starts from one KPI. First call (no tables): reads nothing, lists the connected tables that fit the KPI. Second call (the
+ * tables the user confirmed): looks at only those, after telling the cost if it could pass 1 GB, and returns the draft in sentences and the risks.
+ */
+export async function discoverForKpiTool(cfg: ServerConfig, args: { kpi?: string; tables?: string[]; go_ahead?: boolean }) {
+  needProject(cfg);
+  const card = readCard(cfg.packDir);
+  const kpi = (args?.kpi ?? card?.kpi ?? "").trim();
+  if (!kpi) throw new Error("ask the user which KPI to start from, in their words, then call this with it");
+  if (args?.tables?.length && !args.go_ahead) {
+    const data = await openData(cfg.packDir);
+    try {
+      const all = await data.tables();
+      const chosen = args.tables.map((n) => all.find((t) => t.name === n || t.name.split(".").pop() === n)).filter((t): t is NonNullable<typeof t> => !!t);
+      const est = setupReadEstimate(chosen.map((t) => t.bytes), budgetBytes());
+      if (est.needs_go_ahead) return { needs_go_ahead: true, say: est.say, next: "Tell the user this in plain words. If they agree, call again with go_ahead set to true; if not, choose fewer or smaller tables." };
+    } finally {
+      await data.close();
+    }
+  }
+  return discoverForKpi({ workspace: cfg.packDir, kpi, hint: card?.how_calculated, tables: args?.tables });
 }
