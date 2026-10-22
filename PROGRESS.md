@@ -107,6 +107,19 @@ One folder per project under a home folder, a registry, and read-only localhost 
 | 3 | One local site with pages: overview, sign-off (the only page with buttons), how the steps decide, results; `open_project_page` | done |
 | 4 | Skills, README, plugin settings: the project flow instead of an environment variable | done |
 
+## The Explorer
+
+Questions no expert covers, answered from a closed set of fixed read operations, labelled exploratory, with a record and a page for each (`docs/evidence/explorer.md`).
+
+| Step | What | State |
+|---|---|---|
+| 1 | The operations, refusals, budgets and the stored record (`core/runner/src/explore.ts`) | done |
+| 2 | The `explore` tool over MCP, the stored exploration, real data (SQLite and Toolbox) | not started |
+| 3 | Routing: ranking, top-N and breakdown questions go to the Explorer; look-alikes do not | not started |
+| 4 | The page: explorations list and detail, next to results | not started |
+| 5 | The skill, a guardrail hook for Claude Code, README | not started |
+| 6 | Proof: SQLite and BigQuery parity, a live assistant on six questions | not started |
+
 ## Parked from sprint 3 (not done, by decision)
 
 | Item | Why it matters |

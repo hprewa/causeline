@@ -15,6 +15,7 @@ export * from "./seasonal.js";
 export * from "./expectation.js";
 export { medianOf, settledEnd } from "./tail.js";
 export { branchesOf } from "./route.js";
+export { Explorer, OPS, DEFAULT_BUDGET, refusalKinds, type ExploreArgs, type ExploreOp, type ExploreBudget } from "./explore.js";
 export { FACTS, STEP_WORDS, stepWords } from "./facts.js";
 export * from "./rows.js";
 export * from "./toolindex.js";

@@ -6,6 +6,7 @@ export * from "./condition.js";
 export * from "./status.js";
 export * from "./agent.js";
 export * from "./result.js";
+export * from "./exploration.js";
 export * from "./evalcase.js";
 export * from "./intent.js";
 export * from "./validate-pack.js";

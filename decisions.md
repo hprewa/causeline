@@ -287,3 +287,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The sign-off page stays where it was and the menu links to the rest.** Why: its address is already in tests, docs and people's heads; moving it would break them for no gain.
 - **A project not built here shows its experts' rungs as written and says its checks are not tracked.** Why: showing it as draft contradicts its experts, and showing it as reconciled without records would claim checks nobody can see.
 
+## The Explorer (commit see `PROGRESS.md`)
+- **A closed set of read operations, not a query tool.** Why: the Explorer is useful because it can answer a new question; it is safe because every operation is code with tests. A new operation is a code change, never a parameter.
+- **Filter values are bound values; a value that matches nothing returns the values that exist.** Why: a guess would be a wrong answer with a fluent sentence; and a value that is only ever a bound parameter cannot be anything but a value.
+- **Groups under the KPI's minimum volume are listed apart, not ranked.** Why: the same rule the analysis uses; a ranking led by a group of nine rows is noise.
+- **Budgets are enforced in code and stay ended.** Why: a model asked to "keep it short" does not; the person must be told what was and was not read.
+- **A refusal is a step in the record with a reason and an alternative.** Why: what was declined is part of the audit trail, and "no" with nothing to do next is not an answer.
+
