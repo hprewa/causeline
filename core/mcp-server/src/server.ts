@@ -6,6 +6,7 @@ import { SignoffScreen } from "./signoff.js";
 import { ProjectService } from "./projects.js";
 import { ExploreService, type ExploreToolArgs } from "./explore.js";
 import { setupCheck } from "./setup-check.js";
+import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import { acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
@@ -115,6 +116,15 @@ const exploreInput = fromJsonSchema<ExploreToolArgs>(
     ["op"],
   ),
 );
+const getGuideInput = fromJsonSchema<{ name?: string }>(obj({ name: { type: "string", enum: [...GUIDE_NAMES], description: "Which guide. Leave out for the list." } }));
+/** The guides as resources; a server without the guide files still works (the tool says so). */
+function loadGuidesSafely() {
+  try {
+    return loadGuides();
+  } catch {
+    return [];
+  }
+}
 const kpiOptional = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "One KPI; leave out for all." } }));
 const openSignoffInput = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "The KPI to show first." } }));
 const incidentInput = fromJsonSchema<Record<string, unknown>>(
@@ -187,10 +197,10 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
  * "set up" someone's data can reach for the developer path (hand-written pack files) and show the user YAML.
  */
 const INSTRUCTIONS = [
-  "Causeline answers 'why did this number change?' with a deterministic analysis, and builds that setup from the user's own data.",
-  "If the user has data (files, or a BigQuery table) and no working setup yet, or wants to add a KPI or sign one off: follow the causeline-build skill from the start. It is a conversation in plain words; never show the user YAML, SQL or file paths, never write pack files yourself, and use the build tools (connect_files or connect_bigquery, describe_data, test_fact, save_pack, play_back, propose_checks, confirm_number, verify_expert).",
-  "If a setup already exists and the user asks for a ranking, a breakdown, a list or a figure that no expert covers (route says strategy explorer): follow the causeline-explore skill. Everything it says is exploratory, and the data is only ever read through the tools: never write SQL or run a database command.",
-  "If a setup already exists and the user asks why a KPI moved: follow the causeline-investigate skill. The causeline-onboard skill is only for checking data and seasonality of an existing pack.",
+  "Causeline answers 'why did this number change?' with a deterministic analysis, builds that setup from the user's own data, and reads the data in fixed ways for questions no expert covers.",
+  "BEFORE you act on a request, call get_guide with the name that fits it, and follow that guide: 'build' (the user has data and no working setup yet, or wants to add a KPI or sign one off), 'investigate' (why a KPI moved), 'explore' (a ranking, a breakdown, a list or a figure no expert covers; route says strategy explorer), 'onboard' (check the data and its repeating patterns). Claude Code also has the same guidance as skills (causeline-build, causeline-investigate, causeline-explore, causeline-onboard); where you have the skill, follow the skill. At the very start on a new computer, or when something fails to connect, call check_setup.",
+  "Rules that hold in every case: talk to the user in plain words and never show them YAML, SQL or a folder path; never write pack files yourself (use the build tools: connect_files or connect_bigquery, describe_data, test_fact, save_pack, play_back, propose_checks, confirm_number, verify_expert); read the data only through these tools, never write SQL or run a database command; never state a number that a tool did not return; never claim something is checked unless a tool said so; say how far the numbers are trusted; an answer from the explore tool is exploratory and says so.",
+  "Projects: the user's work is saved in named projects. At the start of a session call list_projects; open one by name with open_project, or ask what to call a new one and call create_project. Never ask for a folder.",
 ].join("\n");
 
 /** The causeline-mcp tools: analysis, onboarding and the Builder. `callers` supplies the data connection (Toolbox, or a fake in tests). */
@@ -291,6 +301,10 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("save_pack", "Save the business description", "Check the draft ontology and data definition (shape, how the parts fit, that every SELECT and formula runs on the user's data) and only then write the pack files and generate the query tools. Returns plain-words errors and nothing is written while there are any. Experts are saved as drafts. Never show the user YAML or SQL; use play_back.", saveInput, (a) => savePackTool(cfg, a));
   builder("play_back", "Say the pack in sentences", "The saved pack as numbered plain sentences, and what changed since the user last confirmed. Read them to the user and ask if each is right. Call with confirm=true only after the user agrees; what they confirmed is exactly what the system uses.", playBackInput, (a) => playBackTool(cfg, a));
   builder("reconcile_metric", "Match a KPI to a number the user knows", "Compute a KPI for a period and compare with a number from the user's own report. A match is stored as a confirmed number; a mismatch returns both numbers and where to look. A KPI is only reconciled once at least three confirmed numbers, from at least two periods and two kinds, each from a named source, are in with passing automatic checks, so one number never moves it.", reconcileInput, (a) => reconcileMetricTool(cfg, callers, a));
+  builder("get_guide", "The guidance for a kind of request", "Returns the guide for a kind of request: 'build', 'investigate', 'explore' or 'onboard' (with no name, the list and when each applies). Call it before acting on a request, and follow it: it says what to ask, which tools to use in what order, what never to do, and how to say the answer. It is the same text Claude Code has as skills.", getGuideInput, (a: { name?: string }) => getGuide(a?.name), true);
+  for (const g of loadGuidesSafely()) {
+    server.registerResource(`guide-${g.name}`, `causeline://guide/${g.name}`, { title: `Guide: ${g.name}`, description: g.when, mimeType: "text/markdown" }, async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: g.text }] }));
+  }
   builder("check_setup", "Is everything ready?", "Whether this computer is ready to answer: the Causeline folder can be written to, the data connection software is there (the first check starts fetching it, about 150 to 320 MB, and says how far along it is), and, for a project on a cloud database, whether the sign-in works. One plain line each, with what to do for anything that is not ready. Call it first when a question fails to connect or at the very start on a new computer; tell the user the lines in plain words and never show a folder path.", null, async () => setupCheck(cfg, callers.installer ?? (fallbackInstaller ??= new ToolboxInstaller({ home: cfg.home ?? causelineHome() })), { openProject: projects.list().open ?? undefined, ...(cfg.packDir !== "" ? { signIn: async () => { const r = (await intent.checkConnection()) as { ok: boolean; summary: string }; return { ok: r.ok, summary: r.summary }; } } : {}) }), true);
   builder("list_projects", "List the user's projects", "The user's projects by name, which one is open, and when each was last opened. Call it at the start of a session when the user says 'my project' or when nothing is open. Never show folder paths.", null, () => projects.list(), true);
   builder("create_project", "Start a new project", "Make a project with the name the user gives (for example 'Weekly review') and open it; everything the Builder makes from here on is saved in it and is there next session. Ask the user for the name; do not invent one. Returns where the setup stands.", projectNameInput, async (a: { name: string }) => projects.create(a.name));

@@ -32,3 +32,21 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 **Not shown**
 - One download on one connection (about 4 MB a second here); a slow connection is slower and the person is told to wait, which was not timed. The first question that does not need the data connection (the list of playbooks) answers at once, as intended.
 - Not run through Claude Desktop, Codex or a live assistant; the plugin's bundle is what ran. The `.mcpb` and the executable are the next steps.
+
+## Step 3: the guidance reaches every client through the server
+
+**Why:** in Claude Code the guidance (when to build, how to investigate, how to explore, what never to do) is a skill. A Claude Desktop extension and a Codex server cannot carry skills, so on those the assistant would have had the tools and none of the rules for using them.
+
+**What was built**
+- `get_guide` (a tool) and four resources (`causeline://guide/build`, `investigate`, `explore`, `onboard`): the skills' own text, without the front matter, with when each applies. With no name the tool lists them. The text is embedded in the bundled server file at build time, so the one file serves the guides with nothing beside it; run from the source it reads the skills folder. **One source: `skills/*/SKILL.md`.**
+- The server's handshake instructions are rewritten to be client-neutral: before acting on a request call `get_guide` with the name that fits (what each name is for, in a sentence); where the client has the skill, follow the skill; at the start on a new computer or when something does not connect call `check_setup`; the rules that hold in every case (plain words, no YAML, SQL or paths, never write pack files, read the data only through the tools, no number a tool did not return, nothing called checked unless a tool said so, say how far the numbers are trusted, an explore answer is exploratory); projects (`list_projects`, `open_project`, `create_project`, never ask for a folder).
+
+**Evidence**
+- 4 tests: every guide equals its skill's body (so they cannot drift), has its text and a when-to-use; the tool lists, returns one, and refuses an unknown name naming the real ones; front matter parsing; over stdio the server's instructions carry the five points above, the tool and the four resources are listed, and the tool and a resource return the skills' text.
+- **The bundled server file copied alone** into an empty folder (no skills folder, no playbooks) served all four guides, each equal to its skill, and four resources.
+- All unit tests pass in every package; the scripted end-to-end tests pass.
+
+**Not shown**
+- Whether Claude Desktop or Codex assistants actually call `get_guide` first when told to by the instructions. Nothing here has run either client; a model can ignore instructions, as the Explorer runs showed. The instructions also state the rules that matter most, so a model that skips the guide still sees them.
+- The guides are long (the build guide is the longest): their size in an assistant's context was not measured.
+

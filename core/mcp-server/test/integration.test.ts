@@ -2,13 +2,14 @@
 // `npm run test:integration` (which sets CAUSELINE_INTEGRATION=1). Skipped otherwise.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdtempSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { loadCases, prepareCase } from "@causeline/eval";
+import { parseSkill } from "../src/guides.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..", "..", "..");
@@ -243,3 +244,27 @@ test("a question built over several messages: ask, confirm, run, refine, switch 
     await client.close();
   }
 });
+
+/** A skill file without its front matter, the way the guides are served. */
+const bodyOf = (raw: string) => parseSkill(raw).body;
+
+test("the bundled server alone, with no skills folder beside it, still serves every guide, and they are the skills' text", { skip: !enabled && "set CAUSELINE_INTEGRATION=1" }, async () => {
+  const bundled = resolve(repo, "clients", "claude-code", "server", "causeline-mcp.mjs");
+  if (!existsSync(bundled)) assert.fail("run `npm run bundle:plugin` first");
+  const lone = resolve(mkdtempSync(resolve(tmpdir(), "lone-server-")), "causeline-mcp.mjs");
+  cpSync(bundled, lone);
+  const client = new Client({ name: "integration", version: "0.0.1" });
+  await client.connect(new StdioClientTransport({ command: process.execPath, args: [lone], env: { ...process.env, CAUSELINE_PACK: "", CLAUDE_PROJECT_DIR: "", CAUSELINE_SKILLS: "", CAUSELINE_HOME: mkdtempSync(resolve(tmpdir(), "lone-home-")) } as Record<string, string> }));
+  try {
+    for (const name of ["build", "investigate", "explore", "onboard"]) {
+      const res = (await client.callTool({ name: "get_guide", arguments: { name } })) as any;
+      assert.equal(res.isError, undefined, res.content?.[0]?.text);
+      const skill = bodyOf(readFileSync(resolve(repo, "skills", `causeline-${name}`, "SKILL.md"), "utf-8"));
+      assert.equal(res.structuredContent.text, skill, `${name} in the bundle is the skill's text`);
+    }
+    assert.equal(((await client.listResources()).resources ?? []).length, 4);
+  } finally {
+    await client.close();
+  }
+});
+

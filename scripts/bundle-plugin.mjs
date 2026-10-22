@@ -3,7 +3,7 @@
 // shared skills and core playbooks in. A plugin is copied when installed, so it cannot refer
 // to anything outside its own directory. Run after `npm run build` (npm run bundle:plugin does both).
 import { build } from "esbuild";
-import { cpSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const plugin = resolve("clients", "claude-code");
@@ -22,6 +22,8 @@ await build({
   outfile,
   // some bundled dependencies are CommonJS and call require()
   banner: { js: "import { createRequire as __causelineCreateRequire } from 'node:module'; const require = __causelineCreateRequire(import.meta.url);" },
+  // the guides travel inside the server file: a client that cannot carry skills still gets the same text from get_guide
+  define: { __CAUSELINE_GUIDES__: JSON.stringify(Object.fromEntries(["build", "investigate", "explore", "onboard"].map((n) => [`causeline-${n}`, readFileSync(resolve("skills", `causeline-${n}`, "SKILL.md"), "utf-8")]))) },
   logLevel: "warning",
 });
 

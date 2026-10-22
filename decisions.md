@@ -317,4 +317,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The first check of a new machine starts the download.** Why: the person asked "is it ready?"; saying no and doing nothing wastes the few minutes they would otherwise spend waiting; the line says how far along it is.
 - **`check_setup` is marked read-only although it can start a download.** Why: its only effect is the cache of the software, which the next question would fetch anyway; asking permission for it in every client would put friction on the very first step.
 - **A tool call that needs the data connection while it downloads is answered, not queued.** Why: the person is told in plain words and asks again; a held call would be given up on and the download's progress would be invisible.
+- **The guidance is served by the server and embedded in its file; the skills stay the single source.** Why: Desktop and Codex cannot carry skills; copying the text by hand would drift; embedding it at build time makes the one file self-sufficient.
+- **The handshake instructions repeat the rules that matter most, not only "call get_guide".** Why: a model that skips the guide still has to know not to write SQL, not to show paths and not to invent numbers.
+- **Where the client has the skill, the skill wins.** Why: Claude Code loads skills by their descriptions and that works; the guide is the fallback, not a second voice.
 

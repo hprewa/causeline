@@ -104,7 +104,7 @@ One download to a first answer on Claude Desktop, Codex and Claude Code: no term
 |---|---|---|
 | 1 | The data connection software fetched on first use: pinned fingerprints, resume, check, background progress | done |
 | 2 | Wired into the server, `check_setup`, a real download through the server | done |
-| 3 | The guidance (skills) delivered through the server: `get_guide` | not started |
+| 3 | The guidance (skills) delivered through the server: `get_guide` | done |
 | 4 | A `.mcpb` file for Claude Desktop | not started |
 | 5 | A single executable and a Codex installer | not started |
 | 6 | The analyst guide, clean-machine proof, regression | not started |
