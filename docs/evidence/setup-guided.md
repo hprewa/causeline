@@ -54,3 +54,20 @@ Evidence for each piece, written as it is done. Plan: prep card and resumable se
 - `check_setup` does not yet show the cost limit in force.
 - The discovery matching is by names and columns only; the late-arrival check assumes daily data; only the public dataset was tried.
 - Still nothing run inside real Claude Desktop or Codex, on macOS or Linux; files unsigned.
+
+## A live Claude Code run of the guided setup (complaints, real BigQuery)
+
+`scripts/build-conversation.mjs` with a new persona (`packs/complaints/evals/setup-persona.md`: a non-technical analyst who knows one KPI, one trusted number, one incident, and is fine with about a dollar a question). A Claude Code assistant with the plugin, a fresh Causeline folder, 14 turns, **$0.85 for the assistant** and $0.37 for the simulated user. Transcript: `runs/build-conversation-2026-10-22T20-05-20-788Z.json` (not committed). One run, so this is an observation, not a rate.
+
+**What the assistant did well**
+- It opened with `list_projects`, `get_guide` and `setup_card`, asked for a project name, and then asked the prep-card questions **one at a time**, saving each answer as it came (`save_setup_card` on the KPI and how it is worked out, the trusted number with its source, the incident).
+- It said what looking at the data would read (up to 2.3 GB, about a cent) and **waited for the go-ahead** before reading, then told the person it had read 128 MB.
+- It spoke in plain words throughout (no SQL, no paths, no tool names shown); read the saved description back as numbered sentences; asked for the person's own number before showing its own; and when its count (17,860) was far from theirs (26,270) it reported the gap, gave a plausible reason (the snapshot ends days after that week), and offered an older week, then labelled the KPI a draft with unconfirmed numbers when none was available. It did not invent a number.
+
+**What it did not do, against the guide**
+- **It never asked about a cost limit** (`cost_limit` was not called) although the guide says to ask once, early. The person was never offered a limit to set.
+- **It did not use `discover_for_kpi`.** The dataset has a single table, so a shortlist had nothing to choose between and calling `describe_data` directly was reasonable, but the shortlist path (which was the point of the piece) was not exercised by a model. A dataset with several tables is needed to test it.
+- It recorded **read access as confirmed** from "I'm already signed in" without asking the access question; the sign-in was not checked with `check_connection` at that point.
+- `access_help` was not needed and not used.
+
+**Conclusion:** the prep card and the go-ahead work with a live assistant; the cost-limit instruction was ignored and the KPI-shortlist path is untested with a model. Next: make the cost-limit step part of the flow the assistant cannot skip (for example, have `describe_data` and `connect_bigquery` say the limit in force and offer to change it), and run again on a multi-table dataset.
