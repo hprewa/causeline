@@ -1,0 +1,56 @@
+{
+  "manifest_version": "0.3",
+  "name": "causeline",
+  "display_name": "Causeline",
+  "version": "0.0.0",
+  "description": "Root-cause analysis you can audit: find where, when and why a KPI changed, from your own data, with every number from a deterministic analysis. Build a setup by conversation, check it against your own reports, and ask questions.",
+  "long_description": "Causeline answers 'why did this number change?' with a deterministic analysis and explains it in plain words, using only numbers from the analysis. It builds the setup from your own files or BigQuery table by conversation, checks each KPI against numbers from your own reports, and reads the data in fixed ways for questions no expert covers (always labelled exploratory). Your work is saved in named projects in a folder you choose. The first time it needs to read data it fetches the data connection software (about 150 to 320 MB) and checks it before use.",
+  "author": { "name": "Harsh" },
+  "license": "MIT",
+  "keywords": ["root-cause-analysis", "kpi", "analytics", "bigquery"],
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/causeline-mcp.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/causeline-mcp.mjs"],
+      "env": {
+        "CAUSELINE_HOME": "${user_config.projects_folder}",
+        "CAUSELINE_PLAYBOOKS": "${__dirname}/playbooks",
+        "CAUSELINE_BQ_PROJECT": "${user_config.bigquery_project}"
+      }
+    }
+  },
+  "user_config": {
+    "projects_folder": {
+      "type": "directory",
+      "title": "Where to keep your projects",
+      "description": "A folder for your Causeline projects and the data connection software it fetches the first time. The default is fine for most people.",
+      "default": "${HOME}/Causeline",
+      "required": true
+    },
+    "bigquery_project": {
+      "type": "string",
+      "title": "Google Cloud project for BigQuery (optional)",
+      "description": "Only if your data is in BigQuery: the id of the Google Cloud project your queries are billed to. Leave empty for files on this computer.",
+      "default": "",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": { "node": ">=20.0.0" }
+  },
+  "tools": [
+    { "name": "check_setup", "description": "Is everything ready to answer?" },
+    { "name": "get_guide", "description": "The guidance for a kind of request" },
+    { "name": "list_projects", "description": "The user's projects" },
+    { "name": "create_project", "description": "Start a new project" },
+    { "name": "open_project", "description": "Open a project by name" },
+    { "name": "route", "description": "Map a question to a KPI, a task and an expert" },
+    { "name": "run_playbook", "description": "Run a root-cause analysis" },
+    { "name": "explore", "description": "Read the data in a fixed way (exploratory)" },
+    { "name": "open_project_page", "description": "Open the project's page on this computer" }
+  ]
+}

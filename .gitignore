@@ -5,6 +5,7 @@ runs/
 packs/*/data/raw/
 packs/*/data/causeline.db
 core/*/dist/
+/dist/
 *.log
 .env
 .env.*

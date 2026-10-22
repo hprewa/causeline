@@ -320,4 +320,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The guidance is served by the server and embedded in its file; the skills stay the single source.** Why: Desktop and Codex cannot carry skills; copying the text by hand would drift; embedding it at build time makes the one file self-sufficient.
 - **The handshake instructions repeat the rules that matter most, not only "call get_guide".** Why: a model that skips the guide still has to know not to write SQL, not to show paths and not to invent numbers.
 - **Where the client has the skill, the skill wins.** Why: Claude Code loads skills by their descriptions and that works; the guide is the fallback, not a second voice.
+- **The extension asks for a folder and an optional project, nothing else.** Why: a person should answer two questions at most; a credential has no place in a settings screen when Google's own sign-in exists.
+- **The optional BigQuery project has an empty default.** Why: an optional value with no default may leave the variable unreplaced in the environment; an empty string fills it and the server treats empty as unset.
+- **The icon is drawn by the build as a plain placeholder.** Why: the build must need nothing else; a real icon is a design task and is listed as not done.
 

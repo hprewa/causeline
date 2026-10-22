@@ -50,3 +50,19 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - Whether Claude Desktop or Codex assistants actually call `get_guide` first when told to by the instructions. Nothing here has run either client; a model can ignore instructions, as the Explorer runs showed. The instructions also state the rules that matter most, so a model that skips the guide still sees them.
 - The guides are long (the build guide is the longest): their size in an assistant's context was not measured.
 
+## Step 4: one file for Claude Desktop
+
+**What was built**
+- `clients/claude-desktop/manifest.json` and `scripts/bundle-desktop.mjs` (`npm run bundle:desktop`): `dist/causeline-<version>.mcpb`, **0.8 MB**: the one bundled server file (guides inside it), the core playbooks, a placeholder icon the build draws itself, and the manifest. No Toolbox. Manifest version 0.3 (the current one in the spec I read on 22 October; the page also mentions 0.4 for another runtime): server type node, command `node` with `${__dirname}` (never `npx`), the settings screen asks for **a folder** (default `${HOME}/Causeline`, the same place the server uses when it is told nothing) and an **optional BigQuery project**; no credential is asked for (sign-in is Google's own); macOS and Windows; Node 20 or later (Claude Desktop ships its own).
+- Built and checked with Anthropic's own tool (`@anthropic-ai/mcpb` 2.1.2): `validate` ("Manifest schema validation passes!") and `pack`.
+
+**Evidence**
+- 3 tests of the manifest (starts with Node from inside the extension, no `npx`, a folder with a sensible default, an optional string whose empty default still fills the variable, nothing secret, the platforms, every tool it lists exists in the server).
+- **The extension, run as Claude Desktop would** (`scripts/desktop-proof.mjs`): the `.mcpb` was unpacked with the same tool, its manifest read, the variables filled in as the settings screen would (a folder of the person's choosing, no BigQuery project), and the server started with exactly the command, arguments and environment the manifest gives, and a PATH holding only Node (no Toolbox on it, checked). Through the MCP protocol, **20 checks passed**: all nine listed tools are offered; the instructions tell the assistant to ask for the guide and a guide is served from inside the extension; a project registered in the chosen folder is listed by name and no folder path reaches the assistant; a new project is made and kept in the folder chosen in the settings; the first check says the data connection software is being prepared (0%), a question asked during the fetch is answered in plain words and not with an error about a missing file; the fetched software ends up in the chosen folder and matches its pinned fingerprint; the analysis then runs on the example project (the planted fault first); an exploratory read works and is labelled. 91 seconds from start to finish, including the real 294 MB fetch.
+- All unit tests pass in every package; purity passes.
+
+**Not shown**
+- **Claude Desktop itself has not installed or run this file.** Everything above is the manifest's instructions followed by hand, with Claude Desktop's own Node assumed to be Node 20 or later (this machine's is 20.12). How Desktop displays the settings screen, whether it asks permission for each tool, how it treats a tool that answers "ask again shortly", and whether it passes the variables exactly as the spec says are not known.
+- macOS was not run. The placeholder icon is plain; it needs a real one.
+- The extension is not signed and not in any directory (the directory no longer takes submissions: people install the file).
+
