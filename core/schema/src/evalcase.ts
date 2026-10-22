@@ -51,6 +51,19 @@ export const Expectation = z
     no_change_points: z.boolean().optional(),
     /** The comparison's difference must (not) be significant. */
     comparison_significant: z.boolean().optional(),
+    /** An Explorer question (agent level only): what the answer must do. */
+    explorer: z
+      .object({
+        /** The assistant read the data with the explore tool, and said the answer is exploratory. */
+        labelled: z.boolean().optional(),
+        /** Words that must appear in the rows the Explorer returned (a node, a label). */
+        rows_include: z.array(z.string().min(1)).optional(),
+        /** The Explorer refused, with this kind of refusal. */
+        refused: z.enum(["free_sql", "join", "cause", "change", "unknown_kpi", "other"]).optional(),
+        /** The assistant ran no shell command and no database tool of its own. */
+        no_shell: z.boolean().optional(),
+      })
+      .optional(),
   })
   .refine(
     (e) =>
@@ -67,7 +80,8 @@ export const Expectation = z
       e.significant !== undefined ||
       (e.change_points_include?.length ?? 0) > 0 ||
       e.no_change_points === true ||
-      e.comparison_significant !== undefined,
+      e.comparison_significant !== undefined ||
+      e.explorer !== undefined,
     { message: "expect must assert at least one of top_finding, findings_include, must_mention, must_not_claim, stopped_reason, no_findings, masking_flags" },
   );
 export type Expectation = z.infer<typeof Expectation>;

@@ -9,6 +9,8 @@ export interface AgentRun {
   result: Result | null;
   /** What each intent tool answered, in order (the full bodies), for scoring the question the agent built. */
   intents: { tool: string; body: any }[];
+  /** What each `explore` call answered, in order (the full bodies). */
+  explored: any[];
   metrics: AgentMetrics;
   /** The Claude Code session, so a conversation can be continued with `resume`. */
   sessionId?: string;
@@ -40,6 +42,8 @@ export function parseStream(lines: string[]): AgentRun {
   const runPlaybookIds = new Set<string>();
   const intentIds = new Map<string, string>();
   const intents: AgentRun["intents"] = [];
+  const exploreIds = new Set<string>();
+  const explored: any[] = [];
   let result: Result | null = null;
   let narrative = "";
   const metrics: AgentMetrics = { turns: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, ms: 0 };
@@ -62,6 +66,7 @@ export function parseStream(lines: string[]): AgentRun {
         if (block.type === "tool_use" && block.name) {
           toolCalls.push({ name: block.name, input: block.input, ...(block.id ? { id: block.id } : {}) } as { name: string; input: unknown });
           if (/(run_playbook|run_intent)$/.test(block.name) && block.id) runPlaybookIds.add(block.id);
+          if (/__explore$|^explore$/.test(block.name) && block.id) exploreIds.add(block.id);
           const intentTool = /(set_intent|run_intent|recall|start_over|get_intent)$/.exec(block.name)?.[1];
           if (intentTool && block.id) intentIds.set(block.id, intentTool);
         }
@@ -71,6 +76,10 @@ export function parseStream(lines: string[]): AgentRun {
         if (block.type === "tool_result" && block.tool_use_id) {
           const call = toolCalls.find((c) => (c as { id?: string }).id === block.tool_use_id);
           if (call) call.output = textOf(block.content).slice(0, 600);
+        }
+        if (block.type === "tool_result" && block.tool_use_id && exploreIds.has(block.tool_use_id)) {
+          const body = safeJson(textOf(block.content));
+          if (body) explored.push(body);
         }
         if (block.type === "tool_result" && block.tool_use_id && intentIds.has(block.tool_use_id)) {
           const body = safeJson(textOf(block.content));
@@ -94,7 +103,7 @@ export function parseStream(lines: string[]): AgentRun {
       if (msg.is_error === true || (typeof msg.subtype === "string" && msg.subtype !== "success")) error = `claude finished with ${String(msg.subtype)}: ${narrative.slice(0, 300)}`;
     }
   }
-  return { narrative, toolCalls, result, intents, metrics, ...(sessionId ? { sessionId } : {}), ...(error ? { error } : {}), ...(session ? { session } : {}) };
+  return { narrative, toolCalls, result, intents, explored, metrics, ...(sessionId ? { sessionId } : {}), ...(error ? { error } : {}), ...(session ? { session } : {}) };
 }
 
 function safeJson(text: string): unknown {

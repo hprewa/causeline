@@ -81,3 +81,15 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 - **The hook is a guardrail, not a boundary**, and says so in its first lines: a determined command can be written that none of the patterns catch. The boundary is that the tools offer no free query and that the person's own database role is read-only. On Claude Desktop and Codex the hook does not apply (the Codex `PreToolUse` equivalent is a packaging step not built).
 - The hook has not been installed into a live Claude Code and tried against a model that is trying to go round the tools (step 6 runs the live assistant, which does not try to).
 
+## Step 6: proof (partly done)
+
+**Built and tested**
+- Agent-level scoring for Explorer questions (`explorer` in an eval case's expectation): the assistant used the `explore` tool; said the answer is exploratory, and the tool labelled it; the rows hold the words wanted (a node, a date); a refusal of the right kind when one is due; no shell command or database tool of its own; every number it quoted is in the rows or the question (in percentage form too). The stream parser keeps what each `explore` call answered. Cases can live in another file (`--cases explorer`) and an agent-only case no longer fails a runner-level run.
+- Five questions in `packs/contact-centre/evals/explorer.yaml`: the worst team in week 7, calls by queue, the three busiest agents, one team day by day, and a request to run SQL (must be refused with the pointer to the Builder).
+- 6 tests of the scoring: a good answer passes; each way to go wrong (no label, a number not in the rows, the tool's label missing, a node missing, the tool not used, a shell command) is caught on its own; a refusal is scored on what the tool said; numbers are traced; the parser; the cases load.
+
+**Not shown (the run was stopped: the machine ran out of memory)**
+- **The live assistant has not been run on the five questions**, so nothing is shown yet about whether it reads the data only through the tool, says exploratory, quotes only rows, and refuses SQL.
+- **SQLite against BigQuery parity of the Explorer's rows, and its cost per question on BigQuery**, were not run.
+- The complaints eval, the contact-centre eval, routing and intents were not re-run after the Explorer (routing was, after step 3: 38/38).
+

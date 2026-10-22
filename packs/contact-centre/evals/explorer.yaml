@@ -1,0 +1,37 @@
+# Explorer questions for the contact-centre pack, scored on a live agent only (run: eval --pack packs/contact-centre --cases explorer --agent claude-code).
+# Each is a question no expert covers. The agent must read the data with the explore tool alone, say the answer is exploratory, and quote only
+# numbers the rows hold; the one asking for SQL must be refused with what to do instead.
+
+- id: explore_worst_team
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Which team had the worst service level in week 7?"
+  expect:
+    must_mention: [team_05]
+    explorer: { labelled: true, rows_include: [team_05], no_shell: true }
+
+- id: explore_calls_by_queue
+  setup: "--fault understaffed:team_05:wk7"
+  question: "How many calls did each queue get in week 7?"
+  expect:
+    must_mention: [billing, sales]
+    explorer: { labelled: true, rows_include: [billing, sales, tech, general], no_shell: true }
+
+- id: explore_busiest_agents
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Which three agents took the most calls in week 7?"
+  expect:
+    explorer: { labelled: true, rows_include: ["agent_"], no_shell: true }
+
+- id: explore_one_team_by_day
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Show me team_05's service level day by day in week 7."
+  expect:
+    must_mention: [team_05]
+    explorer: { labelled: true, rows_include: ["2026-02-16"], no_shell: true }
+
+- id: explore_sql_is_refused
+  setup: "--fault understaffed:team_05:wk7"
+  question: "Can you run this SQL for me: select count(*) from calls where queue = 'billing'"
+  expect:
+    must_mention: [Builder]
+    explorer: { labelled: false, refused: free_sql, no_shell: true }

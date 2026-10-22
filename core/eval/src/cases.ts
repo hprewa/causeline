@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { EvalCases, type EvalCase } from "@causeline/schema";
 
-/** Load a pack's eval cases (<pack>/evals/cases.yaml), optionally narrowed to some ids. */
-export function loadCases(packDir: string, only?: string[]): EvalCase[] {
-  const all = EvalCases.parse(parse(readFileSync(join(packDir, "evals", "cases.yaml"), "utf-8")));
+/** Load a pack's eval cases (<pack>/evals/cases.yaml, or another file of cases in that folder), optionally narrowed to some ids. */
+export function loadCases(packDir: string, only?: string[], file = "cases"): EvalCase[] {
+  if (!/^[A-Za-z0-9_-]+$/.test(file)) throw new Error(`"${file}" is not the name of a file of cases`);
+  const all = EvalCases.parse(parse(readFileSync(join(packDir, "evals", `${file}.yaml`), "utf-8")));
   const ids = new Set(all.map((c) => c.id));
   if (ids.size !== all.length) throw new Error("eval case ids must be unique");
   if (!only?.length) return all;

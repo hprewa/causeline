@@ -26,6 +26,8 @@ export interface CaseOutcome {
   gap?: string;
   /** What the run found, for comparing databases. */
   summary?: RunSummary;
+  /** The case has no runner-level inputs: only an agent can be scored on it, and the runner column does not apply. */
+  agentOnly?: boolean;
   /** The playbook the case ran, and the branches of it the run took (see `branchesOf`). */
   playbook?: string;
   branches?: string[];
@@ -46,6 +48,7 @@ const mark = (s: CaseOutcome["runner"] | CaseOutcome["agent"] | undefined, gap?:
 
 /** Did the runner side of a case do what was asked? A known gap is "ok" while it still fails, and not ok once it passes (remove the marker). */
 export function runnerOk(o: CaseOutcome): boolean {
+  if (o.agentOnly) return true;
   if (!isScore(o.runner)) return false;
   return o.gap ? !o.runner.pass : o.runner.pass;
 }
@@ -57,7 +60,7 @@ export function renderTable(outcomes: CaseOutcome[], withAgent: boolean): string
     const a = o.agent && isScore(o.agent) ? o.agent.metrics : undefined;
     return [
       o.id,
-      mark(o.runner, o.gap),
+      o.agentOnly ? "-" : mark(o.runner, o.gap),
       String(o.steps),
       String(o.runnerMs),
       ...(withAgent ? [mark(o.agent), a ? String(a.turns) : "-", a ? String(a.inputTokens + a.outputTokens) : "-", a ? a.costUsd.toFixed(3) : "-", a ? (a.ms / 1000).toFixed(1) : "-"] : []),
@@ -67,7 +70,7 @@ export function renderTable(outcomes: CaseOutcome[], withAgent: boolean): string
   const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join("  ").trimEnd();
   const out = [line(header), line(widths.map((w) => "-".repeat(w))), ...rows.map(line)];
 
-  const normal = outcomes.filter((o) => !o.gap);
+  const normal = outcomes.filter((o) => !o.gap && !o.agentOnly);
   const gaps = outcomes.filter((o) => o.gap);
   const passed = normal.filter((o) => isScore(o.runner) && o.runner.pass).length;
   out.push("", `runner score: ${passed}/${normal.length}${gaps.length > 0 ? ` (and ${gaps.length} known gap${gaps.length === 1 ? "" : "s"}, ${gaps.filter((g) => isScore(g.runner) && !g.runner.pass).length} still open)` : ""}`);
@@ -80,6 +83,7 @@ export function renderTable(outcomes: CaseOutcome[], withAgent: boolean): string
   for (const o of outcomes) {
     for (const [level, s] of [["runner", o.runner], ["agent", o.agent]] as const) {
       if (!s) continue;
+      if (level === "runner" && o.agentOnly) continue;
       if (!isScore(s)) out.push("", `${o.id} [${level}] ERROR: ${s.error}`);
       else if (!(o.gap && level === "runner")) for (const c of s.checks.filter((x) => !x.ok)) out.push("", `${o.id} [${level}] ${c.name}: ${c.detail ?? "failed"}`);
     }

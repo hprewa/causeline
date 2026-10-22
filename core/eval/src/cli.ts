@@ -9,6 +9,7 @@ import { branchCoverage, expertsWithUntestedBranches, renderCoverage } from "./b
 
 const USAGE = `usage: causeline eval --pack <dir> [options]
   --case <id[,id...]>     run only these cases
+  --cases <name>          use evals/<name>.yaml instead of evals/cases.yaml (for example explorer: questions scored on a live agent only)
   --agent claude-code     also ask each case's question to a live agent (costs money; never run in CI)
   --plugin-dir <dir>      the plugin to give the agent (default: clients/claude-code)
   --no-bare               let the agent use your own Claude Code login and settings (default is --bare, which needs ANTHROPIC_API_KEY)
@@ -79,6 +80,7 @@ export async function runEvalCli(argv: string[]): Promise<number> {
   const outcomes = await runEvals({
     packDir: resolve(pack),
     only: flags.get("case")?.split(","),
+    cases: flags.get("cases"),
     // per pack: two packs can have a case with the same id, and must not share a directory
     workRoot: resolve(flags.get("work-dir") ?? join(defaultWorkRoot(), basename(resolve(pack)))),
     reuse: switches.has("reuse"),

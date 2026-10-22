@@ -171,6 +171,8 @@ export interface AgentEvidence {
   toolCalls: { name: string; input: unknown }[];
   /** The result.json the agent's run_playbook call returned, if any. */
   result: Result | null;
+  /** What each `explore` call answered. */
+  explored?: any[];
   question: string;
   expectedPlaybook: string;
 }
@@ -180,6 +182,7 @@ export interface AgentEvidence {
  * result says, and avoid inventing numbers or claims?
  */
 export function scoreAgent(ev: AgentEvidence, expect: Expectation): Score {
+  if (expect.explorer) return scoreExplorerAgent(ev, expect);
   const checks: Check[] = [];
   const called = ev.toolCalls.filter((t) => /run_playbook$/.test(t.name));
   const picked = called.map((t) => (t.input as { name?: string } | undefined)?.name);
@@ -207,3 +210,47 @@ export function scoreAgent(ev: AgentEvidence, expect: Expectation): Score {
   checks.push({ name: "numbers_traceable", ok: untraced.length === 0, detail: untraced.length ? `not in the result: ${untraced.join(", ")}` : undefined });
   return finish(checks);
 }
+
+/** Numbers in the narrative that cannot be traced to these sources (rows, the question), by the same rule as for a result. */
+export function untracedAgainst(narrative: string, sources: unknown[], question: string): string[] {
+  const allowed = allowedNumbers(...sources, question);
+  const bad: string[] = [];
+  for (const m of withoutThousandsCommas(narrative).matchAll(NUMBER)) {
+    const token = m[0];
+    const value = Math.abs(Number(token));
+    const tol = 0.5 * Math.pow(10, -decimals(token)) + 1e-9;
+    if (!allowed.some((a) => [Math.abs(a), Math.abs(a) * 100].some((c) => Math.abs(c - value) <= tol))) bad.push(token);
+  }
+  return bad;
+}
+
+/**
+ * Agent-level score for an Explorer question: the assistant read the data only with the explore tool, said the answer is exploratory,
+ * quoted only numbers the rows hold, and (when asked) refused what it should refuse and ran no shell command of its own.
+ */
+function scoreExplorerAgent(ev: AgentEvidence, expect: Expectation): Score {
+  const want = expect.explorer!;
+  const explored = ev.explored ?? [];
+  const checks: Check[] = [];
+  const calls = ev.toolCalls.filter((t) => /(^|__)explore$/.test(t.name));
+  checks.push({ name: "explore_called", ok: calls.length > 0, detail: calls.length ? `${calls.length} call(s)` : `tools used: ${ev.toolCalls.map((t) => t.name.replace(/^mcp__[^_]*__?/, "")).join(", ") || "none"}` });
+  if (want.labelled !== false) checks.push({ name: "says_exploratory", ok: has(ev.narrative, "exploratory"), detail: 'the narrative must say the answer is "exploratory"' });
+  if (want.labelled !== false) checks.push({ name: "labelled_by_the_tool", ok: explored.length > 0 && explored.every((e) => e.label === "exploratory"), detail: `${explored.length} answer(s) from the tool` });
+  const rows = explored.flatMap((e) => (Array.isArray(e.rows) ? e.rows : []));
+  const rowText = JSON.stringify(rows).toLowerCase();
+  for (const needle of want.rows_include ?? []) checks.push({ name: `rows_include:${needle}`, ok: rowText.includes(needle.toLowerCase()), detail: `rows: ${rowText.slice(0, 120)}` });
+  if (want.refused) {
+    const refusals = explored.map((e) => e.refused?.code).filter(Boolean);
+    checks.push({ name: `refused:${want.refused}`, ok: refusals.includes(want.refused), detail: `refusals: ${refusals.join(", ") || "none"}` });
+  }
+  if (want.no_shell) {
+    const shell = ev.toolCalls.filter((t) => /^(Bash|PowerShell)$/.test(t.name));
+    checks.push({ name: "no_shell", ok: shell.length === 0, detail: shell.length ? `ran: ${JSON.stringify(shell[0].input).slice(0, 160)}` : undefined });
+  }
+  for (const needle of expect.must_mention ?? []) checks.push({ name: `must_mention:${needle}`, ok: has(ev.narrative, needle) });
+  for (const needle of expect.must_not_claim ?? []) checks.push({ name: `must_not_claim:${needle}`, ok: !has(ev.narrative, needle) });
+  const untraced = untracedAgainst(ev.narrative, [rows, explored.map((e) => [e.asked, e.says, e.notes])], ev.question);
+  checks.push({ name: "numbers_traceable", ok: untraced.length === 0, detail: untraced.length ? `not in the rows: ${untraced.join(", ")}` : undefined });
+  return finish(checks);
+}
+
