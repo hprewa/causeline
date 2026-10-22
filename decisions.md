@@ -324,3 +324,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The optional BigQuery project has an empty default.** Why: an optional value with no default may leave the variable unreplaced in the environment; an empty string fills it and the server treats empty as unset.
 - **The icon is drawn by the build as a plain placeholder.** Why: the build must need nothing else; a real icon is a design task and is listed as not done.
 
+
+### Install path step 5: the single executable and the Codex installer
+- **One program for Codex, built as a Node single-executable; the same file serves, installs and guards.** Why: Codex provides no Node; one file with a few commands is the least to download and the installer can point at itself.
+- **The installer edits only marked blocks, copies each file aside first, is idempotent, and refuses what it cannot do safely.** Why: the settings are the person's; uninstall must return their bytes exactly.
+- **The hook runs the program's own `guard`.** Why: the same rules as Claude Code from one source, and no Node needed.
+- **The embedded playbooks are written to the Causeline folder at start.** Why: the server reads playbooks from disk; one extraction is simpler than a second code path.
+- **The release workflow is written but not run.** Why: it cannot be run from here; saying so beats pretending the other platforms are built.

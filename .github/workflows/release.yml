@@ -1,0 +1,42 @@
+name: release
+
+# Builds the single program for each platform and the Claude Desktop extension.
+# Written but not yet run: there was no way to run a workflow from the machine it was written on.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  program:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-14, macos-13, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.12.2"
+      - run: npm ci
+      - run: npm run build
+      - run: npm run bundle:exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causeline-mcp-${{ matrix.os }}
+          path: dist/causeline-mcp-*
+
+  desktop-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.12.2"
+      - run: npm ci
+      - run: npm run build
+      - run: npm run bundle:desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causeline-desktop-extension
+          path: dist/*.mcpb

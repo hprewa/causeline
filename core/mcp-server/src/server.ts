@@ -6,6 +6,7 @@ import { SignoffScreen } from "./signoff.js";
 import { ProjectService } from "./projects.js";
 import { ExploreService, type ExploreToolArgs } from "./explore.js";
 import { setupCheck } from "./setup-check.js";
+import { INSTRUCTIONS } from "./instructions.js";
 import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import { acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
@@ -196,12 +197,7 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
  * What a model should know before it picks a tool: which of the plugin's skills to follow. Without this a model that is asked to
  * "set up" someone's data can reach for the developer path (hand-written pack files) and show the user YAML.
  */
-const INSTRUCTIONS = [
-  "Causeline answers 'why did this number change?' with a deterministic analysis, builds that setup from the user's own data, and reads the data in fixed ways for questions no expert covers.",
-  "BEFORE you act on a request, call get_guide with the name that fits it, and follow that guide: 'build' (the user has data and no working setup yet, or wants to add a KPI or sign one off), 'investigate' (why a KPI moved), 'explore' (a ranking, a breakdown, a list or a figure no expert covers; route says strategy explorer), 'onboard' (check the data and its repeating patterns). Claude Code also has the same guidance as skills (causeline-build, causeline-investigate, causeline-explore, causeline-onboard); where you have the skill, follow the skill. At the very start on a new computer, or when something fails to connect, call check_setup.",
-  "Rules that hold in every case: talk to the user in plain words and never show them YAML, SQL or a folder path; never write pack files yourself (use the build tools: connect_files or connect_bigquery, describe_data, test_fact, save_pack, play_back, propose_checks, confirm_number, verify_expert); read the data only through these tools, never write SQL or run a database command; never state a number that a tool did not return; never claim something is checked unless a tool said so; say how far the numbers are trusted; an answer from the explore tool is exploratory and says so.",
-  "Projects: the user's work is saved in named projects. At the start of a session call list_projects; open one by name with open_project, or ask what to call a new one and call create_project. Never ask for a folder.",
-].join("\n");
+
 
 /** The causeline-mcp tools: analysis, onboarding and the Builder. `callers` supplies the data connection (Toolbox, or a fake in tests). */
 registerBigQuery();

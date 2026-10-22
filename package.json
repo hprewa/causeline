@@ -18,6 +18,7 @@
     "toolbox": "node scripts/toolbox.mjs packs/contact-centre 5000",
     "test:integration": "node scripts/integration.mjs",
     "bundle:plugin": "npm run build && node scripts/bundle-plugin.mjs",
+    "bundle:exe": "npm run build && node scripts/bundle-exe.mjs",
     "bundle:desktop": "npm run bundle:plugin && node scripts/bundle-desktop.mjs",
     "eval:all": "npm run eval"
   },

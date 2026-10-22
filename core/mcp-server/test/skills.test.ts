@@ -33,8 +33,8 @@ test("the explore skill names the tool and its operations, carries the label, an
   assert.match(skill, /Never write or suggest SQL/);
   assert.match(skill, /No claim about cause/);
   assert.match(readFileSync(resolve(repo, "skills", "causeline-investigate", "SKILL.md"), "utf-8"), /causeline-explore/);
-  assert.match(serverSource, /call get_guide with the name that fits/);
-  assert.match(serverSource, /'explore' \(a ranking, a breakdown/);
+  assert.match(readFileSync(resolve(repo, "core", "mcp-server", "src", "instructions.ts"), "utf-8"), /call get_guide with the name that fits/);
+  assert.match(readFileSync(resolve(repo, "core", "mcp-server", "src", "instructions.ts"), "utf-8"), /'explore' \(a ranking, a breakdown/);
   assert.ok(registered.has("explore"));
 });
 

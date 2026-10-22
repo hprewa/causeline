@@ -66,11 +66,25 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - macOS was not run. The placeholder icon is plain; it needs a real one.
 - The extension is not signed and not in any directory (the directory no longer takes submissions: people install the file).
 
-## Step 5 (started, not finished): one source for the shell guard
+## Step 5: the single executable and the Codex installer
+
+### One source for the shell guard
 
 - The shell-command guard is now written once, in `core/mcp-server/src/guard.ts` (with `guard-cli.ts`), and the Claude Code plugin's hook file `clients/claude-code/hooks/guard.mjs` is **built from it** by `npm run bundle:plugin` (it is no longer tracked). This is the groundwork for the Codex installer, whose hook can run the same code (Codex's hooks use the same stdin fields and the same deny answer as Claude Code's, read from its hooks page on 22 October).
 - All unit tests pass (the guard tests now run the TypeScript rules and the compiled command-line entry); purity passes; the plugin bundles.
 - **Not shown:** the bundled `hooks/guard.mjs` was piped one command by hand from PowerShell and answered `{}` (an allow); PowerShell's quoting of the JSON is the likely cause, but I did not confirm it, so the bundled hook is not independently proved to deny.
 
-**Not done in step 5:** the single executable (Node SEA), the `install codex` / `uninstall codex` / `doctor` / `--version` commands and the Codex config, `AGENTS.md`, skills and hook edits, the release workflow for macOS and Linux, and `clients/codex/`. **Not done in step 6:** the analyst guide, clean-machine proof for the executable, and the final regression. Planned in `PROGRESS.md`.
+### The program
+- `npm run bundle:exe` makes `dist/causeline-mcp-<platform>-<arch>(.exe)`: the same server as one Node single-executable (Node 20.12.2, `postject`), 73 MB on Windows, with the four guides and the core playbooks inside it. The playbooks are written to `<Causeline folder>/playbooks-<version>` at start. The Node fuse name differs between Node versions, so the build reads it from the Node binary.
+- Commands: no argument serves MCP; `--version`; `doctor` (plain words, no paths); `guard` (the shell check, used by the Codex hook); `install codex` / `uninstall codex`.
+- `install codex` writes marked blocks into `config.toml` and `AGENTS.md`, four skills in `~/.agents/skills`, and one entry in `hooks.json`; each changed file is copied aside first; running it twice changes nothing; it refuses a foreign `causeline` server, a foreign skill folder, invalid hooks JSON, or a block with no end marker; `uninstall codex` restores the original bytes and removes every file it made. 6 unit tests on a temporary home.
+- **The program run on a machine with no Node** (`scripts/exe-proof.mjs`: the executable copied to its own folder, a PATH holding only the Windows system folder, checked to hold no Node): **20 checks passed**. Version; `doctor` in plain words without a path; an unknown command refused; over MCP: the instructions, a guide served from inside the program, the example project listed, a first question answered "preparing the data connection (0%)", the real 294 MB fetch matching its pinned fingerprint, the analysis then finding the planted fault (`team_05`), the playbooks coming out of the program; `install codex` into a temporary home that already had a settings file, the entry pointing at the program, the hook running the program's own `guard`, which **denied a database command line and let `ls` through**, and `uninstall codex` restoring the settings file exactly and removing what it made. 108 seconds for the session including the fetch.
+- `clients/codex/README.md` (the by-hand values) and `.github/workflows/release.yml` (builds the program on Windows, two macOS and Linux, and the extension) are written.
 
+**Not shown**
+- **Codex's own app has not run any of this.** What its settings screen does with the entry, whether 60 seconds of start time is right, how it asks you to trust the hook, and that it reads `AGENTS.md` and `~/.agents/skills` as its pages say are not known.
+- **The release workflow has never run**, so no macOS or Linux program exists or has been run. Node's single-executable feature is experimental.
+- Windows SmartScreen and macOS Gatekeeper will warn on an unsigned program; signing is not done.
+- The Claude Code plugin's bundled `hooks/guard.mjs` was still not independently shown to deny from the shell (an earlier hand pipe answered `{}` because of quoting, unconfirmed); the program's `guard`, the same code, was shown to deny.
+
+**Not done in step 6:** the analyst guide, a live assistant run through the plugin on a clean home, and the final regression.
