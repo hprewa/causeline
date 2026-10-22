@@ -17,3 +17,22 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 **Not shown**
 - Nothing here has run against a real database or through the MCP server (steps 2 and 6). The `profile` operation is tested only for its refusal: the test fake cannot answer the cycle tools.
 - The refusal for free SQL and joins is a recorded request (`cannot`), made by the assistant; the code cannot tell a person is asking for SQL in words. The boundary that matters is that no operation accepts any.
+
+## Step 2: the `explore` tool and the stored exploration, on real data
+
+**What was built**
+- `core/mcp-server/src/explore.ts`: the `explore` tool. One call is one fixed read; the first call of a question carries the question, later calls continue the same exploration, and `new` starts another. The record is written to the project's results folder after every step (`exploration-<id>.json`), so a conversation that stops loses nothing and a page can show one under way. Switching project clears the exploration.
+- Every result carries `label: "exploratory"` and the sentence about itself, the rows, notes, what was read (queries, bytes on a database that reports them), the KPIs read with how far each is trusted, and the budget left. A request that cannot be done is an answer (`refused`, with a reason and what to do instead), not an error.
+- The tool's description tells the assistant: say it is exploratory, quote only numbers from `rows`, never work out new ones, make no claim about cause, report `refused` in plain words.
+- A pack can set its own budgets in `ontology.yaml` (`explorer: { max_steps, max_rows }`).
+
+**Evidence** (a scripted run through the server over stdio against a real Toolbox and the contact-centre data with a planted fault, with every number recomputed here from the raw CSV files, not by the system under test)
+- The worst teams by service level in week 7: team_05 first, its value and row count equal the CSV's (to the six decimals the tool reports); calls by queue in week 7: every volume is the CSV's count and they add up to the week's total; one team's service level by day for seven whole days: each day equals the CSV; two teams side by side: the numbers match and the difference is reported as real; the biggest fall against the week before: team_05, as the fault. The same exploration continued across the calls and `new` started another.
+- A free-SQL request is refused with the reason and "describe it as a KPI with the Builder"; an unknown KPI is refused with the list of KPIs; a filter value that does not exist returns no rows. The stored record validates, is labelled exploratory, numbers its eight steps, keeps the question, and holds the two refusals.
+- All unit tests pass in every package; purity passes. Found on the way: the results page's ordering depended on file times that tie when two files are written together, so it could list the older first; it now settles a tie by the file name, and its test sets the times.
+
+**Not shown**
+- Not run on BigQuery (step 6). `profile` has not been run against real data.
+- The record's `queries` and bytes are zero on a database that does not report them (SQLite).
+- The router does not send questions here yet (step 3), and nothing on a page shows an exploration yet (step 4).
+

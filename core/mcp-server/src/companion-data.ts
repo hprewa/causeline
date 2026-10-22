@@ -43,7 +43,7 @@ export function listResults(runsDir: string, limit = 40): ResultItem[] {
   return readdirSync(runsDir)
     .filter((f) => FILE_NAME.test(f))
     .map((f) => ({ f, at: statSync(join(runsDir, f)).mtime.toISOString() }))
-    .sort((a, b) => b.at.localeCompare(a.at))
+    .sort((a, b) => b.at.localeCompare(a.at) || b.f.localeCompare(a.f)) // file names begin with the time, so a tie in time is settled by the name
     .slice(0, limit)
     .flatMap(({ f, at }) => {
       try {

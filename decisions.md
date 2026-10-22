@@ -293,4 +293,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Groups under the KPI's minimum volume are listed apart, not ranked.** Why: the same rule the analysis uses; a ranking led by a group of nine rows is noise.
 - **Budgets are enforced in code and stay ended.** Why: a model asked to "keep it short" does not; the person must be told what was and was not read.
 - **A refusal is a step in the record with a reason and an alternative.** Why: what was declined is part of the audit trail, and "no" with nothing to do next is not an answer.
+- **One exploration at a time, continued by default, and written after every step.** Why: a question is explored in a few steps; the page must be able to show one under way, and a stopped conversation must not lose what was read.
+- **A request that cannot be done is an answer with a reason, not an error.** Why: an error is something the assistant retries or hides; a refusal with an alternative is something it tells the person.
+- **Values are rounded to six decimals in the answer.** Why: the answer is read by people and quoted by a model; the tests compare to that precision.
 

@@ -1,7 +1,7 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { request } from "node:http";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { connectFiles, savePack, SqliteToolCaller } from "@causeline/builder";
@@ -44,6 +44,8 @@ before(async () => {
   });
   writeFileSync(join(dir, "runs", "2026-02-01T10-00-00-000Z-metric_change-ok_rate.json"), JSON.stringify(done));
   writeFileSync(join(dir, "runs", "2026-02-02T10-00-00-000Z-metric_change-ok_rate.json"), JSON.stringify(Result.parse({ playbook: "metric_change", inputs: { metric: "ok_rate" }, status: "stopped", headline: null, stopped_reason: "data_still_arriving", stopped_detail: "the newest weeks hold little", generator })));
+  utimesSync(join(dir, "runs", "2026-02-01T10-00-00-000Z-metric_change-ok_rate.json"), new Date("2026-02-01T10:00:00Z"), new Date("2026-02-01T10:00:00Z"));
+  utimesSync(join(dir, "runs", "2026-02-02T10-00-00-000Z-metric_change-ok_rate.json"), new Date("2026-02-02T10:00:00Z"), new Date("2026-02-02T10:00:00Z"));
   writeFileSync(join(dir, "secret.json"), JSON.stringify({ secret: "do not show" }));
   screen = new SignoffScreen(cfg(), { caller: async () => new SqliteToolCaller(join(dir, "ws")) });
   const url = new URL(await screen.address());

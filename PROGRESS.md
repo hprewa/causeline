@@ -114,7 +114,7 @@ Questions no expert covers, answered from a closed set of fixed read operations,
 | Step | What | State |
 |---|---|---|
 | 1 | The operations, refusals, budgets and the stored record (`core/runner/src/explore.ts`) | done |
-| 2 | The `explore` tool over MCP, the stored exploration, real data (SQLite and Toolbox) | not started |
+| 2 | The `explore` tool over MCP, the stored exploration, real data (SQLite and Toolbox) | done |
 | 3 | Routing: ranking, top-N and breakdown questions go to the Explorer; look-alikes do not | not started |
 | 4 | The page: explorations list and detail, next to results | not started |
 | 5 | The skill, a guardrail hook for Claude Code, README | not started |

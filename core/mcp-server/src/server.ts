@@ -4,6 +4,7 @@ import { IntentService } from "./intent.js";
 import { registerBigQuery } from "@causeline/connect-bigquery";
 import { SignoffScreen } from "./signoff.js";
 import { ProjectService } from "./projects.js";
+import { ExploreService, type ExploreToolArgs } from "./explore.js";
 import { acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
@@ -86,6 +87,32 @@ const acceptSampleInput = fromJsonSchema<{ kpi: string; check: string; note?: st
 );
 const projectNameInput = fromJsonSchema<{ name: string }>(obj({ name: { type: "string", description: "The project's name as the user says it (for example 'Weekly review')." } }, ["name"]));
 const projectOptionalInput = fromJsonSchema<{ name?: string }>(obj({ name: { type: "string", description: "A project by name; leave out for the open one." } }));
+const exploreInput = fromJsonSchema<ExploreToolArgs>(
+  obj(
+    {
+      op: { type: "string", enum: ["breakdown", "rank", "series", "compare", "profile", "cannot"], description: "breakdown: a KPI split by one concept. rank: the highest, lowest, biggest rise or biggest fall values of a concept. series: a KPI over time. compare: two values of a concept, or two windows. profile: a KPI by position in a cycle (for example weekday). cannot: record that the request is outside these (free SQL, a join, a cause, a change, an unknown KPI)." },
+      kpi: { type: "string", description: "One of the project's KPIs, as route or get_intent lists them." },
+      by: { type: "string", description: "The concept to split by (breakdown, rank, compare of two values)." },
+      filters: { type: "object", additionalProperties: { type: "string" }, description: "Confine to values of other concepts, for example {\"concept\": \"value\"}. A value that does not exist comes back with the values that do." },
+      period: { type: "string", description: "A period label at the top time level (as route returns them). Or give start_date and end_date." },
+      start_date: { type: "string", description: "First whole day, YYYY-MM-DD." },
+      end_date: { type: "string", description: "Last whole day, inclusive, YYYY-MM-DD." },
+      against_period: { type: "string", description: "A second period to set the first against." },
+      against_start: { type: "string", description: "First day of the second window." },
+      against_end: { type: "string", description: "Last day of the second window." },
+      order: { type: "string", enum: ["highest", "lowest", "biggest_rise", "biggest_fall"], description: "rank: which end. The last two need a second window." },
+      top: { type: "number", description: "rank: how many (default 5, at most 25)." },
+      level: { type: "string", description: "series: the time level (default the top one)." },
+      cycle: { type: "string", description: "profile: the cycle, for example weekday." },
+      nodes: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2, description: "compare: the two values of `by` to set side by side." },
+      kind: { type: "string", enum: ["free_sql", "join", "cause", "change", "unknown_kpi", "other"], description: "cannot: what kind of request this is." },
+      request: { type: "string", description: "cannot: the user's words." },
+      question: { type: "string", description: "The user's question in their own words. Give it with the first step of an exploration." },
+      new: { type: "boolean", description: "Start a new exploration instead of continuing the one under way (use it when the user changes the subject)." },
+    },
+    ["op"],
+  ),
+);
 const kpiOptional = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "One KPI; leave out for all." } }));
 const openSignoffInput = fromJsonSchema<{ kpi?: string }>(obj({ kpi: { type: "string", description: "The KPI to show first." } }));
 const incidentInput = fromJsonSchema<Record<string, unknown>>(
@@ -270,6 +297,7 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("accept_sample", "Accept a number as plausible", "Only when the user has no exact figure to check against: show them the number the tools give for a check and, if they say it looks right, record it as a plausible sample. It never counts toward a rung; the KPI stays a draft marked 'numbers not confirmed', and answers from it say so. Prefer confirm_number whenever the user can give a number from a report.", acceptSampleInput, async (a) => acceptSampleTool(cfg, a));
   builder("signoff_status", "Where each KPI stands", "The ladder for one KPI or all: draft, reconciled, calibrated or verified (and whether its numbers were only a plausible sample), what stands between it and the next step in plain words, the automatic checks, and each check with its state. Our number is shown only for a check the user has already answered.", kpiOptional, (a) => signoffStatusTool(cfg, a), true);
   builder("run_checks", "Re-run the stored checks", "Work out again every confirmed number and the automatic checks. Use it after the model changed (a changed KPI drops back to draft) or to refresh a sign-off: a KPI is reconciled again only if every stored number still matches. Numbers that no longer match go back to pending with the new figure.", verifyInput, async (a) => runChecksTool(cfg, callers, a));
+  builder("explore", "Read the data in a fixed way (exploratory)", "For a question about a KPI that no expert covers and the analysis cannot answer: a ranking, a breakdown by a concept, a KPI over time, a comparison of two values or two windows, or a pattern over a cycle. Each call is one fixed read; chain a few for one question (at most 12 steps and 400 rows). It cannot run free queries, join other data, say what caused a change or change anything: for those, call it with op 'cannot' and the matching kind, and tell the user what it says to do instead. EVERY answer is exploratory: say so in the user's words, quote only numbers from `rows`, never work out new ones, and make no claim about cause. `trust` says how far each KPI's numbers are trusted: say so for a KPI that is a draft. If `refused` is set, tell the user why and what to do instead. Start the first step of a question with `question`; use `new` when the subject changes.", exploreInput, async (a: ExploreToolArgs) => explorer.run(a));
   builder("open_project_page", "Open the project's page", "Open a page on this computer that shows the open project at a glance: each KPI and how far it is trusted, the experts, how the steps decide what to do next, and every answer given so far. It is read-only and has a link to the sign-off page. Returns its address (give it to the user if the browser did not open). Offer it when the user asks where things stand or wants to see the evidence behind an answer.", null, async () => ({ ...(await screen.open(undefined, "home")), note: "The page is local to this computer and works until this session ends." }));
   builder("open_signoff", "Open the sign-off screen", "Open a page on this computer where the user can enter numbers from their own reports, see ours beside them, and confirm or flag each one. Returns its address (give it to the user if the browser did not open). Everything on it is also available through confirm_number; offer it when there are several numbers to check or the user would rather click than type.", openSignoffInput, async (a: { kpi?: string }) => ({ ...(await screen.open(a?.kpi)), note: "The page is local to this computer and works until this session ends. Anything the user confirms there shows in signoff_status." }));
   builder("add_incident", "Record a past incident", "Remember a past incident the user knows the cause of (period, where it was, how they would ask) as a test case run on their real data. Ask the user for one per KPI.", incidentInput, (a) => addIncidentTool(cfg, a as never));
@@ -277,7 +305,11 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
 
   // --- the running intent: a question built up over messages, checked against the data, then run ------------------------
   const intent = new IntentService(cfg, callers);
-  const projects = new ProjectService(cfg, callers, () => intent.reset());
+  const explorer = new ExploreService(cfg, callers);
+  const projects = new ProjectService(cfg, callers, () => {
+    intent.reset();
+    explorer.reset();
+  });
   builder("get_intent", "Read the question so far", "Start of any question about a KPI. Returns everything you need to fill the intent in correctly: today's date and what the data covers, the KPIs (with other names people use), the concepts you can filter by, the views (time levels), recent period labels, the intent built so far, what the user said since the last answer, and the numbered answers so far. Read it before calling set_intent.", null, () => intent.get(), true);
   builder("set_intent", "Update the question", "Record the user's message and the change it makes to the intent. Fill in only what they said; leave other slots out to keep them, set a slot to null to clear it, and set a filter to null to drop it. You never compute dates: say them as the period structure and the code resolves them against today and the data. Returns either the question to ask the user (exactly one), or the intent read back in plain words for the user to confirm. A new KPI with the rest unchanged is a topic switch: the result says what carried over; tell the user.", setIntentInput, (a) => intent.set(a));
   builder("run_intent", "Run the question", "Run the intent once set_intent says it is ready (it re-checks, and refuses with the one question to ask if anything is missing or unclear). Returns the full result, the play-back and any notes. Explain the result using only what it contains. The intent is kept so the user can refine it.", null, () => intent.run());

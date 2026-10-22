@@ -200,6 +200,8 @@ export const Ontology = z.object({
   dimensions: z.array(Identifier).default([]),
   metrics: Metrics,
   thresholds: Thresholds.optional(),
+  /** How much one exploration may read: steps (fixed read operations) and rows returned. Unset keeps the defaults (12 and 400). */
+  explorer: z.object({ max_steps: z.number().int().min(1).max(50), max_rows: z.number().int().min(10).max(5000) }).partial().optional(),
 });
 export type Ontology = z.infer<typeof Ontology>;
 
