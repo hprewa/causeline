@@ -335,3 +335,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Install path step 6: guide and proof
 - **The guide admits the Codex installer is a command, run from the Run box, and says what has not been tried.** Why: no terminal is true only for Claude Desktop; saying otherwise would send people into a dead end.
 - **The live run's 2/3 is reported as it came.** Why: the miss is the known derived-number weakness; a rerun until it passed would hide it.
+
+### Guided setup step 1: the prep card
+- **The card is its own file (`setup.json`), not part of `build.json`.** Why: it must exist before anything is connected, and it needs no new state version or migration.
+- **The card's numbers are the person's figures, not checks.** Why: the ladder counts only numbers confirmed at sign-off against a named source; the card saves asking twice, it does not lower the bar.
+- **A card holds three numbers; a fourth is refused.** Why: three is what the first rung asks for; more can come at sign-off.
+- **Progress is "N of M setup steps done" in the build status.** Why: a person returning in another client needs one line, not a checklist.

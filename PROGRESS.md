@@ -109,6 +109,18 @@ One download to a first answer on Claude Desktop, Codex and Claude Code: no term
 | 5 | A single executable and a Codex installer | done on Windows (run with no Node; Codex app, macOS and Linux not run) |
 | 6 | The analyst guide, live run, regression | done (live agent 2/3; BigQuery complaints not re-run; no real Desktop/Codex/macOS) |
 
+## Guided setup on the analyst's own data (Phase 1b)
+
+Plan: prep card and resume, cost caps in plain words, admin message and sign-in, KPI-scoped discovery, proof (`docs/evidence/setup-guided.md`).
+
+| Step | What | State |
+|---|---|---|
+| 1 | The prep card and resumable setup | done |
+| 2 | Cost caps in plain words | not started |
+| 3 | The message to your admin; clearer sign-in | not started |
+| 4 | KPI-scoped discovery | not started |
+| 5 | Proof on BigQuery and regression | not started |
+
 ## Projects and the companion page
 
 One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).

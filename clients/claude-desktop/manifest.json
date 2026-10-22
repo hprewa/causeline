@@ -44,6 +44,7 @@
   },
   "tools": [
     { "name": "check_setup", "description": "Is everything ready to answer?" },
+    { "name": "setup_card", "description": "What you have told us before setup, and what to ask next" },
     { "name": "get_guide", "description": "The guidance for a kind of request" },
     { "name": "list_projects", "description": "The user's projects" },
     { "name": "create_project", "description": "Start a new project" },

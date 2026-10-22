@@ -67,7 +67,7 @@ after(async () => {
 
 test("exposes exactly the causeline-mcp tools, with read-only hints where they apply", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "check_setup", "confirm_number", "connect_bigquery", "connect_files", "create_project", "describe_data", "explore", "generate_tools", "get_guide", "get_intent", "list_playbooks", "list_projects", "open_project", "open_project_page", "open_signoff", "play_back", "project_summary", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "scan_kpis", "set_intent", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "check_setup", "confirm_number", "connect_bigquery", "connect_files", "create_project", "describe_data", "explore", "generate_tools", "get_guide", "get_intent", "list_playbooks", "list_projects", "open_project", "open_project_page", "open_signoff", "play_back", "project_summary", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "save_setup_card", "scan_kpis", "set_intent", "setup_card", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
   const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
   assert.equal(byName.list_playbooks.annotations?.readOnlyHint, true);
   assert.equal(byName.generate_tools.annotations?.readOnlyHint, false);
@@ -198,3 +198,16 @@ test("projects: with none open the tools say so; create and open switch what eve
   }
 });
 
+
+test("setup_card and save_setup_card keep the prep card in the open project and say what to ask next", async () => {
+  const empty = await call(client, "setup_card");
+  assert.equal(empty.isError, undefined);
+  assert.match(empty.structuredContent.next, /which one KPI/);
+  const saved = await call(client, "save_setup_card", { kpi: "handle time", numbers: [{ period: "2026-W07", value: 410, source: "weekly report" }] });
+  assert.equal(saved.isError, undefined);
+  assert.match(saved.structuredContent.next, /how that KPI is worked out/);
+  const again = await call(client, "setup_card");
+  assert.equal(again.structuredContent.trusted_numbers[0].value, 410);
+  assert.match(again.structuredContent.note, /not confirmed checks/);
+  assert.equal((await call(client, "build_status")).structuredContent.steps[0].step, "prep card");
+});

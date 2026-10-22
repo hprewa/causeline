@@ -13,3 +13,4 @@ export * from "./verify.js";
 export * from "./projects.js";
 export * from "./sqlite-tools.js";
 export * from "./data.js";
+export * from "./setup-card.js";

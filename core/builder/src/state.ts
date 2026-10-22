@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkGenerated } from "@causeline/generate";
+import { cardStatus, readCard } from "./setup-card.js";
 import { atLeast, loadAgents, loadPack, nextRungNeeds, validatePack, type Rung, type StatusChange } from "@causeline/schema";
 
 /** What kind of number a check is; the first rung asks for several numbers of different kinds, from different periods. */
@@ -251,7 +252,11 @@ export interface BuildStatus {
   steps: Step[];
   /** The one thing to do next, in plain words. */
   next: string;
+  /** Where the setup stands in one line, so any session in any client can say "you are 2 of 7 steps in". */
+  progress: string;
 }
+
+const progressOf = (steps: Step[]) => `${steps.filter((s) => s.done).length} of ${steps.length} setup steps done`;
 
 /** The checklist, worked out live from the files as well as from build.json, with the next step. */
 /** The analysis has been run: from now on the saved description's answer about repeating patterns counts as decided. */
@@ -265,9 +270,21 @@ export function markSeasonalityAnalysed(workspace: string): void {
 
 export function buildStatus(workspace: string): BuildStatus {
   const state = readState(workspace);
-  if (!state) return { steps: [{ step: "connect your files", done: false, detail: "nothing has been connected yet" }], next: "Connect the user's files (CSV)." };
+  const card = readCard(workspace);
+  const cardSteps: Step[] = [];
+  let cardNext = "";
+  if (card) {
+    const cs = cardStatus(card);
+    const answered = cs.items.filter((i) => i.done).length;
+    cardSteps.push({ step: "prep card", done: cs.next === "", detail: `${answered} of ${cs.items.length} answered` });
+    cardNext = cs.next;
+  }
+  if (!state) {
+    const steps = [...cardSteps, { step: "connect your files", done: false, detail: "nothing has been connected yet" }];
+    return { steps, next: cardNext || "Connect the user's data (files, or a BigQuery table or dataset).", progress: progressOf(steps) };
+  }
 
-  const steps: Step[] = [];
+  const steps: Step[] = [...cardSteps];
   steps.push({ step: "files connected", done: state.tables.length > 0, detail: state.tables.map((t) => `${t.name} (${t.rows} rows)`).join(", ") || "none" });
   steps.push({ step: "data looked at", done: state.profiled, detail: state.profiled ? "profiled" : "run describe_data" });
 
@@ -298,6 +315,7 @@ export function buildStatus(workspace: string): BuildStatus {
 
   const first = steps.find((s) => !s.done);
   const next: Record<string, string> = {
+    "prep card": cardNext,
     "files connected": "Connect the user's files (CSV).",
     "data looked at": "Run describe_data and read what it suggests.",
     "business described and saved": "Describe the business: draft the model, test each fact, save it, and play it back for the user to confirm.",
@@ -305,5 +323,5 @@ export function buildStatus(workspace: string): BuildStatus {
     "repeating patterns decided": "Run analyze_seasonality and explain the result; then record the decision.",
     "a past incident recorded": "Ask for one past incident the user knows the cause of, and record it.",
   };
-  return { steps, next: first ? (next[first.step] ?? `Take ${first.step.replace("KPI ", "").split(" ")[0]} up the ladder: propose checks, ask the user for the numbers from their own reports, and confirm them (or open the sign-off screen).`) : "Everything is in place for the first rung (reconciled). Testing against the recorded incident (verify_expert) comes next; calibrating it over ordinary past periods and then testing it against incidents make it verified." };
+  return { steps, next: first ? (next[first.step] ?? `Take ${first.step.replace("KPI ", "").split(" ")[0]} up the ladder: propose checks, ask the user for the numbers from their own reports, and confirm them (or open the sign-off screen).`) : "Everything is in place for the first rung (reconciled). Testing against the recorded incident (verify_expert) comes next; calibrating it over ordinary past periods and then testing it against incidents make it verified.", progress: progressOf(steps) };
 }

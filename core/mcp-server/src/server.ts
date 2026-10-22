@@ -9,7 +9,8 @@ import { setupCheck } from "./setup-check.js";
 import { INSTRUCTIONS } from "./instructions.js";
 import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
-import { acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import type { CardAnswers } from "@causeline/builder";
+import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -45,6 +46,20 @@ const scanInput = fromJsonSchema<{ period: string }>({
 });
 
 const obj = (properties: Record<string, unknown>, required: string[] = []): never => ({ type: "object" as const, properties, required }) as never;
+const cardInput = fromJsonSchema<CardAnswers>(
+  obj({
+    kpi: { type: "string", description: "The one KPI they care about, in their words." },
+    how_calculated: { type: "string", description: "How it is worked out today, in their words." },
+    numbers: {
+      type: "array",
+      description: "Numbers they already trust (up to 3 in all): add the ones just given.",
+      items: obj({ period: { type: "string" }, value: { type: "number" }, source: { type: "string", description: "The named report or system it comes from." } }, ["period", "value", "source"]),
+    },
+    incidents: { type: "array", description: "Past incidents with a known cause, in their words.", items: obj({ text: { type: "string" } }, ["text"]) },
+    no_incidents: { type: "boolean", description: "True when they say there are none." },
+    access: obj({ confirmed: { type: "boolean" }, admin: { type: "string", description: "Who to ask for access, if not confirmed." } }, ["confirmed"]),
+  }),
+);
 const connectInput = fromJsonSchema<{ files: string[] }>(obj({ files: { type: "array", items: { type: "string" }, description: "Full paths of the user's CSV files." } }, ["files"]));
 const connectBigQueryInput = fromJsonSchema<{ table?: string; dataset?: string; project?: string; location?: string }>(
   obj({
@@ -290,6 +305,8 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
     server.registerTool(name, { title, description, ...(inputSchema ? { inputSchema: inputSchema as never } : {}), annotations: { readOnlyHint: readOnly } }, (async (args: never) => guard(() => run(args))) as never);
 
   builder("build_status", "Where the build stands", "Building a pack from the user's files: what is done, what is not, and the one next step, in plain words. Call it first in any session that is setting up data; it lets a conversation stop and resume.", null, () => buildStatusTool(cfg), true);
+  builder("setup_card", "The prep card", "What the user has told us before setup (their KPI, how it is worked out, numbers they trust, past incidents, access), what is still to ask, and the one thing to ask next. Call it at the start of setting up a project and when a person comes back to one.", null, () => setupCardTool(cfg), true);
+  builder("save_setup_card", "Record prep card answers", "Record what the user just told you for the prep card, a few answers at a time as they give them (never ask for it all at once). Text answers replace; trusted numbers and incidents are added to. Returns what is still to ask.", cardInput, (a) => saveSetupCardTool(cfg, a));
   builder("connect_files", "Connect the user's files", "Load the user's CSV files into a local database (one table per file; types come from the data; dates become ISO text). Nothing leaves this machine. Report what it did and any note it returns (renamed columns, dates it could not read) to the user in plain words.", connectInput, (a) => connectFilesTool(cfg, a));
   builder("connect_bigquery", "Connect a BigQuery table", "Connect this folder to a BigQuery table or dataset instead of files. Checks the user is signed in (a sign-in the user has to do themselves is explained in the result) and that the project accepts queries, and reads only the tables' descriptions: no data is read and nothing is billed. Every later step is metered: each statement is priced with a free dry run first, and what each step read is in its result. Never writes to BigQuery. Use a fresh folder; it cannot be mixed with the user's own files.", connectBigQueryInput, (a) => connectBigQueryTool(cfg, a));
   builder("describe_data", "Look at the data", "Profile every table: columns, types, empty and distinct counts, samples, and suggestions (time columns, flags, measures, places and products, tables that join, columns that nest, one belonging to exactly one of another). Suggestions only: ask the user about anything in 'ask' instead of guessing.", null, () => describeDataTool(cfg), true);

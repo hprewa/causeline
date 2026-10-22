@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { acceptSample, addIncident, buildStatus, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { connectBigQuery } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
@@ -189,6 +189,31 @@ export async function checkDataTool(cfg: ServerConfig, callers: Callers) {
 // drafts, and refuse to call anything done that has not been checked.
 
 export const buildStatusTool = (cfg: ServerConfig) => buildStatus(cfg.packDir);
+
+function needProject(cfg: ServerConfig) {
+  if (cfg.packDir === "") throw new Error("no project is open. Ask the user what to call theirs and call create_project, or call list_projects and open_project.");
+}
+
+/** The prep card: what the person has told us before setup, what is still to ask, and the one thing to ask next. */
+export function setupCardTool(cfg: ServerConfig) {
+  needProject(cfg);
+  const card = readCard(cfg.packDir);
+  const status = cardStatus(card);
+  return {
+    items: status.items,
+    next: status.next || "The prep card is complete.",
+    ...(card?.numbers.length ? { trusted_numbers: card.numbers, note: "These are the user's own figures and are not confirmed checks: offer one back ('you said X for week N from the Y report; shall I use that?') before using it at sign-off." } : {}),
+    ...(card?.incidents.length ? { incidents: card.incidents } : {}),
+  };
+}
+
+/** Record a few answers on the prep card. */
+export function saveSetupCardTool(cfg: ServerConfig, args: CardAnswers) {
+  needProject(cfg);
+  const card = saveCard(cfg.packDir, args ?? {});
+  const status = cardStatus(card);
+  return { saved: true, items: status.items, next: status.next || "The prep card is complete." };
+}
 
 export async function connectFilesTool(cfg: ServerConfig, args: { files: string[] }) {
   if (!Array.isArray(args?.files) || args.files.length === 0) throw new Error("connect_files needs the paths of the user's CSV files");

@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { atLeast, loadAgents, loadPack, type Rung, type StatusChange } from "@causeline/schema";
 import { causelineHome } from "@causeline/runner";
+import { readCard } from "./setup-card.js";
 import { buildStatus, levelGap, levelOf, readState, unconfirmedNumbers } from "./state.js";
 
 /**
@@ -140,6 +141,8 @@ export interface ProjectSummary {
   tracked: boolean;
   /** Where the setup stands, in the Builder's own words. */
   next: string;
+  /** "3 of 8 setup steps done", so a returning person knows where they are. */
+  progress?: string;
   data: { dialect: string; tables: { name: string; rows: number }[] };
   kpis: { kpi: string; type: string; level: Rung; unconfirmed: boolean; gap: string }[];
   experts: { name: string; kpi: string; task: string; status: Rung; unconfirmed_numbers: boolean }[];
@@ -177,6 +180,7 @@ export function projectSummary(folder: string, name?: string): ProjectSummary {
     folder,
     tracked: !!state,
     next: state ? buildStatus(folder).next : kpis.length > 0 ? "Ready for questions. This project was not built here, so its numbers and checks are not tracked." : buildStatus(folder).next,
+    ...(state || readCard(folder) ? { progress: buildStatus(folder).progress } : {}),
     data: { dialect: state?.dialect ?? "sqlite", tables: (state?.tables ?? []).map((t) => ({ name: t.name, rows: t.rows })) },
     kpis,
     experts,
