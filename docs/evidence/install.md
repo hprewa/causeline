@@ -66,3 +66,11 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - macOS was not run. The placeholder icon is plain; it needs a real one.
 - The extension is not signed and not in any directory (the directory no longer takes submissions: people install the file).
 
+## Step 5 (started, not finished): one source for the shell guard
+
+- The shell-command guard is now written once, in `core/mcp-server/src/guard.ts` (with `guard-cli.ts`), and the Claude Code plugin's hook file `clients/claude-code/hooks/guard.mjs` is **built from it** by `npm run bundle:plugin` (it is no longer tracked). This is the groundwork for the Codex installer, whose hook can run the same code (Codex's hooks use the same stdin fields and the same deny answer as Claude Code's, read from its hooks page on 22 October).
+- All unit tests pass (the guard tests now run the TypeScript rules and the compiled command-line entry); purity passes; the plugin bundles.
+- **Not shown:** the bundled `hooks/guard.mjs` was piped one command by hand from PowerShell and answered `{}` (an allow); PowerShell's quoting of the JSON is the likely cause, but I did not confirm it, so the bundled hook is not independently proved to deny.
+
+**Not done in step 5:** the single executable (Node SEA), the `install codex` / `uninstall codex` / `doctor` / `--version` commands and the Codex config, `AGENTS.md`, skills and hook edits, the release workflow for macOS and Linux, and `clients/codex/`. **Not done in step 6:** the analyst guide, clean-machine proof for the executable, and the final regression. Planned in `PROGRESS.md`.
+

@@ -7,8 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..", "..", "..");
-const hook = resolve(repo, "clients", "claude-code", "hooks", "guard.mjs");
-const { check, decision, RULES } = (await import(pathToFileURL(hook).href)) as { check: (c: string) => { blocked: boolean; rule?: string; reason?: string }; decision: (i: unknown) => any; RULES: { id: string }[] };
+const hook = resolve(here, "..", "src", "guard-cli.js");
+const { check, decision, RULES } = (await import(pathToFileURL(resolve(here, "..", "src", "guard.js")).href)) as { check: (c: unknown) => { blocked: boolean; rule?: string; reason?: string }; decision: (i: unknown) => any; RULES: { id: string }[] };
 
 test("commands that reach the data by a side door are blocked, each with the rule that caught it", () => {
   const blocked: [string, string][] = [
@@ -50,7 +50,7 @@ test("ordinary commands, and mentions of these words in text, are not blocked", 
   ]) {
     assert.equal(check(command).blocked, false, command);
   }
-  assert.equal(check(undefined as never).blocked, false);
+  assert.equal(check(undefined).blocked, false);
 });
 
 test("the hook answers in the form Claude Code reads, and stays out of the way of anything it cannot read", () => {

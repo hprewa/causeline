@@ -14,6 +14,7 @@ core/*/dist/
 clients/claude-code/server/
 clients/claude-code/skills/
 clients/claude-code/playbooks/
+clients/claude-code/hooks/guard.mjs
 
 # private planning notes stay out of the repository
 *-PRIORITIES.md

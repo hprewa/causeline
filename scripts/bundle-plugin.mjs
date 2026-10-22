@@ -27,6 +27,9 @@ await build({
   logLevel: "warning",
 });
 
+// the shell-command guard the plugin's hook runs: one source (core/mcp-server/src/guard.ts), bundled into the hook file
+await build({ entryPoints: [resolve("core", "mcp-server", "dist", "src", "guard-cli.js")], bundle: true, platform: "node", format: "esm", target: "node20", outfile: join(plugin, "hooks", "guard.mjs"), logLevel: "warning" });
+
 for (const dir of ["skills", "playbooks"]) {
   rmSync(join(plugin, dir), { recursive: true, force: true });
   mkdirSync(join(plugin, dir), { recursive: true });
