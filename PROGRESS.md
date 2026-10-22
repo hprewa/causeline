@@ -107,7 +107,7 @@ One download to a first answer on Claude Desktop, Codex and Claude Code: no term
 | 3 | The guidance (skills) delivered through the server: `get_guide` | done |
 | 4 | A `.mcpb` file for Claude Desktop | done (not installed in a real Claude Desktop) |
 | 5 | A single executable and a Codex installer | done on Windows (run with no Node; Codex app, macOS and Linux not run) |
-| 6 | The analyst guide, clean-machine proof, regression | not started |
+| 6 | The analyst guide, live run, regression | done (live agent 2/3; BigQuery complaints not re-run; no real Desktop/Codex/macOS) |
 
 ## Projects and the companion page
 

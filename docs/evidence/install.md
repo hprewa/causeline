@@ -87,4 +87,14 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - Windows SmartScreen and macOS Gatekeeper will warn on an unsigned program; signing is not done.
 - The Claude Code plugin's bundled `hooks/guard.mjs` was still not independently shown to deny from the shell (an earlier hand pipe answered `{}` because of quoting, unconfirmed); the program's `guard`, the same code, was shown to deny.
 
-**Not done in step 6:** the analyst guide, a live assistant run through the plugin on a clean home, and the final regression.
+
+## Step 6: the analyst guide, a live assistant run, the regression
+
+- `docs/guides/analyst-install.md`: clicks only for Claude Desktop; for Codex, one run of the installer from the Run box (stated plainly); what the first-run download looks like; a table of "not ready" messages; removal; what has not been tried.
+- **A live Claude Code assistant through the plugin, with `CAUSELINE_HOME` set to an empty temporary folder** (Toolbox found at the repo root, not fetched, so this is not a first-run test): 3 contact-centre questions, runner 3/3, **agent 2/3**. The failure, `range_clean_four_weeks`, called `trend` where the case expects `metric_change`, and stated two numbers (22, 23) that are not in the result: the known Explorer-era reliability weakness, not new. Cost about $0.74 for the three. (A first attempt ran with `--bare`, which needs an API key, and every case reported "Not logged in"; that is a harness setting, not a product fault.)
+- **Regression, all on this Windows machine:** build and all unit tests pass (46, 31, 173, 27, 22, 12, 38, 49, 14, 45 tests in the packages, 0 failures); contact-centre 25/25 (4/4 playbook branches taken); routing 38/38; intents 16/16; integration 8/8; purity and ladder-name guards pass.
+
+**Not shown**
+- **The complaints evals on BigQuery were not re-run** in this step (they need a fresh Google sign-in); nothing in this block touches that path, but it is not re-proved here.
+- The live run was not a clean first run: the data connection software came from the repo root. The first-run fetch is proved separately (steps 2, 4, 5), not together with a live assistant.
+- Everything in the step 5 "not shown" list still stands: no real Claude Desktop or Codex app, no macOS or Linux, unsigned files, placeholder icon.

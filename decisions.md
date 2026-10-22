@@ -331,3 +331,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The hook runs the program's own `guard`.** Why: the same rules as Claude Code from one source, and no Node needed.
 - **The embedded playbooks are written to the Causeline folder at start.** Why: the server reads playbooks from disk; one extraction is simpler than a second code path.
 - **The release workflow is written but not run.** Why: it cannot be run from here; saying so beats pretending the other platforms are built.
+
+### Install path step 6: guide and proof
+- **The guide admits the Codex installer is a command, run from the Run box, and says what has not been tried.** Why: no terminal is true only for Claude Desktop; saying otherwise would send people into a dead end.
+- **The live run's 2/3 is reported as it came.** Why: the miss is the known derived-number weakness; a rerun until it passed would hide it.
