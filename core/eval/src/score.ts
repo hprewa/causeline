@@ -232,8 +232,8 @@ function scoreExplorerAgent(ev: AgentEvidence, expect: Expectation): Score {
   const want = expect.explorer!;
   const explored = ev.explored ?? [];
   const checks: Check[] = [];
-  const calls = ev.toolCalls.filter((t) => /(^|__)explore$/.test(t.name));
-  checks.push({ name: "explore_called", ok: calls.length > 0, detail: calls.length ? `${calls.length} call(s)` : `tools used: ${ev.toolCalls.map((t) => t.name.replace(/^mcp__[^_]*__?/, "")).join(", ") || "none"}` });
+  const uses = ev.toolCalls.filter((t) => /(^|__)explore$/.test(t.name));
+  checks.push({ name: "explore_called", ok: uses.length > 0, detail: uses.length ? `${uses.length} call(s)` : `tools used: ${ev.toolCalls.map((t) => t.name.replace(/^mcp__[^_]*__?/, "")).join(", ") || "none"}` });
   if (want.labelled !== false) checks.push({ name: "says_exploratory", ok: has(ev.narrative, "exploratory"), detail: 'the narrative must say the answer is "exploratory"' });
   if (want.labelled !== false) checks.push({ name: "labelled_by_the_tool", ok: explored.length > 0 && explored.every((e) => e.label === "exploratory"), detail: `${explored.length} answer(s) from the tool` });
   const rows = explored.flatMap((e) => (Array.isArray(e.rows) ? e.rows : []));
