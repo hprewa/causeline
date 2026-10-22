@@ -191,13 +191,13 @@ export async function discoverForKpi(opts: { workspace: string; kpi: string; hin
     for (const tc of description.time.slice(0, 3)) {
       const days = await recentDays(data, tc.table, tc.column);
       const late = typeof days === "string" ? days : lateArrival(days);
-      if (late) risks.push(`${tc.table}: ${late}`);
+      if (late) risks.push(`${tc.table}.${tc.column}: ${late}`);
     }
     const draft = draftSentences(opts.kpi, description);
     const questions = [...description.ask, ...risks.filter((r) => r.includes("?"))];
     return {
       stage: "draft",
-      say: `I looked at ${chosen.length} table${chosen.length === 1 ? "" : "s"} only, not the whole dataset. ${risks.length > 0 ? `${risks.length} thing${risks.length === 1 ? "" : "s"} to check with you.` : "Nothing in the data itself worries me yet."}`,
+      say: `I looked at ${chosen.length} table${chosen.length === 1 ? "" : "s"} only, not the whole dataset. ${questions.length > 0 ? `${questions.length} thing${questions.length === 1 ? "" : "s"} to check with you.` : "Nothing in the data itself worries me yet."}`,
       draft,
       risks,
       questions,

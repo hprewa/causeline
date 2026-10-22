@@ -358,3 +358,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Plain word matching, no model call in the tool.** Why: it can be explained to the person ("its name has complaint"), tested exactly, and costs nothing.
 - **Related tables are offered, not picked.** Why: a lookup of places or products is often needed but never matches the KPI's words; silently adding it would hide a join.
 - **Risks are questions, not fixes.** Why: whether test rows should count or a number is a percent is the person's call; the tool only notices.
+
+### Guided setup step 5: proof
+- **`check_connection` works on a project still being set up and reads `project.dataset`.** Why: the real run showed it failing exactly when a person needs it, and for any data held in another project.
+- **The proof is scripted, and the missing live run is said.** Why: a script plays the model deterministically and shows the tools; it cannot show that the guide makes an assistant use them well.

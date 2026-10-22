@@ -13,7 +13,10 @@ export interface ConnectionCheck {
   advice?: string;
 }
 
-/** Can this computer read the project (and, when given, the dataset)? Stops at the first thing that fails. */
+/**
+ * Can this computer read the project (and, when given, the dataset)? Stops at the first thing that fails. The dataset may be written
+ * `project.dataset` when the data lives in a different project from the one that is billed (a public dataset, a colleague's project).
+ */
 export async function checkConnection(target: BigQueryTarget, dataset?: string): Promise<ConnectionCheck> {
   const steps: ConnectionCheck["steps"] = [];
   const fail = (what: string, e: unknown): ConnectionCheck => {
@@ -31,8 +34,9 @@ export async function checkConnection(target: BigQueryTarget, dataset?: string):
   }
   if (dataset) {
     try {
-      const [exists] = await bq.dataset(dataset).exists();
-      if (!exists) return fail("dataset", new Error(`Not found: Dataset ${dataset}`));
+      const parts = dataset.split(".");
+      const [exists] = await (parts.length === 2 ? bq.dataset(parts[1], { projectId: parts[0] }) : bq.dataset(dataset)).exists();
+      if (!exists) return fail("dataset", new Error(`Not found: Dataset ${dataset.split(".").pop()}`));
       steps.push({ what: "dataset", ok: true, detail: `The dataset ${dataset} exists and can be read.` });
     } catch (e) {
       return fail("dataset", e);

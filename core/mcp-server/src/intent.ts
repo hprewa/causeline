@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { bigQueryProject, checkConnection } from "@causeline/connect-bigquery";
+import { readState } from "@causeline/builder";
 import { canonicalKpi, intentEnv, IntentSession, planRun, validateIntent, type HistoryEntry, type IntentEnv } from "@causeline/intent";
 import { loadPackForRun } from "@causeline/runner";
 import { conceptsOf, IntentPatch, loadAgents, loadPack, statusSentence, type IntentCheck, type Result } from "@causeline/schema";
@@ -134,13 +135,19 @@ export class IntentService {
 
   /** Can this computer read the pack's data? In words. */
   async checkConnection() {
+    // a project still being set up has no saved description yet: check what it was connected with
+    if (!existsSync(join(this.cfg.packDir, "data.yaml"))) {
+      const bq = readState(this.cfg.packDir)?.bigquery;
+      if (!bq) return { ok: false, summary: "Nothing is connected yet, so there is nothing to check.", steps: [] };
+      return checkConnection({ project: bq.project, location: bq.location }, bq.dataset);
+    }
     const pack = loadPack(this.cfg.packDir, { skipMeta: true });
     if (pack.data.dialect !== "bigquery") return { ok: true, summary: "This pack reads a local database; there is nothing to sign in to.", steps: [] };
     const project = bigQueryProject(this.cfg.packDir);
     if (!project) return { ok: false, summary: "No Google Cloud project is set. Set CAUSELINE_BQ_PROJECT to its id.", steps: [] };
     const file = join(this.cfg.packDir, "data.yaml");
     const sql = existsSync(file) ? readFileSync(file, "utf-8") : "";
-    const datasets = [...new Set([...sql.matchAll(/`[\w-]+\.(\w+)\.\w+`/g)].map((m) => m[1]))];
+    const datasets = [...new Set([...sql.matchAll(/`([\w-]+\.\w+)\.\w+`/g)].map((m) => m[1]))];
     const target = { project, location: process.env.CAUSELINE_BQ_LOCATION };
     let last = await checkConnection(target, datasets[0]);
     for (const d of datasets.slice(1)) if (last.ok) last = await checkConnection(target, d);
