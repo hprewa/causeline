@@ -65,3 +65,19 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 - The pages were not opened by a live assistant; the pictures are of the same page code over the stored record of a scripted run.
 - Long explorations (12 steps of 25 rows) were not pictured.
 
+## Step 5: the skill, the guardrail and the README
+
+**What was built**
+- `skills/causeline-explore/SKILL.md`: when to use the Explorer (route says explorer, or a ranking, a breakdown, a list, a figure that is a read rather than a reason), eight rules (every answer says it is exploratory; quote only numbers from `rows`; never write or suggest SQL or read the data another way; no claim about cause; say how far the numbers are trusted; say what was left out; respect the limits; never invent a value for a filter), how to chain the operations, when it is the wrong tool, and "a refusal is an answer". The `causeline-investigate` skill points to it ("a ranking, a breakdown or a list is not a why question") and the server's instructions to the model name it.
+- `clients/claude-code/hooks/guard.mjs` and `hooks.json` (the plugin's `PreToolUse` hook for Bash and PowerShell): a pure matcher that refuses the common side doors to the data, each with the rule that caught it and what to do instead: the BigQuery command line, a database command line (sqlite, duckdb, psql, mysql ...), starting Toolbox by hand, Toolbox's own endpoint, reading a database file, and an inline script that opens a database. Words in quoted text (a commit message that mentions sqlite) are not matched. A hook it cannot read the input of stays out of the way.
+- README: the Explorer in the end-user path.
+
+**Evidence**
+- 4 hook tests: thirteen side-door commands are blocked, each by the expected rule and with the pointer to `explore`; eleven ordinary commands (and mentions of these words in text, a script called `toolbox.mjs`, a directory called `toolbox/`) are not; the answer is in the form Claude Code reads (`permissionDecision: "deny"` with a reason), checked also by running the script as Claude Code does; the plugin registers the hook, and every rule has a case.
+- A test that the explore skill names the tool and each operation, carries the label, forbids SQL and no claim about cause; that every tool it names exists; that the investigate skill and the server's instructions point to it.
+- All unit tests pass in every package; purity and the ladder guard pass.
+
+**Not shown**
+- **The hook is a guardrail, not a boundary**, and says so in its first lines: a determined command can be written that none of the patterns catch. The boundary is that the tools offer no free query and that the person's own database role is read-only. On Claude Desktop and Codex the hook does not apply (the Codex `PreToolUse` equivalent is a packaging step not built).
+- The hook has not been installed into a live Claude Code and tried against a model that is trying to go round the tools (step 6 runs the live assistant, which does not try to).
+

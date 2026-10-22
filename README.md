@@ -50,7 +50,7 @@ You need Node.js, the pinned [MCP Toolbox](https://github.com/googleapis/mcp-too
 with this repo's plugin (`clients/claude-code`, assembled by `npm run bundle:plugin`). After that no Python, YAML or
 command line is needed. Everything you build is saved in a **project** with a name you give it, kept in a `Causeline` folder in your home
 folder (or wherever `CAUSELINE_HOME` points), so you can open it by name from any session or client and it is still there. Opening a
-project works its stored numbers out again and tells you first if the data no longer matches them. Ask the assistant to
+project works its stored numbers out again and tells you first if the data no longer matches them. Questions no expert covers (which team had the lowest figure, a breakdown by site, a top five) are answered by the **Explorer**: fixed reads of your data, one step at a time, never a free query, at most 12 steps and 400 rows a question, and every answer is labelled exploratory (it says what the data shows and nothing about cause). Ask the assistant to
 "open my project page" for a link to a page on your own computer that shows where the project stands, how each kind of question
 is decided step by step, and every answer given so far (it is read-only; your numbers are confirmed on its Sign-off page). Talk:
 

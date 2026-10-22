@@ -187,6 +187,7 @@ const runPlaybookInput =fromJsonSchema<RunArgs>({
 const INSTRUCTIONS = [
   "Causeline answers 'why did this number change?' with a deterministic analysis, and builds that setup from the user's own data.",
   "If the user has data (files, or a BigQuery table) and no working setup yet, or wants to add a KPI or sign one off: follow the causeline-build skill from the start. It is a conversation in plain words; never show the user YAML, SQL or file paths, never write pack files yourself, and use the build tools (connect_files or connect_bigquery, describe_data, test_fact, save_pack, play_back, propose_checks, confirm_number, verify_expert).",
+  "If a setup already exists and the user asks for a ranking, a breakdown, a list or a figure that no expert covers (route says strategy explorer): follow the causeline-explore skill. Everything it says is exploratory, and the data is only ever read through the tools: never write SQL or run a database command.",
   "If a setup already exists and the user asks why a KPI moved: follow the causeline-investigate skill. The causeline-onboard skill is only for checking data and seasonality of an existing pack.",
 ].join("\n");
 

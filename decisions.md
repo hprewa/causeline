@@ -300,4 +300,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **"Worst" and "best" are read through the KPI's own direction.** Why: the worst service level is its lowest and the worst handle time is its highest; guessing one way would rank backwards half the time.
 - **Explorations have their own list and are kept apart from results.** Why: a result is the analysis's checked output; an exploration is a different kind of thing with a different promise, and mixing them in one list would blur the label the person relies on.
 - **The page says how far each KPI read is trusted, in words.** Why: an exploratory ranking of a draft KPI is two steps removed from a verified answer; the person should see that without knowing the ladder's names.
+- **The shell hook is a guardrail and is called one.** Why: a pattern list cannot stop a determined command; saying it is a boundary would be a false promise. The real boundary is that no tool takes a query and the database role is read-only.
+- **Words in quotes are not matched by the hook's command rules.** Why: a commit message that mentions a database must not be blocked; inline scripts, which live in quotes, have their own rule over the whole text.
+- **The skill says a refusal is an answer, and says what to do with it.** Why: a model's habit on a refusal is to try the same thing another way; the skill names that and forbids it.
 

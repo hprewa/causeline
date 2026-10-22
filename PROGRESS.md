@@ -117,7 +117,7 @@ Questions no expert covers, answered from a closed set of fixed read operations,
 | 2 | The `explore` tool over MCP, the stored exploration, real data (SQLite and Toolbox) | done |
 | 3 | Routing: ranking, top-N and breakdown questions go to the Explorer; look-alikes do not | done |
 | 4 | The page: explorations list and detail, next to results | done |
-| 5 | The skill, a guardrail hook for Claude Code, README | not started |
+| 5 | The skill, a guardrail hook for Claude Code, README | done |
 | 6 | Proof: SQLite and BigQuery parity, a live assistant on six questions | not started |
 
 ## Parked from sprint 3 (not done, by decision)
