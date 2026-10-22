@@ -102,7 +102,13 @@ async function save(opts: { workspace: string; ontology: unknown; data: unknown;
   }
   // a metered database: a deep dive runs 15 to 35 queries over the fact (more when a big surge is drilled through several levels), plus up to five more for the contributions step, so the budget for one question is 50 passes of what one pass reads
   let budgetGb = d.data.budget_gb;
-  if (backend.dialect === "bigquery" && budgetGb === undefined && passBytes > 0) {
+  // a limit the person chose beats anything drafted
+  const chosenCap = readState(opts.workspace)?.cost_cap_gb;
+  if (backend.dialect === "bigquery" && chosenCap !== undefined) {
+    budgetGb = chosenCap;
+    rawData.budget_gb = chosenCap;
+    if (passBytes > 0 && (20 * passBytes) / 1e9 > chosenCap) warnings.push(`a deep dive on this data reads about ${Math.round((20 * passBytes) / 1e8) / 10} GB, which is more than the limit you set (${chosenCap} GB): questions may be stopped part-way. Raise the limit, or narrow the view the KPI is counted over.`);
+  } else if (backend.dialect === "bigquery" && budgetGb === undefined && passBytes > 0) {
     budgetGb = Math.max(5, Math.ceil((50 * passBytes) / 1e9));
     rawData.budget_gb = budgetGb;
     warnings.push(`a deep dive on this data reads about ${Math.round((20 * passBytes) / 1e8) / 10} GB (about $${(Math.round((20 * passBytes * 6.25) / 2 ** 40 * 100) / 100).toFixed(2)} at list price); the limit for one question is set to ${budgetGb} GB`);

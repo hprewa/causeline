@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
-import { connectBigQuery } from "@causeline/connect-bigquery";
+import { costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
 import { defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
@@ -225,7 +225,37 @@ export async function connectBigQueryTool(cfg: ServerConfig, args: { table?: str
   return { ...result, next: result.connected ? "Call describe_data to look at the tables (it reads a little, and says how much), then describe the business as for files." : "Fix that and connect again." };
 }
 
-export const describeDataTool = (cfg: ServerConfig) => describeData(cfg.packDir);
+/**
+ * Looking at the data. On BigQuery, when it could read more than 1 GB, the person is told first (from the tables' free metadata) and
+ * nothing is read until they say go ahead.
+ */
+export async function describeDataTool(cfg: ServerConfig, args?: { go_ahead?: boolean }) {
+  needProject(cfg);
+  if (readState(cfg.packDir)?.dialect === "bigquery" && !args?.go_ahead) {
+    const data = await openData(cfg.packDir);
+    try {
+      const est = setupReadEstimate((await data.tables()).map((t) => t.bytes), budgetBytes());
+      if (est.needs_go_ahead) return { needs_go_ahead: true, say: est.say, next: "Tell the user this in plain words. If they agree, call describe_data again with go_ahead set to true; if not, narrow what is connected (one table instead of a dataset)." };
+    } finally {
+      await data.close();
+    }
+  }
+  return describeData(cfg.packDir);
+}
+
+/** What one question may read, set in money or GB and read back in both; with nothing given, what is in force. */
+export function costCapTool(cfg: ServerConfig, args?: { dollars?: number; gb?: number; no_limit?: boolean }) {
+  needProject(cfg);
+  const set = [args?.dollars, args?.gb, args?.no_limit ? 0 : undefined].filter((x) => x !== undefined);
+  if (set.length > 1) throw new Error("give one of dollars, gb or no_limit");
+  if (set.length === 1) {
+    const gb = args!.no_limit ? 0 : args!.gb !== undefined ? args!.gb : capGbFromDollars(args!.dollars!);
+    const r = setCostCap(cfg.packDir, gb);
+    return { saved: true, say: sayCap(gb), ...(r.saved_in_pack ? {} : { note: "It is kept and applied when the business description is saved." }) };
+  }
+  const chosen = costCap(cfg.packDir);
+  return { say: sayCap(chosen ?? defaultCapGb(), chosen === undefined ? "default" : "chosen") };
+}
 
 export async function testFactTool(cfg: ServerConfig, args: { sql: string; time?: string; concepts?: string[] }) {
   return testFact({ workspace: cfg.packDir, sql: args.sql, time: args.time, concepts: args.concepts });

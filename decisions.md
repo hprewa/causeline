@@ -341,3 +341,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The card's numbers are the person's figures, not checks.** Why: the ladder counts only numbers confirmed at sign-off against a named source; the card saves asking twice, it does not lower the bar.
 - **A card holds three numbers; a fourth is refused.** Why: three is what the first rung asks for; more can come at sign-off.
 - **Progress is "N of M setup steps done" in the build status.** Why: a person returning in another client needs one line, not a checklist.
+
+### Guided setup step 2: cost caps
+- **The person's limit beats any drafted one and survives a re-save.** Why: a number they chose must not be quietly replaced by a guess from the data size.
+- **Looking at big data asks first, from table metadata, and reads nothing until told.** Why: the estimate is free and exact enough; a surprise bill on the first step is what ends trust.
+- **The worst case shown is the smaller of the tables' total and the setup budget.** Why: big tables are sampled, so the table size alone would scare people off for no reason.
+- **Money is list price with the free terabyte ignored.** Why: an upper figure is safe to say; the free tier depends on the account.

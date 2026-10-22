@@ -83,6 +83,8 @@ export interface BuildState {
   dialect?: "sqlite" | "bigquery";
   /** For BigQuery: the project queries are billed to, where the data is, and the dataset when one was given. */
   bigquery?: { project: string; location: string; dataset?: string };
+  /** The most one question may read, in GB, as the person chose it (BigQuery); absent means the standard limit. */
+  cost_cap_gb?: number;
   tables: { name: string; file: string; rows: number; columns: number; notes: string[] }[];
   profiled: boolean;
   /** Per KPI: its checks and where it stands on the ladder (draft, reconciled, calibrated, verified). */
