@@ -95,6 +95,9 @@ Aim: an analyst who is not a coder gets from a download to a first answer on Cla
 - **Regression, all on this Windows machine:** build and all unit tests pass (46, 31, 173, 27, 22, 12, 38, 49, 14, 45 tests in the packages, 0 failures); contact-centre 25/25 (4/4 playbook branches taken); routing 38/38; intents 16/16; integration 8/8; purity and ladder-name guards pass.
 
 **Not shown**
-- **The complaints evals on BigQuery were not re-run** in this step (they need a fresh Google sign-in); nothing in this block touches that path, but it is not re-proved here.
+- The complaints evals on BigQuery were re-run afterwards (below).
 - The live run was not a clean first run: the data connection software came from the repo root. The first-run fetch is proved separately (steps 2, 4, 5), not together with a live assistant.
 - Everything in the step 5 "not shown" list still stands: no real Claude Desktop or Codex app, no macOS or Linux, unsigned files, placeholder icon.
+
+### Complaints on BigQuery, re-run after the install path
+`CAUSELINE_BQ_PROJECT=yukti-dev`, runner level (no live agent): **7/7**, 3/3 `metric_change` branches taken (one not applicable to this pack). Slowest case 110 s. A first attempt without the project variable failed at once with the data connection's own message about the missing variable; that is configuration, not a fault.
