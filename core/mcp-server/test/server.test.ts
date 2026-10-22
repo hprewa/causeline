@@ -67,7 +67,7 @@ after(async () => {
 
 test("exposes exactly the causeline-mcp tools, with read-only hints where they apply", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "check_setup", "confirm_number", "connect_bigquery", "connect_files", "cost_limit", "create_project", "describe_data", "explore", "generate_tools", "get_guide", "get_intent", "list_playbooks", "list_projects", "open_project", "open_project_page", "open_signoff", "play_back", "project_summary", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "save_setup_card", "scan_kpis", "set_intent", "setup_card", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["accept_sample", "access_help", "add_incident", "analyze_seasonality", "build_status", "check_connection", "check_data", "check_setup", "confirm_number", "connect_bigquery", "connect_files", "cost_limit", "create_project", "describe_data", "explore", "generate_tools", "get_guide", "get_intent", "list_playbooks", "list_projects", "open_project", "open_project_page", "open_signoff", "play_back", "project_summary", "propose_checks", "recall", "reconcile_metric", "route", "run_checks", "run_intent", "run_playbook", "save_pack", "save_setup_card", "scan_kpis", "set_intent", "setup_card", "signoff_status", "start_over", "test_fact", "validate_pack", "verify_expert"]);
   const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
   assert.equal(byName.list_playbooks.annotations?.readOnlyHint, true);
   assert.equal(byName.generate_tools.annotations?.readOnlyHint, false);
@@ -210,4 +210,14 @@ test("setup_card and save_setup_card keep the prep card in the open project and 
   assert.equal(again.structuredContent.trusted_numbers[0].value, 410);
   assert.match(again.structuredContent.note, /not confirmed checks/);
   assert.equal((await call(client, "build_status")).structuredContent.steps[0].step, "prep card");
+});
+
+test("access_help writes the message to the administrator for a given project, and asks for the project when there is none", async () => {
+  const none = await call(client, "access_help");
+  assert.equal(none.isError, true);
+  assert.match(none.content[0].text, /billed to/);
+  const ok = await call(client, "access_help", { project: "my-billing", dataset: "d1", problem: "cannot_read_data" });
+  assert.equal(ok.isError, undefined);
+  assert.deepEqual(ok.structuredContent.needs.map((n: any) => n.id), ["roles/bigquery.dataViewer"]);
+  assert.match(ok.structuredContent.message, /on the dataset d1/);
 });

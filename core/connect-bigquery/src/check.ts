@@ -1,5 +1,6 @@
 import { BigQuery } from "@google-cloud/bigquery";
-import { explainBigQueryError } from "./explain.js";
+import { classifyBigQueryError, explainBigQueryError, type AccessProblem } from "./explain.js";
+import { accessAdvice } from "./access.js";
 import type { BigQueryTarget } from "./dryrun.js";
 
 export interface ConnectionCheck {
@@ -7,6 +8,9 @@ export interface ConnectionCheck {
   steps: { what: string; ok: boolean; detail: string }[];
   /** One plain sentence: what is wrong and what to do, or that all is well. */
   summary: string;
+  /** When it failed: which kind of problem, and what to do about it. */
+  problem?: AccessProblem;
+  advice?: string;
 }
 
 /** Can this computer read the project (and, when given, the dataset)? Stops at the first thing that fails. */
@@ -15,7 +19,8 @@ export async function checkConnection(target: BigQueryTarget, dataset?: string):
   const fail = (what: string, e: unknown): ConnectionCheck => {
     const detail = explainBigQueryError(e);
     steps.push({ what, ok: false, detail });
-    return { ok: false, steps, summary: detail };
+    const problem = classifyBigQueryError(e);
+    return { ok: false, steps, summary: detail, problem, advice: accessAdvice(problem) };
   };
   const bq = new BigQuery({ projectId: target.project, location: target.location ?? "US" });
   try {

@@ -10,7 +10,8 @@ import { INSTRUCTIONS } from "./instructions.js";
 import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import type { CardAnswers } from "@causeline/builder";
-import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, costCapTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import type { AccessProblem } from "@causeline/connect-bigquery";
+import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, costCapTool, accessHelpTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -66,6 +67,14 @@ const costCapInput = fromJsonSchema<{ dollars?: number; gb?: number; no_limit?: 
     dollars: { type: "number", description: "The most, in dollars, one question may cost to read (list price)." },
     gb: { type: "number", description: "The most, in GB, one question may read." },
     no_limit: { type: "boolean", description: "True only when the user says they want no limit." },
+  }),
+);
+const accessHelpInput = fromJsonSchema<{ project?: string; dataset?: string; account?: string; problem?: AccessProblem }>(
+  obj({
+    project: { type: "string", description: "The Google Cloud project their queries are billed to; defaults to the open project's." },
+    dataset: { type: "string", description: "The dataset to be read, as project.dataset or dataset." },
+    account: { type: "string", description: "The Google account that signs in, if they know it." },
+    problem: { type: "string", enum: ["cannot_run_queries", "cannot_read_data", "no_permission"], description: "From check_connection's problem, to ask for only the role that is missing." },
   }),
 );
 const connectInput = fromJsonSchema<{ files: string[] }>(obj({ files: { type: "array", items: { type: "string" }, description: "Full paths of the user's CSV files." } }, ["files"]));
@@ -318,6 +327,7 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("connect_files", "Connect the user's files", "Load the user's CSV files into a local database (one table per file; types come from the data; dates become ISO text). Nothing leaves this machine. Report what it did and any note it returns (renamed columns, dates it could not read) to the user in plain words.", connectInput, (a) => connectFilesTool(cfg, a));
   builder("connect_bigquery", "Connect a BigQuery table", "Connect this folder to a BigQuery table or dataset instead of files. Checks the user is signed in (a sign-in the user has to do themselves is explained in the result) and that the project accepts queries, and reads only the tables' descriptions: no data is read and nothing is billed. Every later step is metered: each statement is priced with a free dry run first, and what each step read is in its result. Never writes to BigQuery. Use a fresh folder; it cannot be mixed with the user's own files.", connectBigQueryInput, (a) => connectBigQueryTool(cfg, a));
   builder("describe_data", "Look at the data", "Profile every table: columns, types, empty and distinct counts, samples, and suggestions (time columns, flags, measures, places and products, tables that join, columns that nest, one belonging to exactly one of another). Suggestions only: ask the user about anything in 'ask' instead of guessing. On BigQuery, when looking could read more than 1 GB it first returns needs_go_ahead with the cost in plain words and reads nothing: tell the user and call again with go_ahead true only if they agree.", goAheadInput, (a) => describeDataTool(cfg, a), true);
+  builder("access_help", "A message to whoever looks after the data", "When the user cannot read their data (check_connection says no permission, cannot read or cannot run queries) or has not asked for access yet: writes a ready-to-send message to their administrator naming the exact read-only roles (BigQuery Data Viewer on the dataset, BigQuery Job User on the billing project), what the access allows and does not, and the cost limit. Show it to the user to adjust and send themselves.", accessHelpInput, (a) => accessHelpTool(cfg, a), true);
   builder("cost_limit", "What one question may read", "Set or read the most one question may read from BigQuery, in the user's terms: give dollars ('about $1'), gb, or no_limit. With nothing given it says the limit in force, in plain words. Say the result to the user as it is returned; do not do the money sums yourself.", costCapInput, (a) => costCapTool(cfg, a));
   builder("test_fact", "Try a draft SELECT", "Run a draft fact SELECT (one row per event, every column named, joins allowed) against the user's data and see its columns, a sample and the row count. Read-only: anything but a single SELECT is refused. Use it before save_pack.", testFactInput, (a) => testFactTool(cfg, a), true);
   builder("save_pack", "Save the business description", "Check the draft ontology and data definition (shape, how the parts fit, that every SELECT and formula runs on the user's data) and only then write the pack files and generate the query tools. Returns plain-words errors and nothing is written while there are any. Experts are saved as drafts. Never show the user YAML or SQL; use play_back.", saveInput, (a) => savePackTool(cfg, a));

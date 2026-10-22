@@ -21,3 +21,12 @@ Evidence for each piece, written as it is done. Plan: prep card and resumable se
 - Tested: 3 cost tests (wording, dollars to GB, the go-ahead rule including unknown sizes), 2 limit tests (kept in record and yaml with comments, refusals); the exact tool list test updated. Build, unit tests and purity pass.
 
 **Not shown:** `describe_data`'s go-ahead and `cost_limit` have not been run against real BigQuery or by a live assistant yet (piece 5); `check_setup` does not yet show the limit in force; "about 100 cents" style rounding is fixed but money for very large reads is shown to two decimals only; the free tier is ignored.
+
+## Piece 3: the message to your administrator, and clearer sign-in
+
+- `classifyBigQueryError` tells Google's errors apart by what to do: not signed in, expired, **cannot run queries** (the billing project lacks the right to create jobs), **cannot read the data** (the dataset lacks read), other permission, project / dataset / table not found, billing. `check_connection` now returns `problem` and `advice` when it fails. The older plain sentences keep their words; an expiry now says that some organisations require signing in every few days and that this is Google's policy.
+- `access_help` writes a message the person can send as it is: the two roles (BigQuery Data Viewer on the dataset, BigQuery Job User on the billing project), the project and dataset, the account, what the access allows (reads and runs queries; nothing can be written, changed or deleted), the cost limit in force, and how it will be checked. Given a problem it asks only for the role that is missing. It never mentions scopes or tokens.
+- `docs/guides/analyst-sign-in.md`: what to ask for, what each message means, and an honest account of the analyst sign-in route that is **not built**.
+- Tested: 4 tests of the classification, the advice, the message and the single-role cases, 1 through the server tool. All unit tests pass.
+
+**Not shown:** the classification is from error text and Google can word these differently; the real wording of a denied dataset read and a denied job were taken from the usual messages, not provoked on a real project; the roles named are what Google's documentation and the earlier access spike say, and were not tried against a restricted account; the OAuth-client sign-in for people without a terminal is documented as the plan, not built; no administrator has received the message.

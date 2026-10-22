@@ -347,3 +347,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Looking at big data asks first, from table metadata, and reads nothing until told.** Why: the estimate is free and exact enough; a surprise bill on the first step is what ends trust.
 - **The worst case shown is the smaller of the tables' total and the setup budget.** Why: big tables are sampled, so the table size alone would scare people off for no reason.
 - **Money is list price with the free terabyte ignored.** Why: an upper figure is safe to say; the free tier depends on the account.
+
+### Guided setup step 3: access
+- **Two roles are named, split by what fails.** Why: a refusal to run queries and a refusal to read are fixed on different resources; asking for one broad role would be both riskier and wrong.
+- **The message never mentions scopes.** Why: read-only comes from the role; naming scopes invites an administrator to approve something broader.
+- **The analyst sign-in without a terminal is documented, not built.** Why: it needs a real Google Cloud console to build and prove; claiming it would be a fiction.

@@ -1,3 +1,26 @@
+/** What is wrong with getting at the data, so the right help can be given. */
+export type AccessProblem = "not_signed_in" | "expired" | "cannot_run_queries" | "cannot_read_data" | "no_permission" | "project_not_found" | "dataset_missing" | "table_missing" | "billing" | "other";
+
+/**
+ * Which kind of problem a Google error is. A refusal to run queries (the billing project lacks the right to create jobs) is told apart from
+ * a refusal to read the data (the dataset lacks the right to read), because they are fixed by different roles.
+ */
+export function classifyBigQueryError(e: unknown): AccessProblem {
+  const text = (e instanceof Error ? e.message : String(e)).toLowerCase();
+  if (text.includes("invalid_grant") || text.includes("reauth") || text.includes("invalid_rapt") || text.includes("token has been expired")) return "expired";
+  if (text.includes("default credentials")) return "not_signed_in";
+  if (text.includes("not found: dataset") || (text.includes("dataset") && text.includes("not found"))) return "dataset_missing";
+  if (text.includes("not found: table") || (text.includes("table") && text.includes("not found"))) return "table_missing";
+  if (text.includes("access denied") || text.includes("permission") || text.includes("403")) {
+    if (text.includes("jobs.create") || text.includes("bigquery.jobs")) return "cannot_run_queries";
+    if (text.includes("tables.getdata") || text.includes("tables.get") || text.includes("datasets.get") || text.includes("tables.list")) return "cannot_read_data";
+    return "no_permission";
+  }
+  if (text.includes("billing") || text.includes("quota")) return "billing";
+  if (text.includes("project") && (text.includes("not found") || text.includes("invalid"))) return "project_not_found";
+  return "other";
+}
+
 /**
  * Turns what Google's libraries throw into a sentence a person can act on. The raw message is kept after the
  * sentence for anyone who needs it.
@@ -7,7 +30,7 @@ export function explainBigQueryError(e: unknown): string {
   const text = raw.toLowerCase();
   const withRaw = (sentence: string) => `${sentence} (${raw.split("\n")[0].slice(0, 200)})`;
   if (text.includes("invalid_grant") || text.includes("reauth") || text.includes("token has been expired")) {
-    return withRaw("Your Google sign-in has expired. Sign in again, then retry.");
+    return withRaw("Your Google sign-in has expired. Sign in again, then retry. Some organisations make everyone sign in again every few days; that is Google's policy, not a fault here.");
   }
   if (text.includes("default credentials")) {
     return withRaw("No Google sign-in was found on this computer. Sign in with Google first.");

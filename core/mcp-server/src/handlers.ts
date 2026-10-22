@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
 import { costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
-import { budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
+import { accessMessage, bigQueryProject, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
 import { defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
@@ -299,4 +299,15 @@ export const signoffStatusTool = (cfg: ServerConfig, args: { kpi?: string } = {}
 
 export async function runChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string }) {
   return runChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller() });
+}
+
+/** The message to send to whoever looks after the data, with the exact roles, for the open project (or the project and dataset given). */
+export function accessHelpTool(cfg: ServerConfig, args?: { project?: string; dataset?: string; account?: string; problem?: AccessProblem }) {
+  needProject(cfg);
+  const bq = readState(cfg.packDir)?.bigquery;
+  const project = args?.project?.trim() || bq?.project || bigQueryProject(cfg.packDir) || "";
+  if (!project) throw new Error("ask the user for the Google Cloud project their queries are billed to (their own), then call this again with it");
+  const cap = costCap(cfg.packDir);
+  const m = accessMessage({ project, dataset: args?.dataset ?? bq?.dataset, account: args?.account, problem: args?.problem, ...(cap !== undefined && cap > 0 ? { cap_gb: cap } : {}) });
+  return { ...m, next: "Show the user the message and offer to adjust it. They send it themselves; you cannot. Afterwards, call check_connection to see if it worked." };
 }
