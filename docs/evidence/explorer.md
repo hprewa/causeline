@@ -50,3 +50,18 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 - The shape is read from words: a ranking asked in other words ("what is the busiest ...", "who is doing worst") is only caught when it uses one of the listed words and names a concept. A question that misses goes where it went before (an expert's value answer), not to a wrong place.
 - Only the contact-centre pack has routing cases for this; the complaints pack has no routing eval.
 
+## Step 4: the page for explorations
+
+**What was built**
+- The local pages gain **Explorations** (in the menu, after "How it decides"): a list newest first (the question, how many steps, how many requests were refused, whether it stopped at its limit) and one page per exploration: an "Exploratory" banner with the sentence about itself, the KPIs read with how far each is trusted in words ("not yet checked against your reports" for a draft), then every step (what was asked, the sentence, the rows as a table, how many were found and shown, notes, a refusal with its reason and what to do instead, queries and data read), the budget used, and why it stopped.
+- Same rules as the other pages: built on the server with every value escaped, no script, no form, no button, a policy that allows none; only a plain exploration file name inside the project's results folder is read; a file that is not a valid exploration is not listed and not opened. Explorations are not mixed into the Results list.
+
+**Evidence**
+- 2 new tests over HTTP (23 in the package): the list and the page show the question with its markup escaped, the refusal count, the trust in the KPI read, numbers to four places, "5 found; 1 shown", the notes, the refusal (reason and alternative), the budget used and a hostile value shown as text; a file that is not an exploration is not listed; seven path tricks (`..%2F`, encoded dots, a result file, a bad file, a missing file, a slash inside the name) all say "cannot be shown" and never return the file outside the folder. The earlier "no script, no form, no button" test now covers the two new pages.
+- Pictures in a real browser, light and dark, of a real exploration made by the previous step's run (the planted-fault data): `docs/evidence/explorer/`. Looking at them found one wording bug (the banner said "This comes from it comes from"), fixed.
+- All unit tests pass in every package; purity passes.
+
+**Not shown**
+- The pages were not opened by a live assistant; the pictures are of the same page code over the stored record of a scripted run.
+- Long explorations (12 steps of 25 rows) were not pictured.
+

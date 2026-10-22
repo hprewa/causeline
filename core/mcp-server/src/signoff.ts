@@ -8,8 +8,8 @@ import { loadPack } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 import type { Callers } from "./handlers.js";
 import { signoffPage } from "./signoff-page.js";
-import { homeBody, playbookBody, playbooksBody, resultBody, resultsBody, shell, type Section } from "./companion-pages.js";
-import { listResults, playbookView, readResult } from "./companion-data.js";
+import { explorationBody, explorationsBody, homeBody, playbookBody, playbooksBody, resultBody, resultsBody, shell, type Section } from "./companion-pages.js";
+import { listExplorations, listResults, playbookView, readExploration, readResult } from "./companion-data.js";
 import { allPlaybooks } from "./handlers.js";
 import { openProjectName } from "./projects.js";
 
@@ -155,6 +155,12 @@ export class SignoffScreen {
         if (tail.length === 0) return page("How it decides", "playbooks", playbooksBody(books, base));
         const one = books.find((b) => b.name === decodeURIComponent(name));
         return page(one ? one.name : "Not found", "playbooks", one ? playbookBody(one, base) : `<h1>No such playbook</h1><p><a href="${base}playbooks">All playbooks</a></p>`);
+      }
+      if (section === "explorations") {
+        if (tail.length === 0) return page("Explorations", "explorations", explorationsBody(listExplorations(this.cfg.runsDir), base));
+        const file = decodeURIComponent(name);
+        const e = readExploration(this.cfg.runsDir, file);
+        return page("Exploration", "explorations", e ? explorationBody(e, file, base) : `<h1>That exploration cannot be shown</h1><p class="lede">It is not in this project's results, or it was made by another version.</p><p><a href="${base}explorations">All explorations</a></p>`);
       }
       if (section === "results") {
         if (tail.length === 0) return page("Results", "results", resultsBody(listResults(this.cfg.runsDir), base));

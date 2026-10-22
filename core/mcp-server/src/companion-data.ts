@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { FACTS, stepWords } from "@causeline/runner";
-import { Result, type Playbook, type Target } from "@causeline/schema";
-import type { PlaybookView, ResultItem } from "./companion-pages.js";
+import { Exploration, Result, type Playbook, type Target } from "@causeline/schema";
+import type { ExplorationItem, PlaybookView, ResultItem } from "./companion-pages.js";
 
 const label = (p: Playbook, id: string) => {
   const s = p.steps.find((x) => x.id === id);
@@ -36,6 +36,7 @@ export function playbookView(p: Playbook, source: "pack" | "core"): PlaybookView
 }
 
 const FILE_NAME = /^[A-Za-z0-9._-]+\.json$/;
+const EXPLORATION_FILE = /^exploration-[A-Za-z0-9._-]+\.json$/;
 
 /** The latest answers kept for the project (newest first). Reads only what the run itself wrote. */
 export function listResults(runsDir: string, limit = 40): ResultItem[] {
@@ -67,3 +68,32 @@ export function readResult(runsDir: string, file: string): Result | null {
     return null;
   }
 }
+
+/** The explorations kept for the project (newest first). */
+export function listExplorations(runsDir: string, limit = 40): ExplorationItem[] {
+  if (!runsDir || !existsSync(runsDir)) return [];
+  return readdirSync(runsDir)
+    .filter((f) => EXPLORATION_FILE.test(f))
+    .map((f) => ({ f, at: statSync(join(runsDir, f)).mtime.toISOString() }))
+    .sort((a, b) => b.at.localeCompare(a.at) || b.f.localeCompare(a.f))
+    .slice(0, limit)
+    .flatMap(({ f, at }) => {
+      try {
+        const e = Exploration.parse(JSON.parse(readFileSync(join(runsDir, f), "utf-8")));
+        return [{ file: f, at, question: e.question, steps: e.steps.length, refused: e.steps.filter((s) => s.refusal).length, stopped: !!e.stopped }];
+      } catch {
+        return [];
+      }
+    });
+}
+
+/** One kept exploration, by the name it was listed under (a plain exploration file name inside the results folder only). */
+export function readExploration(runsDir: string, file: string): Exploration | null {
+  if (!EXPLORATION_FILE.test(file) || !runsDir || !existsSync(join(runsDir, file))) return null;
+  try {
+    return Exploration.parse(JSON.parse(readFileSync(join(runsDir, file), "utf-8")));
+  } catch {
+    return null;
+  }
+}
+

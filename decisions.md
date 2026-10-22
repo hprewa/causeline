@@ -298,4 +298,6 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Values are rounded to six decimals in the answer.** Why: the answer is read by people and quoted by a model; the tests compare to that precision.
 - **Routing to the Explorer is a hint, and only for a question an expert does not cover.** Why: a wrong route to an expert is caught by its checks; a wrong route to the Explorer would hide an expert's better answer. So a why question, a comparison and a trend are never taken.
 - **"Worst" and "best" are read through the KPI's own direction.** Why: the worst service level is its lowest and the worst handle time is its highest; guessing one way would rank backwards half the time.
+- **Explorations have their own list and are kept apart from results.** Why: a result is the analysis's checked output; an exploration is a different kind of thing with a different promise, and mixing them in one list would blur the label the person relies on.
+- **The page says how far each KPI read is trusted, in words.** Why: an exploratory ranking of a draft KPI is two steps removed from a verified answer; the person should see that without knowing the ladder's names.
 

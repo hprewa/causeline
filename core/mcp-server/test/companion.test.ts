@@ -46,6 +46,21 @@ before(async () => {
   writeFileSync(join(dir, "runs", "2026-02-02T10-00-00-000Z-metric_change-ok_rate.json"), JSON.stringify(Result.parse({ playbook: "metric_change", inputs: { metric: "ok_rate" }, status: "stopped", headline: null, stopped_reason: "data_still_arriving", stopped_detail: "the newest weeks hold little", generator })));
   utimesSync(join(dir, "runs", "2026-02-01T10-00-00-000Z-metric_change-ok_rate.json"), new Date("2026-02-01T10:00:00Z"), new Date("2026-02-01T10:00:00Z"));
   utimesSync(join(dir, "runs", "2026-02-02T10-00-00-000Z-metric_change-ok_rate.json"), new Date("2026-02-02T10:00:00Z"), new Date("2026-02-02T10:00:00Z"));
+  const exploration = {
+    id: "2026-02-03T10-00-00-000Z",
+    question: "Which <b>team</b> was worst?",
+    started: "2026-02-03T10:00:00Z",
+    label: "exploratory",
+    kpis: [{ kpi: "ok_rate", rung: "draft" }],
+    steps: [
+      { n: 1, op: "rank", asked: "lowest 3 place by ok_rate, 2026-W03", args: {}, says: "The 2 place values with the lowest ok rate.", columns: ["rank", "node", "value", "volume"], rows: [{ rank: 1, node: "<script>alert(1)</script>", value: 0.3333333, volume: 40 }], rows_total: 5, notes: ["1 place value had under 10 rows."], queries: 2, ms: 5 },
+      { n: 2, op: "cannot", asked: "a request that cannot be carried out", args: {}, says: "Free-form queries are not available.", columns: [], rows: [], rows_total: 0, notes: [], refusal: { code: "free_sql", reason: "Free-form queries are not available.", instead: "Add it as a KPI with the Builder." }, queries: 0, ms: 0 },
+    ],
+    budget: { steps: 1, max_steps: 12, rows: 1, max_rows: 400 },
+    stopped: null,
+  };
+  writeFileSync(join(dir, "runs", "exploration-2026-02-03T10-00-00-000Z.json"), JSON.stringify(exploration));
+  writeFileSync(join(dir, "runs", "exploration-bad.json"), JSON.stringify({ nonsense: true }));
   writeFileSync(join(dir, "secret.json"), JSON.stringify({ secret: "do not show" }));
   screen = new SignoffScreen(cfg(), { caller: async () => new SqliteToolCaller(join(dir, "ws")) });
   const url = new URL(await screen.address());
@@ -82,7 +97,7 @@ test("the overview shows the KPIs and how far each is trusted, the experts, and 
 });
 
 test("the read-only pages hold no script, no form and no button, and the policy allows none", async () => {
-  for (const path of ["home", "playbooks", "playbooks/metric_change", "results", "results/2026-02-01T10-00-00-000Z-metric_change-ok_rate.json"]) {
+  for (const path of ["home", "playbooks", "playbooks/metric_change", "explorations", "explorations/exploration-2026-02-03T10-00-00-000Z.json", "results", "results/2026-02-01T10-00-00-000Z-metric_change-ok_rate.json"]) {
     const page = await get(`${root}${path}`);
     assert.equal(page.status, 200, path);
     assert.doesNotMatch(page.text, /<script|<form|<button|<input|onclick=/i, path);
@@ -96,7 +111,7 @@ test("the read-only pages hold no script, no form and no button, and the policy 
 test("the sign-off page is the same site: it carries the menu, and the menu reaches every page", async () => {
   const page = await get(root);
   assert.match(page.text, /aria-current="page">Sign-off/);
-  for (const label of ["Overview", "How it decides", "Results"]) assert.match(page.text, new RegExp(`>${label}</a>`));
+  for (const label of ["Overview", "How it decides", "Explorations", "Results"]) assert.match(page.text, new RegExp(`>${label}</a>`));
   assert.match(page.text, new RegExp(`href="${root}playbooks"`));
 });
 
@@ -138,3 +153,34 @@ test("escaping covers the five characters that can break out of markup", () => {
   assert.equal(esc(`<a href="x" onclick='y'>&`), "&lt;a href=&quot;x&quot; onclick=&#39;y&#39;&gt;&amp;");
   assert.match(homeBody({ name: "<b>x</b>", folder: "", next: "<i>", tracked: true, data: { dialect: "sqlite", tables: [] }, kpis: [], experts: [], incidents: 0, recent_changes: [] }), /&lt;b&gt;x&lt;\/b&gt;/);
 });
+
+test("explorations: listed with their question, opened by name, labelled exploratory, with every step, its rows, its refusal and its budget, escaped", async () => {
+  const list = await get(`${root}explorations`);
+  assert.equal(list.status, 200);
+  assert.match(list.text, /Which &lt;b&gt;team&lt;\/b&gt; was worst\?/);
+  assert.match(list.text, /1 request refused/);
+  assert.doesNotMatch(list.text, /exploration-bad|nonsense/, "a file that is not an exploration is not listed");
+  assert.doesNotMatch((await get(`${root}results`)).text, /Which &lt;b&gt;team/, "explorations are not mixed into the results");
+  const one = await get(`${root}explorations/exploration-2026-02-03T10-00-00-000Z.json`);
+  assert.match(one.text, /class="banner"><b>Exploratory\.<\/b>/);
+  assert.match(one.text, /no claim about cause/);
+  assert.match(one.text, /ok rate \(not yet checked against your reports\)/, "the trust in the KPI read is said");
+  assert.match(one.text, /Step 1/);
+  assert.match(one.text, /<td class="n">0\.3333<\/td>/, "numbers are shown to four places");
+  assert.match(one.text, /5 found; 1 shown/);
+  assert.match(one.text, /1 place value had under 10 rows/);
+  assert.match(one.text, /<b>Not done:<\/b> Free-form queries are not available\. <b>Instead:<\/b> Add it as a KPI with the Builder\./);
+  assert.match(one.text, /Used 1 of 12 steps and 1 of 400 rows/);
+  assert.match(one.text, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(one.text, /<script>alert|<b>team/);
+});
+
+test("explorations: only an exploration file inside the results folder is read", async () => {
+  for (const bad of ["..%2Fsecret.json", "%2e%2e%2fsecret.json", "secret.json", "2026-02-01T10-00-00-000Z-metric_change-ok_rate.json", "exploration-bad.json", "exploration-nope.json", "exploration-..%2Fsecret.json"]) {
+    const page = await get(`${root}explorations/${bad}`);
+    assert.equal(page.status, 200);
+    assert.match(page.text, /cannot be shown/, bad);
+    assert.doesNotMatch(page.text, /do not show/, bad);
+  }
+});
+
