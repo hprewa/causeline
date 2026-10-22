@@ -69,5 +69,5 @@ Aim: whatever the person builds is saved in a **project** they can open by name 
 - No live assistant was run through the project flow (create a project, build into it, close, open it again by name, ask for the page), and the plugin was not reinstalled into Claude Desktop or Codex: those are the spikes' packagings and are not built.
 
 ## Run after the whole block
-With a freshly bundled plugin: scripted end-to-end tests **7/7**, contact-centre eval **25/25** with all 4 playbook branches taken, routing **27/27**, intents **16/16**. (Two earlier attempts were cut off because the machine ran out of memory.) The complaints eval on BigQuery was not re-run after this block.
+With a freshly bundled plugin: scripted end-to-end tests **7/7**, contact-centre eval **25/25** with all 4 playbook branches taken, routing **27/27**, intents **16/16**. (Two earlier attempts were cut off because the machine ran out of memory.) The complaints eval on BigQuery, run after the block on 22 October: **7/7** (Equifax volume 45 queries, Wells Fargo 43, Equifax timely rate 32, the three quiet weeks 28, 29, 27, the week after the data ends 2); the branch gate passes with 3/3 applicable branches. (A first attempt failed on all seven cases because the Google sign-in had expired again, which says nothing about the analysis.)
 
