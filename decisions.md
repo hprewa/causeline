@@ -308,3 +308,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The SQL case no longer requires the word Builder.** Why: the assistant offered a breakdown of the same figure, which is a valid alternative; the case should check the refusal, not one wording of the way out.
 - **Reported as it came out: 0/5, 3/5, 2/5, 5/5, 3/5.** Why: tuning wording until one run is clean and reporting that run would claim a reliability the assistant does not have.
 
+## The analyst install path (commit see `PROGRESS.md`)
+- **The data connection software is fetched on first use, not bundled.** Why: 156 to 316 MB a platform is too big to put in an extension or an installer, and a person who opens the extension should not wait for it.
+- **Its SHA-256 is pinned in the code and checked before it is ever run.** Why: Google publishes no fingerprint, and a download that is run without a check is a way to run whatever is at that address; the table is the only trust we add.
+- **No tool call waits for the download.** Why: a call that blocks for minutes is given up on by the client; the first use starts the download and says how far along it is, and the person asks again.
+- **A bad or partial file is deleted, never run; a failed try is tried again.** Why: a half-installed program that is run is worse than a delay.
+- **One definition of where the Causeline home is.** Why: projects and the fetched software must agree, from every client.
+

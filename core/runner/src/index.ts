@@ -9,6 +9,7 @@ export * from "./load.js";
 export { checkPlaybook } from "./validate.js";
 export { runCli, summarise } from "./cli.js";
 export * from "./toolbox-process.js";
+export * from "./toolbox-install.js";
 export { VERSION } from "./version.js";
 export { runProductMetric } from "./product.js";
 export * from "./seasonal.js";

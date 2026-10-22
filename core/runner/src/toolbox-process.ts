@@ -1,3 +1,4 @@
+import { BUILDS, causelineHome, installDir, platformKey } from "./toolbox-install.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createServer } from "node:net";
@@ -19,7 +20,7 @@ export interface ToolboxOptions {
 const exeName = process.platform === "win32" ? "toolbox.exe" : "toolbox";
 
 /**
- * Locate the Toolbox binary: an explicit path, then CAUSELINE_TOOLBOX, then PATH,
+ * Locate the Toolbox binary: an explicit path, then CAUSELINE_TOOLBOX, then PATH, then the copy fetched into the Causeline home on first use,
  * then a toolbox binary at the repo root (where the README installs it).
  */
 export function findToolboxBinary(explicit?: string, env: NodeJS.ProcessEnv = process.env): string {
@@ -27,6 +28,8 @@ export function findToolboxBinary(explicit?: string, env: NodeJS.ProcessEnv = pr
   if (explicit) candidates.push(explicit);
   if (env.CAUSELINE_TOOLBOX) candidates.push(env.CAUSELINE_TOOLBOX);
   for (const dir of (env.PATH ?? "").split(delimiter)) if (dir) candidates.push(join(dir, exeName));
+  const build = BUILDS[platformKey()];
+  if (build) candidates.push(join(installDir(causelineHome(env)), build.file));
   candidates.push(resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", exeName));
   const found = candidates.find((c) => existsSync(c));
   if (!found) {

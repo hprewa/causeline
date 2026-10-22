@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { atLeast, loadAgents, loadPack, type Rung, type StatusChange } from "@causeline/schema";
+import { causelineHome } from "@causeline/runner";
 import { buildStatus, levelGap, levelOf, readState, unconfirmedNumbers } from "./state.js";
 
 /**
@@ -25,8 +26,7 @@ interface Registry {
 
 /** The folder that holds the registry and, by default, the projects: CAUSELINE_HOME, else a folder called Causeline in the person's home. */
 export function projectsHome(env: NodeJS.ProcessEnv = process.env): string {
-  const set = env.CAUSELINE_HOME?.trim();
-  return resolve(set ? set : join(homedir(), "Causeline"));
+  return causelineHome(env);
 }
 
 const FILE = "projects.json";

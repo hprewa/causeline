@@ -96,6 +96,19 @@ New ladder (draft, reconciled, calibrated, verified; flag "numbers not confirmed
 | Contact-centre 25/25, routing 27/27, intents 16/16, scripted end-to-end tests 7/7 after the change | pass; complaints eval on BigQuery 7/7 |
 | Calibration and fault injection (the two rungs above reconciled) | not started: phase 2 |
 
+## Analyst install path
+
+One download to a first answer on Claude Desktop, Codex and Claude Code: no terminal, no Node, no manual download (`docs/evidence/install.md`).
+
+| Step | What | State |
+|---|---|---|
+| 1 | The data connection software fetched on first use: pinned fingerprints, resume, check, background progress | done |
+| 2 | Wired into the server, `check_setup`, a real download through the server | not started |
+| 3 | The guidance (skills) delivered through the server: `get_guide` | not started |
+| 4 | A `.mcpb` file for Claude Desktop | not started |
+| 5 | A single executable and a Codex installer | not started |
+| 6 | The analyst guide, clean-machine proof, regression | not started |
+
 ## Projects and the companion page
 
 One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).
