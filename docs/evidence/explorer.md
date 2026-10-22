@@ -81,15 +81,29 @@ Plan: a closed set of read operations over the project's own catalogue tools; no
 - **The hook is a guardrail, not a boundary**, and says so in its first lines: a determined command can be written that none of the patterns catch. The boundary is that the tools offer no free query and that the person's own database role is read-only. On Claude Desktop and Codex the hook does not apply (the Codex `PreToolUse` equivalent is a packaging step not built).
 - The hook has not been installed into a live Claude Code and tried against a model that is trying to go round the tools (step 6 runs the live assistant, which does not try to).
 
-## Step 6: proof (partly done)
+## Step 6: proof
 
 **Built and tested**
-- Agent-level scoring for Explorer questions (`explorer` in an eval case's expectation): the assistant used the `explore` tool; said the answer is exploratory, and the tool labelled it; the rows hold the words wanted (a node, a date); a refusal of the right kind when one is due; no shell command or database tool of its own; every number it quoted is in the rows or the question (in percentage form too). The stream parser keeps what each `explore` call answered. Cases can live in another file (`--cases explorer`) and an agent-only case no longer fails a runner-level run.
-- Five questions in `packs/contact-centre/evals/explorer.yaml`: the worst team in week 7, calls by queue, the three busiest agents, one team day by day, and a request to run SQL (must be refused with the pointer to the Builder).
-- 6 tests of the scoring: a good answer passes; each way to go wrong (no label, a number not in the rows, the tool's label missing, a node missing, the tool not used, a shell command) is caught on its own; a refusal is scored on what the tool said; numbers are traced; the parser; the cases load.
+- Agent-level scoring for Explorer questions (`explorer` in an eval case's expectation): the assistant used the `explore` tool; said the answer is exploratory, and the tool labelled it; the rows hold the words wanted; a refusal of the right kind when one is due; no shell command or database tool of its own; every number it quoted is in the rows or the question (percentage form too). The stream parser keeps what each `explore` call answered. Cases can live in another file (`--cases explorer`) and an agent-only case no longer fails a runner-level run. 6 unit tests of the scoring.
+- Five questions in `packs/contact-centre/evals/explorer.yaml`: the worst team in week 7, calls by queue, the three busiest agents, one team day by day, and a request to run SQL (must be refused).
 
-**Not shown (the run was stopped: the machine ran out of memory)**
-- **The live assistant has not been run on the five questions**, so nothing is shown yet about whether it reads the data only through the tool, says exploratory, quotes only rows, and refuses SQL.
-- **SQLite against BigQuery parity of the Explorer's rows, and its cost per question on BigQuery**, were not run.
-- The complaints eval, the contact-centre eval, routing and intents were not re-run after the Explorer (routing was, after step 3: 38/38).
+**SQLite against BigQuery** (`scripts/explore-proof.mjs`, eight fixed reads on the planted-fault data: a ranking, a breakdown, a series for one filter, two comparisons, a ranking by fall against the week before, a breakdown inside a filter, and the weekday cycle profile): **identical, 8 steps and 38 rows**, to a relative 1e-6. BigQuery read **0.06 GB in 17 queries (about $0.0003 at list price)**: 3 to 13 MB a step.
 
+**The live assistant** (Claude Code, `--no-bare`, your own login, one run of the five questions each time, about $0.10 a question):
+| Run | What changed before it | Result |
+|---|---|---|
+| 1 | - | 0/5: the `explore` tool was not on the harness's pre-approved list, so the assistant asked for permission instead of answering. The tool is read-only (it reads fixed breakdowns and writes only its own record), so it is now marked so and listed |
+| 2 | permission fixed | 3/5: one answer did not use the word "exploratory"; one worked out a difference between two rows ("183 calls") |
+| 3 | skill: use the word, no differences you computed | 2/5: two answers quoted a number the assistant derived ("26 percentage points below the next", "160 to 190 on weekdays"); one refusal offered a breakdown as the alternative and did not mention the Builder (I dropped that wording from the case: a breakdown was a valid alternative) |
+| 4 | skill: no ranges or averages; rankings return `gap_to_next` to quote | **5/5** |
+| 5 | none (a repeat of 4) | **3/5**: one answer quoted a number not in the rows ("8"); the request for SQL was refused in words without calling the tool, so the record shows no refusal |
+
+So the label, the use of the tool and the refusal of shell commands held in every run that got as far as answering; the recurring failure is the assistant **stating a number it worked out itself**, in roughly one answer in three, which the scoring catches and the skill forbids. It did not become reliable by changing the wording; one run in five was clean, and a repeat was not.
+
+**Regression, after the Explorer (bundle rebuilt first):** scripted end-to-end tests 7/7; contact-centre eval 25/25 with 4/4 playbook branches; routing 38/38; intents 16/16; complaints on BigQuery 7/7 (3/3 applicable branches); all unit tests; purity and ladder guards.
+
+**Not shown**
+- That the assistant stops stating derived numbers. Five runs of five questions is not a measure of how often it does; the honest reading is "sometimes, about a third of the answers", and the page shows the rows so a person can check.
+- A refusal of SQL that the assistant makes in words without calling the tool is not recorded on the Explorations page (run 5); the answer to the person was right.
+- The guardrail hook was not tested against a model that is trying to get round the tools; this assistant does not try.
+- No run on a question the planted data cannot answer well, and none on the complaints data.

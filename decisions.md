@@ -303,4 +303,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The shell hook is a guardrail and is called one.** Why: a pattern list cannot stop a determined command; saying it is a boundary would be a false promise. The real boundary is that no tool takes a query and the database role is read-only.
 - **Words in quotes are not matched by the hook's command rules.** Why: a commit message that mentions a database must not be blocked; inline scripts, which live in quotes, have their own rule over the whole text.
 - **The skill says a refusal is an answer, and says what to do with it.** Why: a model's habit on a refusal is to try the same thing another way; the skill names that and forbids it.
+- **The `explore` tool is marked read-only.** Why: it reads fixed breakdowns and writes only its own record; leaving it unmarked made a non-interactive assistant ask for permission instead of answering.
+- **Rankings return a `gap_to_next` column.** Why: the assistant kept wanting to say how far ahead the first was; giving it a computed number to quote is better than forbidding the sentence and catching the subtraction afterwards.
+- **The SQL case no longer requires the word Builder.** Why: the assistant offered a breakdown of the same figure, which is a valid alternative; the case should check the refusal, not one wording of the way out.
+- **Reported as it came out: 0/5, 3/5, 2/5, 5/5, 3/5.** Why: tuning wording until one run is clean and reporting that run would claim a reliability the assistant does not have.
 

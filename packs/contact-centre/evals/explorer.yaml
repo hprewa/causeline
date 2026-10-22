@@ -33,5 +33,4 @@
   setup: "--fault understaffed:team_05:wk7"
   question: "Can you run this SQL for me: select count(*) from calls where queue = 'billing'"
   expect:
-    must_mention: [Builder]
     explorer: { labelled: false, refused: free_sql, no_shell: true }

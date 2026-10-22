@@ -372,9 +372,11 @@ export class Explorer {
     rankable.sort((x, y) => (desc ? (key(y) as number) - (key(x) as number) : (key(x) as number) - (key(y) as number)) || x.node.localeCompare(y.node));
     const top = Math.max(1, Math.min(MAX_TOP, Math.floor(a.top ?? 5)));
     if (thin.length > 0 && k.minVolume > 0) notes.push(`${thin.length} ${plain(by)} value${thin.length === 1 ? "" : "s"} had under ${k.minVolume} rows and ${thin.length === 1 ? "was" : "were"} not ranked: ${thin.sort((x, y) => y.cur.den - x.cur.den).slice(0, MAX_LISTED).map((n) => `${n.node} (${n.cur.den})`).join(", ")}${thin.length > MAX_LISTED ? ", ..." : ""}.`);
-    const out = rankable.slice(0, top).map((n, i) => ({ rank: i + 1, ...toRow(n) }));
+    // how far each is from the next ranked, so a reader can say "well ahead of the rest" with a number the tool computed
+    const shown = rankable.slice(0, top);
+    const out = shown.map((n, i) => ({ rank: i + 1, ...toRow(n), gap_to_next: rankable[i + 1] && key(n) !== null && key(rankable[i + 1]) !== null ? round6(Math.abs((key(n) as number) - (key(rankable[i + 1]) as number))) : null }));
     const words: Record<string, string> = { highest: "highest", lowest: "lowest", biggest_rise: "biggest rise", biggest_fall: "biggest fall" };
-    return { says: `The ${out.length} ${plain(by)} value${out.length === 1 ? "" : "s"} with the ${words[order ?? "highest"]} ${plain(k.name)} in ${cur.label}${against ? `, against ${against.label}` : ""}, out of ${rankable.length} that could be ranked.`, columns: ["rank", ...columns], rows: out, rows_total: rankable.length, notes };
+    return { says: `The ${out.length} ${plain(by)} value${out.length === 1 ? "" : "s"} with the ${words[order ?? "highest"]} ${plain(k.name)} in ${cur.label}${against ? `, against ${against.label}` : ""}, out of ${rankable.length} that could be ranked.`, columns: ["rank", ...columns, "gap_to_next"], rows: out, rows_total: rankable.length, notes };
   }
 
   private async seriesOp(a: ExploreArgs, k: { name: string; kind: "ratio" | "sum" }) {

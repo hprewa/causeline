@@ -21,6 +21,7 @@ test("a breakdown lists every value with its volume and share, and the shares ad
 test("a ranking puts the right end first, and by change against another window", async () => {
   const lowest = await make().run({ op: "rank", kpi: "m", by: "a2", period: "W5", order: "lowest", top: 2 });
   assert.deepEqual(lowest.rows.map((r) => [r.rank, r.node]), [[1, "P2"], [2, "P1"]]);
+  assert.ok(Math.abs((lowest.rows[0].gap_to_next as number) - ((lowest.rows[1].value as number) - (lowest.rows[0].value as number))) < 1e-6, "how far the first is from the next ranked");
   const highest = await make().run({ op: "rank", kpi: "m", by: "a2", period: "W5", order: "highest", top: 1 });
   assert.notEqual(highest.rows[0].node, "P2");
   const fall = await make().run({ op: "rank", kpi: "m", by: "a2", period: "W5", against_period: "W4", order: "biggest_fall", top: 1 });

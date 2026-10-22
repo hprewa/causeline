@@ -28,7 +28,7 @@ test("the explore skill names the tool and its operations, carries the label, an
   const skill = readFileSync(resolve(repo, "skills", "causeline-explore", "SKILL.md"), "utf-8");
   const named = new Set([...skill.matchAll(/`([a-z]+(?:_[a-z]+)*)`/g)].map((m) => m[1]));
   for (const must of ["explore", "route", "open_project_page", "breakdown", "rank", "series", "compare", "profile", "cannot", "free_sql"]) assert.ok(named.has(must), `the skill never names ${must}`);
-  assert.ok([...named].filter((n) => /_/.test(n)).every((n) => registered.has(n) || ["free_sql", "unknown_kpi", "about_this_answer", "against_period", "against_start", "against_end", "start_date", "end_date"].includes(n)), "every tool it names exists");
+  assert.ok([...named].filter((n) => /_/.test(n)).every((n) => registered.has(n) || ["free_sql", "unknown_kpi", "about_this_answer", "against_period", "against_start", "against_end", "gap_to_next", "start_date", "end_date"].includes(n)), "every tool it names exists");
   assert.match(skill, /exploratory/);
   assert.match(skill, /Never write or suggest SQL/);
   assert.match(skill, /No claim about cause/);
