@@ -362,3 +362,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Guided setup step 5: proof
 - **`check_connection` works on a project still being set up and reads `project.dataset`.** Why: the real run showed it failing exactly when a person needs it, and for any data held in another project.
 - **The proof is scripted, and the missing live run is said.** Why: a script plays the model deterministically and shows the tools; it cannot show that the guide makes an assistant use them well.
+
+### Guided setup: the two faults from the second live run
+- **The reminder rides on tool results, not only on the guide.** Why: the guide already said to ask the incident question and not to state derived numbers, and the live assistant did both anyway; a sentence in the result it is reading at that moment is harder to skip.
+- **`accept_sample` says what its figure covers.** Why: a bare total invites division; the tool knows the period, the assistant should not have to guess a per-day rate.

@@ -116,10 +116,10 @@ Plan: prep card and resume, cost caps in plain words, admin message and sign-in,
 | Step | What | State |
 |---|---|---|
 | 1 | The prep card and resumable setup | done |
-| 2 | Cost caps in plain words | done (not yet run on real BigQuery) |
+| 2 | Cost caps in plain words | done (run on real BigQuery; the limit is offered on connecting) |
 | 3 | The message to your admin; clearer sign-in | done (analyst OAuth client not built) |
-| 4 | KPI-scoped discovery | done (not yet run on real BigQuery) |
-| 5 | Proof on BigQuery and regression | done (script plays the model; no live assistant run yet) |
+| 4 | KPI-scoped discovery | done (run on real BigQuery, including a live assistant on a seven-table dataset) |
+| 5 | Proof on BigQuery and regression | done (scripted proof passed; two live Claude Code runs, one run each; skipped incident question and a derived per-day figure addressed afterwards, not re-run live) |
 
 ## Projects and the companion page
 

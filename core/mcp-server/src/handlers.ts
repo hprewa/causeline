@@ -295,7 +295,8 @@ export const verifyExpertTool = (cfg: ServerConfig, args: { kpi: string }) => ve
 // --- sign-off: numbers from the user's own reports, and where each KPI stands -----------------------------------------
 
 export async function proposeChecksTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; odd_period?: { start: string; end: string; name?: string; scope?: Record<string, string> } }) {
-  return proposeChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller(), odd: args.odd_period });
+  const proposed = await proposeChecks({ workspace: cfg.packDir, kpi: args.kpi, tools: await callers.caller(), odd: args.odd_period });
+  return { ...proposed, ...cardReminder(cfg) };
 }
 
 /** Give a number: when it matches it is confirmed; with `flag` it is recorded and flagged instead. The tools' number comes back with the answer. */
@@ -309,7 +310,22 @@ export async function confirmNumberTool(cfg: ServerConfig, callers: Callers, arg
 }
 
 /** The person has no exact figure but says the number looks right: it is kept as a plausible sample and the KPI is marked "numbers not confirmed". */
-export const acceptSampleTool = (cfg: ServerConfig, args: { kpi: string; check: string; note?: string }) => acceptSample({ workspace: cfg.packDir, ...args });
+/** What is still open on the prep card, as a reminder to tack onto results that come late in a conversation; nothing when it is complete or there is none. */
+export function cardReminder(cfg: ServerConfig): { still_to_ask: string } | Record<string, never> {
+  const card = readCard(cfg.packDir);
+  if (!card) return {};
+  const next = cardStatus(card).next;
+  return next ? { still_to_ask: `The prep card is not finished. Before you move on, ${next[0].toLowerCase()}${next.slice(1)}` } : {};
+}
+
+export function acceptSampleTool(cfg: ServerConfig, args: { kpi: string; check: string; note?: string }) {
+  const r = acceptSample({ workspace: cfg.packDir, ...args });
+  return {
+    ...r,
+    say: `The figure for that check is ${r.got.toLocaleString("en-US")}. It covers the whole period of the check, not one day. Quote it as it is; do not divide it, average it or call a day typical, and say the newest day may be partial.`,
+    ...cardReminder(cfg),
+  };
+}
 
 export const signoffStatusTool = (cfg: ServerConfig, args: { kpi?: string } = {}) => ({ kpis: signoffStatus(cfg.packDir, args?.kpi) });
 

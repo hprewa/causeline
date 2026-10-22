@@ -91,3 +91,11 @@ Evidence for each piece, written as it is done. Plan: prep card and resumable se
 **A harness finding, not a product fault.** The first rerun used the harness's fixed starting folder (`CAUSELINE_PACK`), which every new server process reopens, so the work landed there and the new project folder stayed empty. In real use the server reopens the last project instead. `scripts/build-conversation.mjs --no-pack` avoids the fixed folder; use it for any setup conversation.
 
 **Not shown:** one run each, so no rates; one dataset of each kind; the second run did not cover the access-help message or the go-ahead (the shop data is under 1 GB); the derived-number and skipped-incident faults are not fixed.
+
+## Fixes for the two faults the second live run left
+
+**What was wrong, traced.** (1) The card's incident question was skipped because the person said they had no report numbers and the assistant treated the card as finished; nothing in a tool result reminded it. (2) The "roughly 900 to 1,000 orders a day" came from `accept_sample`, which returned only the total for the check's period (3,713 for four days, the last partial); the assistant divided it and called the result a normal day.
+
+**Changes.** Results that arrive late in setup (`propose_checks`, `accept_sample`) now carry `still_to_ask` while the prep card has an open item, worded as the next question. `accept_sample` returns a `say` line that gives the figure as covering the whole period, forbids dividing, averaging or calling a day typical, and says the newest day may be partial. Guide rule 6 now names sums, averages and per-day figures worked out from a tool's number; the card paragraph says that having no report numbers does not finish the card. 2 tests (reminder absent without a card, shows the numbers question then the incident question, gone once answered).
+
+**Not shown:** these are instructions in tool results, so they make the faults less likely, not impossible; no live assistant run was repeated after the change (a run costs about a dollar and one run gives no rate); the late-arrival risk text still gives a typical-day figure only from the tool, which is the intended quotable one.
