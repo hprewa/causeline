@@ -384,3 +384,6 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A throw-away Codex home per run.** Why: the person's own Codex settings and sign-in must not change, and a stale or wrong model in their settings must not decide a test.
 - **Approval of Causeline's tools is set for the test harness only.** Why: turning approvals off is the person's security choice; the installer does not make it.
 - **An agent that could not run is an error, not a fail.** Why: a usage limit says nothing about the product; the table shows it and the evidence says no rate exists.
+
+### Phase 1 close-out: the shared sign-in app is a task after development
+- **Recorded as an open item in PROGRESS.md, to do before analysts use Causeline as intended.** Why: the administrator's sign-in file works for teams with someone to make it, but not for a lone analyst, and the product's promise is no terminal and no help. It waits because it needs a domain and privacy policy that do not exist yet and a Google review whose wording depends on the finished product.
