@@ -387,3 +387,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 
 ### Phase 1 close-out: the shared sign-in app is a task after development
 - **Recorded as an open item in PROGRESS.md, to do before analysts use Causeline as intended.** Why: the administrator's sign-in file works for teams with someone to make it, but not for a lone analyst, and the product's promise is no terminal and no help. It waits because it needs a domain and privacy policy that do not exist yet and a Google review whose wording depends on the finished product.
+
+### Phase 2 step 0: what counts as an alarm
+- **An alarm is a judged period where the analysis claims something (a significant headline, a finding, or a masking flag other than thin cells); a period it declines to judge is not counted either way and is reported.** Why: measured on the contact-centre pack (3.3% of judged weeks) and real complaints (71%); a refusal in a holiday week is the analysis being right, and counting it as a false alarm would punish the behaviour we want.
+- **The complaints headline test is the first thing to fix, ahead of the calibration core.** Why: 11 of 11 judged weeks of complaint volume read as significant; the headline z ignores week-to-week variation that the contribution tests already use (`adjustedZ`). Calibrating on top of it would only report the fault.
