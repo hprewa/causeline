@@ -47,3 +47,14 @@ It ends with the readiness check unless `--no-check`.
 - **Agent-level question evals through Codex: none scored.** All six contact-centre cases (runner level 6/6) failed at the agent step with the account's usage limit ("You've hit your usage limit ... try again at Nov 22nd"), a free-allowance limit reached after the two conversations. Those are errors, not failures, and there is no pass rate for Codex.
 - The complaints cases on BigQuery through Codex; the Codex desktop app; interactive approval prompts; macOS/Linux; any rate (one run each).
 - The Claude Code setup conversation was not re-run to check the `9afa2dc` fixes (the Codex run showed the incident question asked; that is a different assistant).
+
+## Step 4: regression after the whole block
+
+Run from PowerShell on the final code (one run each; the Bash tool's shell crashes one integration subtest on a Windows job-object error, so these are not run from it):
+- Build and unit tests: exit 0, no failures (mcp-server 64 tests, 56 run and 8 that need the integration switch).
+- `check:purity` and `check:ladder`: pass.
+- Contact-centre eval at runner level: **25/25**, all four `metric_change` branches taken. Routing: **38/38**. Intents: **16/16**. Integration: **8/8**.
+- Complaints eval on real BigQuery (`yukti-dev`): **7/7**, three of three applicable `metric_change` branches taken.
+- `bundle:plugin`; the Claude Desktop extension run (**passed**, including the first-run fetch of the data connection software); the single-executable run (**passed**); the engineer-path proof (`causeline init` for Codex and Claude Code in a temporary home, second run changes nothing; **passed**).
+
+**Not shown:** these are runner-level evals plus the install proofs; the live-assistant evals were not re-run this block except the two Codex setup conversations (one run each) and no Claude Code assistant run after the final code; nothing on macOS or Linux; no real analyst yet (the tester kit is written, the trial is not done).
