@@ -67,7 +67,7 @@ try {
   const found = await tool("discover_for_kpi", { kpi: "complaint volume" });
   check("discovery runs on it (shortlist, reads nothing)", found.body?.stage === "shortlist", found.error ?? found.body?.say);
   const draft = await tool("discover_for_kpi", { kpi: "complaint volume", tables: ["complaint_database"], go_ahead: true });
-  check("discovery then reads the confirmed table and drafts sentences (the data connection software uses the sign-in too)", draft.body?.stage === "draft" && (draft.body?.draft ?? []).length > 0, draft.error ?? draft.body?.say);
+  check("discovery then reads the confirmed table and drafts sentences (through the Node client; the Toolbox process is not exercised here)", draft.body?.stage === "draft" && (draft.body?.draft ?? []).length > 0, draft.error ?? draft.body?.say);
 
   const creds = join(home, "google", "credentials.json");
   const keys = existsSync(creds) ? Object.keys(JSON.parse(readFileSync(creds, "utf-8"))).sort().join(",") : "";
