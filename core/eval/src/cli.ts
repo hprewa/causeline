@@ -10,7 +10,9 @@ import { branchCoverage, expertsWithUntestedBranches, renderCoverage } from "./b
 const USAGE = `usage: causeline eval --pack <dir> [options]
   --case <id[,id...]>     run only these cases
   --cases <name>          use evals/<name>.yaml instead of evals/cases.yaml (for example explorer: questions scored on a live agent only)
-  --agent claude-code     also ask each case's question to a live agent (costs money; never run in CI)
+  --agent claude-code|codex  also ask each case's question to a live agent (costs money; never run in CI)
+  --codex-home <dir>      with --agent codex: a Codex home with the sign-in and Causeline installed (node scripts/codex-home.mjs makes one)
+  --codex-model <name>    with --agent codex: a model the account can use (default gpt-5.6-terra)
   --plugin-dir <dir>      the plugin to give the agent (default: clients/claude-code)
   --no-bare               let the agent use your own Claude Code login and settings (default is --bare, which needs ANTHROPIC_API_KEY)
   --model <name>          model for the agent
@@ -75,7 +77,8 @@ export async function runEvalCli(argv: string[]): Promise<number> {
     return outcomes.every((o) => o.pass && (!o.agent || o.agent.pass)) ? 0 : 1;
   }
   const agentName = flags.get("agent");
-  if (agentName && agentName !== "claude-code") throw new Error(`unknown agent "${agentName}" (only claude-code is supported)`);
+  if (agentName && agentName !== "claude-code" && agentName !== "codex") throw new Error(`unknown agent "${agentName}" (claude-code or codex)`);
+  if (agentName === "codex" && !flags.get("codex-home")) throw new Error("--agent codex needs --codex-home <dir> (node scripts/codex-home.mjs makes one)");
 
   const outcomes = await runEvals({
     packDir: resolve(pack),
@@ -89,6 +92,9 @@ export async function runEvalCli(argv: string[]): Promise<number> {
     ...(agentName
       ? {
           agent: {
+            client: agentName === "codex" ? ("codex" as const) : ("claude-code" as const),
+            codexHome: flags.get("codex-home") ? resolve(flags.get("codex-home")!) : undefined,
+            codexModel: flags.get("codex-model"),
             pluginDir: resolve(flags.get("plugin-dir") ?? join("clients", "claude-code")),
             bare: !switches.has("no-bare"),
             model: flags.get("model"),

@@ -2,14 +2,16 @@
 // A live build conversation: a Claude Code agent (with the Causeline plugin) talks to a simulated user until the pack is
 // built, or the turns run out. The simulated user is a second, tool-less model call that is told only what the persona file says.
 //   node scripts/build-conversation.mjs --persona packs/complaints/evals/build-persona.md [--folder <empty dir>] [--turns 30] [--model <m>]
+//   --client codex   talk to Codex instead (needs `codex login`; --codex-model defaults to gpt-5.6-terra; Causeline is installed into a throw-away Codex home through `causeline init`)
 //   --no-pack   start every turn with no project open (as a new session does), so the assistant must open the project it made; needs CAUSELINE_HOME set
 //   node scripts/build-conversation.mjs --persona <file> --continue runs/build-conversation-<time>.json   carry on a conversation that stopped (for example at a usage limit)
 // Needs `claude` on the PATH and a sign-in; spends model tokens (each turn's cost is printed). Writes the transcript to runs/.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { runClaudeCode } from "../core/eval/dist/src/index.js";
+import { makeCodexHome } from "./codex-home.mjs";
+import { runClaudeCode, runCodex } from "../core/eval/dist/src/index.js";
 
 const repo = resolve(import.meta.dirname, "..");
 const flag = (name, dflt) => (process.argv.includes(`--${name}`) ? process.argv[process.argv.indexOf(`--${name}`) + 1] : dflt);
@@ -17,7 +19,9 @@ const persona = readFileSync(resolve(flag("persona")), "utf-8");
 const folder = resolve(flag("folder", flag("continue") ? JSON.parse(readFileSync(resolve(flag("continue")), "utf-8")).folder : mkdtempSync(join(tmpdir(), "build-conversation-"))));
 mkdirSync(folder, { recursive: true });
 const maxTurns = Number(flag("turns", "30"));
-const model = flag("model");
+const client = flag("client", "claude-code");
+const model = flag("model"); // for Claude, and for the simulated user
+const codexModel = flag("codex-model", "gpt-5.6-terra");
 const toolbox = existsSync(join(repo, process.platform === "win32" ? "toolbox.exe" : "toolbox")) ? join(repo, process.platform === "win32" ? "toolbox.exe" : "toolbox") : undefined;
 const opening = flag("opening", "Hi. I'd like to look at consumer complaints data and understand why the numbers move. Can you help me set that up?");
 
@@ -61,13 +65,23 @@ if (flag("continue")) {
   first = turns.length + 1;
   user = (await simulateUser(transcript)).text;
 }
+let codexHome;
+const causelineHome = process.env.CAUSELINE_HOME ?? mkdtempSync(join(tmpdir(), "causeline-home-"));
+if (client === "codex") {
+  // a throw-away Codex home: the person's sign-in copied in, Causeline installed through the engineer path; their own Codex settings are not touched
+  codexHome = makeCodexHome(causelineHome);
+}
 let agentCost = 0;
 let userCost = 0;
 console.log(`folder: ${folder}`);
 for (let i = first; i <= maxTurns; i++) {
   console.log(`\n--- turn ${i} ---\nUSER: ${user}`);
   transcript.push({ role: "user", text: user });
-  const run = await runClaudeCode({
+  const serverEnv = { CAUSELINE_NO_BROWSER: "1", ...(process.env.CAUSELINE_BQ_PROJECT ? { CAUSELINE_BQ_PROJECT: process.env.CAUSELINE_BQ_PROJECT } : {}), ...(toolbox ? { CAUSELINE_TOOLBOX: toolbox } : {}), CAUSELINE_HOME: causelineHome };
+  const run =
+    client === "codex"
+      ? await runCodex({ question: user, workDir: folder, codexHome, model: codexModel, resume: session, serverEnv, timeoutMs: 20 * 60_000 })
+      : await runClaudeCode({
     question: user,
     pluginDir: join(repo, "clients", "claude-code"),
     packDir: folder,

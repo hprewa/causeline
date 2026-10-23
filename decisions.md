@@ -379,3 +379,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **`sign_in` returns at once and `check_connection` is the confirmation.** Why: a tool call that waits for a person in a browser would time out in most clients; the person says when they are done and the check is the evidence.
 - **Scope is `bigquery`, not `cloud-platform` or a read-only variant.** Why: BigQuery has no read-only scope that works for queries; read-only comes from the person's roles, and the guide says so.
 - **The sign-in file's secret is not treated as a secret.** Why: Google documents a desktop client's secret as non-confidential; the rule that Causeline never accepts a password, key or token is about the person's own credentials, which still never reach it.
+
+### Phase 1 close-out step 3: Codex
+- **A throw-away Codex home per run.** Why: the person's own Codex settings and sign-in must not change, and a stale or wrong model in their settings must not decide a test.
+- **Approval of Causeline's tools is set for the test harness only.** Why: turning approvals off is the person's security choice; the installer does not make it.
+- **An agent that could not run is an error, not a fail.** Why: a usage limit says nothing about the product; the table shows it and the evidence says no rate exists.

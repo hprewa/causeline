@@ -28,3 +28,7 @@ The first question that needs data prepares the data connection software (a one-
 ## Not yet shown
 
 Nothing here has been run inside Codex's own desktop app. The program, the installer and the settings it writes are proved on Windows in a temporary home; macOS and Linux builds come from the release workflow and have not been run. The programs are not code-signed, so Windows SmartScreen or macOS Gatekeeper may warn on first run.
+
+## Approvals
+
+Codex asks you to approve a tool that changes something (for example starting a project) the first time it is used. That is Codex's own safety setting, and Causeline's installer leaves it as it is. A Codex run with no one to ask (`codex exec`) refuses such a tool unless approval is set for it in Codex's settings.

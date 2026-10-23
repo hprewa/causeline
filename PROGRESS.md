@@ -129,7 +129,7 @@ Sign-in without a terminal, the engineer path, Codex run for real, a tester kit 
 |---|---|---|
 | 1 | The engineer path: `causeline init` for Codex, Claude Code, Claude Desktop (not `npx github:`, which npm cannot build); a clean-checkout build fault fixed | done |
 | 2 | Analyst sign-in without a terminal (user-created OAuth client) | built and tested against a fake Google; real-Google proof pending the test client |
-| 3 | Codex run for real (evals and a setup conversation) | not started |
+| 3 | Codex run for real | two setup conversations done (one run each); question evals through Codex not scored: the account's usage limit was reached |
 | 4 | Tester kit, install guide, regression | not started |
 
 ## Projects and the companion page

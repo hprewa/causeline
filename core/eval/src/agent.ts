@@ -173,3 +173,84 @@ export async function runClaudeCode(o: AgentOptions): Promise<AgentRun> {
   if (!run.narrative && !run.error) run.error = `claude produced no result (exit ${code}): ${err.trim().slice(0, 400)}`;
   return run;
 }
+
+// --- Codex -------------------------------------------------------------------------------------------------------------
+
+/** Turn Codex's `exec --json` events into the same evidence: each finished MCP tool call becomes a tool use and its result. */
+export function parseCodexStream(lines: string[]): AgentRun {
+  const synthetic: string[] = [];
+  let narrative = "";
+  let threadId: string | undefined;
+  let error: string | undefined;
+  const metrics: AgentMetrics = { turns: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, ms: 0 };
+  for (const line of lines) {
+    let ev: Record<string, any>;
+    try {
+      ev = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (ev.type === "thread.started") threadId = ev.thread_id;
+    const item = ev.item;
+    if (ev.type === "item.completed" && item?.type === "agent_message") narrative = String(item.text ?? "");
+    if (ev.type === "item.completed" && item?.type === "mcp_tool_call") {
+      const id = String(item.id);
+      const text = item.error ? `ERROR: ${item.error.message ?? JSON.stringify(item.error)}` : textOf(item.result?.content);
+      synthetic.push(
+        JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", id, name: item.tool, input: item.arguments ?? {} }] } }),
+        JSON.stringify({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: id, content: text }] } }),
+      );
+    }
+    if (ev.type === "turn.completed") {
+      metrics.turns += 1;
+      metrics.inputTokens += Number(ev.usage?.input_tokens ?? 0);
+      metrics.outputTokens += Number(ev.usage?.output_tokens ?? 0);
+    }
+    if (ev.type === "turn.failed") error = `codex turn failed: ${String(ev.error?.message ?? "").slice(0, 300)}`;
+  }
+  const run = parseStream(synthetic);
+  return { ...run, narrative, metrics, ...(threadId ? { sessionId: threadId } : {}), ...(error ? { error } : {}) };
+}
+
+export interface CodexOptions {
+  question: string;
+  /** Where Codex works from. */
+  workDir: string;
+  /** A Codex home that holds the sign-in and has Causeline installed (`causeline init --client codex`). */
+  codexHome: string;
+  /** A model the signed-in account can use (`codex debug models` lists them). */
+  model: string;
+  /** Continue this earlier thread. */
+  resume?: string;
+  /** Extra environment for the Causeline server (set through Codex's own config, since Codex passes a server only what is configured). */
+  serverEnv?: Record<string, string>;
+  timeoutMs: number;
+}
+
+/** Ask Codex a question with Causeline installed, approving Causeline's tools (non-interactive Codex refuses a tool that writes otherwise). */
+export async function runCodex(o: CodexOptions): Promise<AgentRun> {
+  const config = [
+    `mcp_servers.causeline.default_tools_approval_mode="approve"`,
+    ...Object.entries(o.serverEnv ?? {}).map(([k, v]) => `mcp_servers.causeline.env.${k}=${JSON.stringify(v)}`),
+  ];
+  const args = ["exec", ...(o.resume ? ["resume", o.resume] : []), "--json", "--skip-git-repo-check", "-m", o.model, ...(o.resume ? [] : ["-s", "read-only"]), ...config.flatMap((c) => ["-c", c]), "-"];
+  const env = { ...process.env, CODEX_HOME: o.codexHome };
+  const win = process.platform === "win32";
+  const child = win ? spawn(["codex", ...args.map(quote)].join(" "), { env, shell: true, cwd: o.workDir, stdio: ["pipe", "pipe", "pipe"] }) : spawn("codex", args, { env, cwd: o.workDir, stdio: ["pipe", "pipe", "pipe"] });
+  child.stdin!.end(o.question);
+  let out = "";
+  let err = "";
+  child.stdout!.on("data", (d: Buffer) => (out += d.toString()));
+  child.stderr!.on("data", (d: Buffer) => (err += d.toString()));
+  const started = Date.now();
+  const timer = setTimeout(() => child.kill(), o.timeoutMs);
+  const code = await new Promise<number | null>((resolve) => {
+    child.once("error", () => resolve(-1));
+    child.once("close", resolve);
+  });
+  clearTimeout(timer);
+  const run = parseCodexStream(out.split(/\r?\n/).filter(Boolean));
+  run.metrics.ms = Date.now() - started;
+  if (!run.narrative && !run.error) run.error = `codex produced no answer (exit ${code}): ${err.trim().split("\n").filter((l) => !/WARNING|ERROR codex_/.test(l)).join(" ").slice(0, 400)}`;
+  return run;
+}

@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { findToolboxBinary, loadPackForRun, loadPlaybook, runPlaybook, SdkToolCaller, ToolboxProcess, type ToolCaller } from "@causeline/runner";
 import type { EvalCase, Result } from "@causeline/schema";
-import { runClaudeCode } from "./agent.js";
+import { runClaudeCode, runCodex } from "./agent.js";
 import { loadCases } from "./cases.js";
 import { prepareCase } from "./prepare.js";
 import { scoreAgent, scoreRunner } from "./score.js";
@@ -19,6 +19,11 @@ async function costControlled(workDir: string, caller: ToolCaller): Promise<Tool
 }
 
 export interface AgentConfig {
+  /** Which assistant answers; Claude Code unless set. */
+  client?: "claude-code" | "codex";
+  /** Codex only: a home with the sign-in and Causeline installed (scripts/codex-home.mjs), and a model the account can use. */
+  codexHome?: string;
+  codexModel?: string;
   pluginDir: string;
   bare: boolean;
   model?: string;
@@ -90,7 +95,18 @@ async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
   if (opts.agent) {
     log(`[${c.id}] asking the agent: ${c.question}`);
     // a bundled causeline-mcp cannot search the repo for Toolbox, so hand it the binary we already found
-    const run = await runClaudeCode({ question: c.question, packDir: workDir, toolbox: findToolboxBinary(opts.toolbox), ...opts.agent });
+    const toolboxBinary = findToolboxBinary(opts.toolbox);
+    const run =
+      opts.agent.client === "codex"
+        ? await runCodex({
+            question: c.question,
+            workDir,
+            codexHome: opts.agent.codexHome ?? "",
+            model: opts.agent.codexModel ?? "gpt-5.6-terra",
+            serverEnv: { CAUSELINE_PACK: workDir, CAUSELINE_TOOLBOX: toolboxBinary, CAUSELINE_NO_BROWSER: "1", ...(process.env.CAUSELINE_BQ_PROJECT ? { CAUSELINE_BQ_PROJECT: process.env.CAUSELINE_BQ_PROJECT } : {}) },
+            timeoutMs: opts.agent.timeoutMs,
+          })
+        : await runClaudeCode({ question: c.question, packDir: workDir, toolbox: toolboxBinary, ...opts.agent });
     outcome.agent = run.error
       ? { error: run.error }
       : {
