@@ -89,7 +89,7 @@ export async function runCli(argv: string[]): Promise<number> {
     try {
       const paths = codexPaths();
       const home = process.env.CAUSELINE_HOME?.trim();
-      say(cmd === "install" ? installCodex({ paths, launch: launchCommand(), ...(home ? { env: { CAUSELINE_HOME: home } } : {}) }) : uninstallCodex({ paths }));
+      say(cmd === "install" ? installCodex({ paths, launch: launchCommand(), env: { ...(home ? { CAUSELINE_HOME: home } : {}), ...(process.env.CAUSELINE_PLAYBOOKS?.trim() ? { CAUSELINE_PLAYBOOKS: process.env.CAUSELINE_PLAYBOOKS.trim() } : {}) } }) : uninstallCodex({ paths }));
       return 0;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));

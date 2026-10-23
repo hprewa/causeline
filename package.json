@@ -20,7 +20,11 @@
     "bundle:plugin": "npm run build && node scripts/bundle-plugin.mjs",
     "bundle:exe": "npm run build && node scripts/bundle-exe.mjs",
     "bundle:desktop": "npm run bundle:plugin && node scripts/bundle-desktop.mjs",
-    "eval:all": "npm run eval"
+    "eval:all": "npm run eval",
+    "init": "node bin/causeline.mjs init"
+  },
+  "bin": {
+    "causeline": "./bin/causeline.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

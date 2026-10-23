@@ -1,12 +1,22 @@
 import { join } from "node:path";
-import { findToolboxBinary, loadPackForRun, loadPlaybook, runPlaybook, SdkToolCaller, ToolboxProcess } from "@causeline/runner";
-import { withCostControl } from "@causeline/connect-bigquery";
+import { findToolboxBinary, loadPackForRun, loadPlaybook, runPlaybook, SdkToolCaller, ToolboxProcess, type ToolCaller } from "@causeline/runner";
 import type { EvalCase, Result } from "@causeline/schema";
 import { runClaudeCode } from "./agent.js";
 import { loadCases } from "./cases.js";
 import { prepareCase } from "./prepare.js";
 import { scoreAgent, scoreRunner } from "./score.js";
 import type { CaseOutcome, RunSummary } from "./table.js";
+
+/**
+ * Cost control for BigQuery packs lives in connect-bigquery, which builds on the Builder, which uses this package. A normal import would make
+ * the three packages need each other's built output, so a clean checkout could not be built; this loads it when a run needs it. The import is
+ * still found by the bundler, and its type is written out here.
+ */
+async function costControlled(workDir: string, caller: ToolCaller): Promise<ToolCaller> {
+  // @ts-ignore the declarations may not exist yet on a first build
+  const m = (await import("@causeline/connect-bigquery")) as { withCostControl: (dir: string, c: ToolCaller) => ToolCaller };
+  return m.withCostControl(workDir, caller);
+}
 
 export interface AgentConfig {
   pluginDir: string;
@@ -61,7 +71,7 @@ async function runOne(c: EvalCase, opts: EvalOptions): Promise<CaseOutcome> {
         playbook: loadPlaybook(c.inputs.playbook, workDir, opts.corePlaybooksDir),
         ontology: def.ontology,
         meta: def.meta,
-        tools: withCostControl(workDir, new SdkToolCaller(toolbox.url)),
+        tools: await costControlled(workDir, new SdkToolCaller(toolbox.url)),
         inputs: { metric: c.inputs.metric, period: c.inputs.period, ...(c.inputs.baseline ? { baseline: c.inputs.baseline } : {}), ...(c.inputs.more ?? {}) },
       });
       outcome.runner = scoreRunner(result, c.expect);

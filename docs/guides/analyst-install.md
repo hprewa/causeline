@@ -20,7 +20,7 @@ If you prefer Codex's own screens, `clients/codex/README.md` lists the values to
 
 ## Claude Code
 
-Install the Causeline plugin (see `clients/claude-code`). Node is needed for the plugin; the Codex program above needs nothing.
+Install the Causeline plugin. Node is needed for the plugin; the Codex program above needs nothing. If you are comfortable with a terminal, the engineer path does it for you: clone the repository, run `npm install`, then `npm run init -- --client claude-code` (or `codex`, or `desktop`). It builds Causeline, keeps a copy of it in your Causeline folder and sets the client up with the client's own commands; running it again changes nothing.
 
 ## The first time
 

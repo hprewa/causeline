@@ -121,6 +121,17 @@ Plan: prep card and resume, cost caps in plain words, admin message and sign-in,
 | 4 | KPI-scoped discovery | done (run on real BigQuery, including a live assistant on a seven-table dataset) |
 | 5 | Proof on BigQuery and regression | done (scripted proof passed; two live Claude Code runs, one run each; skipped incident question and a derived per-day figure addressed afterwards, not re-run live) |
 
+## Phase 1 close-out
+
+Sign-in without a terminal, the engineer path, Codex run for real, a tester kit (`docs/evidence/phase-1-close-out.md`).
+
+| Step | What | State |
+|---|---|---|
+| 1 | The engineer path: `causeline init` for Codex, Claude Code, Claude Desktop (not `npx github:`, which npm cannot build); a clean-checkout build fault fixed | done |
+| 2 | Analyst sign-in without a terminal (user-created OAuth client) | not started |
+| 3 | Codex run for real (evals and a setup conversation) | not started |
+| 4 | Tester kit, install guide, regression | not started |
+
 ## Projects and the companion page
 
 One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).

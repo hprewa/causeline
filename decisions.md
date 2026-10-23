@@ -366,3 +366,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Guided setup: the two faults from the second live run
 - **The reminder rides on tool results, not only on the guide.** Why: the guide already said to ask the incident question and not to state derived numbers, and the live assistant did both anyway; a sentence in the result it is reading at that moment is harder to skip.
 - **`accept_sample` says what its figure covers.** Why: a bare total invites division; the tool knows the period, the assistant should not have to guess a per-day rate.
+
+### Phase 1 close-out step 1: the engineer path
+- **Clone, install, `init`; not `npx github:`.** Why: npm cannot build this workspace repository as a git dependency (the `prepare` build fails in its temporary clone), and a dependency-free launcher would be a second product to keep in step.
+- **`init` copies the server to the Causeline home and points the client at the copy.** Why: an npx or clone folder can move or be cleaned; Codex's settings must not break when it does.
+- **Claude Code is set up with its own plugin commands.** Why: the settings format is Claude Code's to change; its commands are the stable surface.
+- **Cost control is loaded by the eval package at run time.** Why: three packages formed a build cycle that a clean checkout could not resolve; the cost is one untyped-looking import with its type written beside it.
