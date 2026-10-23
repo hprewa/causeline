@@ -44,6 +44,7 @@
   },
   "tools": [
     { "name": "check_setup", "description": "Is everything ready to answer?" },
+    { "name": "sign_in", "description": "Open the Google sign-in page in your browser" },
     { "name": "setup_card", "description": "What you have told us before setup, and what to ask next" },
     { "name": "get_guide", "description": "The guidance for a kind of request" },
     { "name": "list_projects", "description": "The user's projects" },

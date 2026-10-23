@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { useOwnSignIn } from "@causeline/connect-bigquery";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { causelineHome, VERSION } from "@causeline/runner";
 import { loadConfig } from "./config.js";
@@ -45,6 +46,7 @@ async function serve(): Promise<void> {
   useEmbeddedPlaybooks();
   // stdout carries the MCP protocol, so anything human-readable goes to stderr
   const config = loadConfig();
+  useOwnSignIn(config.home ?? causelineHome()); // Causeline's own Google sign-in, when the person has made one, before any data connection starts
   const toolbox = new ToolboxManager(config);
   const server = createServer(config, toolbox);
   let closing = false;

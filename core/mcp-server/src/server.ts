@@ -11,7 +11,7 @@ import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import type { CardAnswers } from "@causeline/builder";
 import type { AccessProblem } from "@causeline/connect-bigquery";
-import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, signInTool, withSignIn, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -68,6 +68,9 @@ const costCapInput = fromJsonSchema<{ dollars?: number; gb?: number; no_limit?: 
     gb: { type: "number", description: "The most, in GB, one question may read." },
     no_limit: { type: "boolean", description: "True only when the user says they want no limit." },
   }),
+);
+const signInInput = fromJsonSchema<{ client_file?: string }>(
+  obj({ client_file: { type: "string", description: "The path to the Google sign-in file the user's administrator gave them (needed once). Leave out when it was already given." } }),
 );
 const accessHelpInput = fromJsonSchema<{ project?: string; dataset?: string; account?: string; problem?: AccessProblem }>(
   obj({
@@ -374,7 +377,8 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("run_intent", "Run the question", "Run the intent once set_intent says it is ready (it re-checks, and refuses with the one question to ask if anything is missing or unclear). Returns the full result, the play-back and any notes. Explain the result using only what it contains. The intent is kept so the user can refine it.", null, () => intent.run());
   builder("recall", "Go back to an earlier answer", "Without n: the numbered list of answers so far. With n: bring that answer's question back as the active intent so the user can adjust it ('the same, for another value').", recallInput, (a) => intent.recall(a), true);
   builder("start_over", "Forget the question being built", "Clear the intent being built (for a clearly new question where nothing should carry over). The answers so far are kept and can be recalled.", null, () => intent.startOver());
-  builder("check_connection", "Can the data be reached?", "For a pack that reads a cloud database: whether this computer is signed in, the project accepts queries and the dataset can be read, in plain words with what to do when not. Call it when a run fails to connect or before the first question on a new database.", null, () => intent.checkConnection(), true);
+  builder("check_connection", "Can the data be reached?", "For a pack that reads a cloud database: whether this computer is signed in, the project accepts queries and the dataset can be read, in plain words with what to do when not. Call it when a run fails to connect or before the first question on a new database.", null, async () => withSignIn(cfg, await intent.checkConnection()), true);
+  builder("sign_in", "Sign in to Google", "For a user who cannot or does not want to use a terminal: opens Google's sign-in page in their browser so they can choose their account and allow read access to BigQuery. Needs a Google sign-in file from their administrator, given once (the result says when it is missing and what to ask for). Returns at once; when the user says they finished, call check_connection. You never see a password, and the user's own Google tool sign-in is left alone.", signInInput, (a) => signInTool(cfg, callers, a));
 
   server.registerTool(
     "generate_tools",

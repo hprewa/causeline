@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
 import { discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
-import { accessMessage, bigQueryProject, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
+import { accessMessage, beginSignIn, bigQueryProject, hasClientFile, hasOwnSignIn, saveClientFile, signInInUse, useOwnSignIn, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
-import { defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
+import { causelineHome, defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
 import { loadAgents, loadPack, Playbook, validatePack, type Result } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 
@@ -342,6 +342,56 @@ export function accessHelpTool(cfg: ServerConfig, args?: { project?: string; dat
   const cap = costCap(cfg.packDir);
   const m = accessMessage({ project, dataset: args?.dataset ?? bq?.dataset, account: args?.account, problem: args?.problem, ...(cap !== undefined && cap > 0 ? { cap_gb: cap } : {}) });
   return { ...m, next: "Show the user the message and offer to adjust it. They send it themselves; you cannot. Afterwards, call check_connection to see if it worked." };
+}
+
+// --- signing in to Google without a terminal ---------------------------------------------------------------------------
+
+let signInAttempt: { status: "waiting" | "done" | "failed"; say?: string } | undefined;
+
+/**
+ * Start a sign-in: opens Google's page in the browser. The person finishes there and tells the assistant, which then checks the connection.
+ * The first time, the administrator's sign-in file is needed (a path to it, given once).
+ */
+export async function signInTool(cfg: ServerConfig, callers: Callers, args?: { client_file?: string }) {
+  const home = cfg.home ?? causelineHome();
+  if (args?.client_file?.trim()) saveClientFile(home, args.client_file.trim());
+  if (!hasClientFile(home)) {
+    return {
+      needs_client: true,
+      say: "To sign in without a terminal, I need a small sign-in file from whoever looks after your Google Cloud account. It is made once for everyone who signs in and it holds no password.",
+      next: "Tell the user to ask their administrator for a Google sign-in file for a desktop app (the guide for administrators has the steps), and to give you the file when they have it. Then call sign_in again with its path as client_file. If they can use a terminal, signing in with Google's own tool also works.",
+    };
+  }
+  const { url, done } = await beginSignIn({ home });
+  signInAttempt = { status: "waiting" };
+  void done.then(async (r) => {
+    if (r.ok) {
+      useOwnSignIn(home);
+      await callers.reset?.(); // the data connection software starts again and picks the new sign-in up
+      signInAttempt = { status: "done" };
+    } else signInAttempt = { status: "failed", say: r.say };
+  });
+  return {
+    started: true,
+    say: "A Google sign-in page has opened in your browser. Choose your account and allow access, then come back here and tell me when you are done.",
+    link: url,
+    next: "Tell the user a page opened, and give them the link in case it did not. When they say they are done, call check_connection. You never see their password or anything they type on Google's page.",
+  };
+}
+
+/** Add which sign-in is in use, and what the last attempt did, to a connection check; point at signing in when that is the fix. */
+export function withSignIn<T extends { ok: boolean; problem?: AccessProblem; advice?: string }>(cfg: ServerConfig, check: T): T & { sign_in: Record<string, unknown> } {
+  const home = cfg.home ?? causelineHome();
+  const using = signInInUse(home);
+  const sign_in: Record<string, unknown> = {
+    using: using === "causeline" ? "Causeline's own Google sign-in" : using === "other_settings" ? "the Google sign-in set in this computer's settings" : "Google's own tool on this computer (or none)",
+    file_ready: hasClientFile(home),
+    signed_in_with_causeline: hasOwnSignIn(home),
+    ...(signInAttempt ? { last_attempt: signInAttempt.status === "failed" ? signInAttempt.say : signInAttempt.status } : {}),
+  };
+  const fixable = check.problem === "not_signed_in" || check.problem === "expired";
+  const advice = fixable && hasClientFile(home) ? "Sign in with Google again: I can open the page for you (sign_in)." : fixable ? `${check.advice ?? ""} If you cannot use a terminal, your administrator can make a Google sign-in file once for everyone; then I can open the sign-in page for you.`.trim() : check.advice;
+  return { ...check, ...(advice ? { advice } : {}), sign_in };
 }
 
 /**

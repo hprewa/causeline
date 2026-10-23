@@ -128,7 +128,7 @@ Sign-in without a terminal, the engineer path, Codex run for real, a tester kit 
 | Step | What | State |
 |---|---|---|
 | 1 | The engineer path: `causeline init` for Codex, Claude Code, Claude Desktop (not `npx github:`, which npm cannot build); a clean-checkout build fault fixed | done |
-| 2 | Analyst sign-in without a terminal (user-created OAuth client) | not started |
+| 2 | Analyst sign-in without a terminal (user-created OAuth client) | built and tested against a fake Google; real-Google proof pending the test client |
 | 3 | Codex run for real (evals and a setup conversation) | not started |
 | 4 | Tester kit, install guide, regression | not started |
 
