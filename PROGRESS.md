@@ -143,7 +143,7 @@ Calibration, held-out incidents, fault injection on the person's own data, confi
 | 1 | Calibration core and tools | done (unit tests and one real run on contact-centre data through the server; BigQuery, the hit rate and a live assistant not shown) |
 | 2 | Held-out incidents and incident import | done (mechanics shown on SQLite and by stub; no live assistant, no BigQuery) |
 | 3 | Fault injection on the person's own data (files / SQLite) | done (clear faults, one synthetic dataset, no cloud data, no live assistant) |
-| 4 | Confidence labels on answers | not started |
+| 4 | Confidence labels on answers | done (a rule from the run and the rung; not compared with how often high answers are right; no live assistant) |
 | 5 | Proof on two packs, rates published | not started |
 | 6 | Synthetic alerts pack | not started |
 

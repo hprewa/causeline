@@ -193,6 +193,10 @@ test("a question built over several messages: ask, confirm, run, refine, switch 
     assert.equal(first.n, 1);
     assert.equal(first.result.findings[0].value, "team_05", "found by date range, not by label");
     assert.equal(first.result.inputs.start_date, "2026-02-16");
+    // every answer says how sure it is, from the run and the expert's rung; this pack's experts are verified-by-construction packs, so the ceiling is what the evidence gives
+    assert.ok(["high", "moderate", "low"].includes(first.confidence.label), JSON.stringify(first.confidence));
+    assert.ok(first.confidence.because.length >= 2, "the reasons are in words");
+    assert.match(first.notes.join(" "), /Say how sure the answer is/);
 
     // refine: a team that is not quite a team name is offered, not guessed; then the run is confined to it
     r = await tool("set_intent", { message: "just team 5", patch: { filters: { team: "tem 05" } } });

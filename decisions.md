@@ -419,3 +419,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **All the planted faults that can be planted must be found, and the unchanged period must stay quiet.** Why: one miss means the analysis cannot be trusted with that kind of problem; a noisy control means any finding proves nothing.
 - **A missing part is met by declining for any data reason.** Why: the analysis may call it data quality or data still arriving depending on where in the data the period is; what matters is that it does not blame a cause.
 - **Cloud data is refused for now.** Why: it is read-only and cannot be copied cheaply; a capped extract is a later decision.
+
+### Phase 2 step 4: confidence labels
+- **The label is the weaker of the run's evidence and the expert's rung.** Why: a strong-looking run from an expert whose numbers have not been checked against the person's reports could be strong evidence for the wrong thing; the rung is the check on that.
+- **The ceilings are draft low, reconciled and calibrated moderate, verified high.** Why: only verified has been shown to find something it was not set up on; calibrated says it does not cry wolf, not that it finds.
+- **The reasons are worked out from the run and quoted from its fields.** Why: the guide forbids stating a number no tool returned; a label with reasons the assistant makes up would break that.
+- **An answer that finds nothing is at most moderate, and says only that nothing stands out.** Why: the analysis not seeing something is not evidence that nothing happened.
+- **The label is added after the run, not part of the result file.** Why: it depends on the expert's rung at the time, which can change, while the result file is a record of what the run found.

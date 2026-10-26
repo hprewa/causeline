@@ -22,3 +22,4 @@ export * from "./rows.js";
 export * from "./toolindex.js";
 export { resolveWindow, hasRange, type WindowArgs } from "./window.js";
 export { parseScope, ScopedToolCaller } from "./scope.js";
+export * from "./confidence.js";

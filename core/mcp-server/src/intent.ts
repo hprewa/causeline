@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { bigQueryProject, checkConnection } from "@causeline/connect-bigquery";
 import { readState } from "@causeline/builder";
 import { canonicalKpi, intentEnv, IntentSession, planRun, validateIntent, type HistoryEntry, type IntentEnv } from "@causeline/intent";
-import { loadPackForRun } from "@causeline/runner";
+import { confidenceOf, loadPackForRun } from "@causeline/runner";
 import { conceptsOf, IntentPatch, loadAgents, loadPack, statusSentence, type IntentCheck, type Result } from "@causeline/schema";
 import type { ServerConfig } from "./config.js";
 import { runPlaybookTool, type Callers } from "./handlers.js";
@@ -113,8 +113,9 @@ export class IntentService {
       ran: true,
       n: entry.n,
       playback: check.playback,
-      notes: [...check.notes, `This answer comes from an expert that ${statusSentence(plan.status, plan.unconfirmed_numbers)}; say so in plain words.`],
+      notes: [...check.notes, `This answer comes from an expert that ${statusSentence(plan.status, plan.unconfirmed_numbers)}; say so in plain words.`, "Say how sure the answer is, with the label and its reasons from confidence (they come from the run, not from your own judgement)."],
       expert: plan.expert,
+      confidence: confidenceOf({ rung: plan.status, unconfirmed: plan.unconfirmed_numbers, result }),
       file,
       result,
       next: "Explain the result in plain words using only what it contains. The user can now refine it with set_intent (the intent is kept), or use recall(n) / start_over.",
