@@ -85,7 +85,7 @@ const when = (iso: string | undefined | null) => (iso ? esc(iso.replace("T", " "
 export function homeBody(s: ProjectSummary): string {
   const kpis = s.kpis.length
     ? `<table><thead><tr><th>KPI</th><th>How far it is trusted</th><th>What would take it further</th></tr></thead><tbody>${s.kpis
-        .map((k) => `<tr><td>${esc(k.kpi.replace(/_/g, " "))}</td><td>${badge(k.level)}${k.unconfirmed ? ' <span class="muted">numbers not confirmed</span>' : ""}</td><td class="muted">${esc(k.gap || "nothing: this is the top rung")}</td></tr>`)
+        .map((k) => `<tr><td>${esc(k.kpi.replace(/_/g, " "))}</td><td>${badge(k.level)}${k.unconfirmed ? ' <span class="muted">numbers not confirmed</span>' : ""}${k.calibration ? ` <span class="muted">raised something in ${Math.round(k.calibration.false_alarm_rate * 100)}% of ${k.calibration.quiet_periods} ordinary periods (allowed ${Math.round(k.calibration.allowed * 100)}%)</span>` : ""}</td><td class="muted">${esc(k.gap || "nothing: this is the top rung")}</td></tr>`)
         .join("")}</tbody></table>`
     : `<p class="muted">No KPI is described yet.</p>`;
   const experts = s.experts.length

@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
-import { accessMessage, beginSignIn, bigQueryProject, hasClientFile, hasOwnSignIn, saveClientFile, signInInUse, useOwnSignIn, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
+import { calibrate, calibrationStatus, labelPeriod, sayRate, type CalibrationReport, discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { sayBytes, sayUsd, accessMessage, beginSignIn, bigQueryProject, hasClientFile, hasOwnSignIn, saveClientFile, signInInUse, useOwnSignIn, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
 import { causelineHome, defaultPlaybooksDir, loadPackForRun, type ToolboxInstaller, loadPlaybook, resolveThresholds, runPlaybook, ToolIndex, type RunInputs, type ToolCaller } from "@causeline/runner";
@@ -342,6 +342,72 @@ export function accessHelpTool(cfg: ServerConfig, args?: { project?: string; dat
   const cap = costCap(cfg.packDir);
   const m = accessMessage({ project, dataset: args?.dataset ?? bq?.dataset, account: args?.account, problem: args?.problem, ...(cap !== undefined && cap > 0 ? { cap_gb: cap } : {}) });
   return { ...m, next: "Show the user the message and offer to adjust it. They send it themselves; you cannot. Afterwards, call check_connection to see if it worked." };
+}
+
+// --- calibration: does the analysis cry wolf? ---------------------------------------------------------------------------
+
+/** A calibration report in the words the person is told: every figure comes from the replay, and the next thing to do is said. */
+export function describeCalibration(r: CalibrationReport) {
+  const ev = r.evaluation;
+  if (r.stage === "not_ready") return { ...r, say: r.reasons.join(" "), next: "Get the KPI reconciled first (the numbers from the user's own reports), then calibrate." };
+  if (r.stage === "needs_go_ahead") {
+    const e = r.estimate!;
+    return {
+      ...r,
+      needs_go_ahead: true,
+      say: `Checking ${e.periods} past periods would read ${e.measured ? "about" : "roughly"} ${sayBytes(e.total_bytes)} in all (${sayUsd(e.total_bytes)}), about ${sayBytes(e.bytes_per_period)} each. Each period keeps to your limit for one question.`,
+      next: "Tell the user this in plain words and ask whether to go ahead. If they agree, call calibrate again with go_ahead set to true; if not, nothing is read.",
+    };
+  }
+  const looked = `I have looked at ${r.progress.done} of ${r.progress.total} past periods.`;
+  if (r.stage === "running") {
+    return { ...r, say: `${looked} So far ${ev!.alarms} of the ${ev!.judged} I could judge raised something.`, next: "Say the progress in a few words and call calibrate again to continue; it picks up where it stopped." };
+  }
+  const base = `Of the ${ev!.judged} ordinary periods I could judge, ${ev!.alarms} raised something (${sayRate(ev!.rate)}). You allow ${sayRate(ev!.allowed)}.`;
+  const skipped = ev!.not_judged > 0 ? ` ${ev!.not_judged} period${ev!.not_judged === 1 ? " was" : "s were"} not judged (the analysis said it could not compare ${ev!.not_judged === 1 ? "it" : "them"} fairly) and ${ev!.not_judged === 1 ? "is" : "are"} not counted.` : "";
+  const real = ev!.real_events > 0 ? ` ${ev!.real_events} ${ev!.real_events === 1 ? "was" : "were"} left out because you said something real happened then.` : "";
+  if (!ev!.enough) {
+    return { ...r, say: `${base}${skipped}${real} That is too few quiet periods to say anything: at least 8 are needed, so the KPI stays ${r.level}.`, next: "Say that more history is needed. Nothing else can be done now." };
+  }
+  if (ev!.pass) {
+    return { ...r, say: `${base}${skipped}${real} It stays quiet enough, so the KPI is now ${r.level}. With only ${ev!.judged} periods the true rate could still be as high as ${sayRate(ev!.upper)}.`, next: "Say the result, then carry on (past incidents, then verify_expert)." };
+  }
+  return {
+    ...r,
+    say: `${base}${skipped}${real} That is more than you allow, so the KPI stays ${r.level}.`,
+    next: r.flagged.length > 0
+      ? "Ask the user about the flagged periods ONE AT A TIME: 'Was something real going on around <words>?' using what it said (flagged[].what). Record each answer with label_period (real true or false), then call calibrate again. A yes is a real event: it stops counting against the KPI, and is worth recording as a past incident. Do not argue the numbers away."
+      : "Every flagged period has been answered. Say plainly that it raises something more often than allowed; the allowed rate can be changed only if the user chooses (calibrate with allowed_false_alarm_rate).",
+  };
+}
+
+export async function calibrateTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean }) {
+  needProject(cfg);
+  if (!args?.kpi) throw new Error("say which KPI to calibrate");
+  const r = await calibrate({ workspace: cfg.packDir, kpi: args.kpi, makeTools: () => callers.caller(), corePlaybooksDir: cfg.corePlaybooksDir, allowed: args.allowed_false_alarm_rate, goAhead: args.go_ahead });
+  return describeCalibration(r);
+}
+
+export function labelPeriodTool(cfg: ServerConfig, args: { kpi: string; period: string; real: boolean; note?: string }) {
+  needProject(cfg);
+  if (typeof args?.real !== "boolean") throw new Error("say whether something real happened (real true or false)");
+  const r = labelPeriod(cfg.packDir, args.kpi, args.period, args.real, args.note);
+  const open = r.evaluation.flagged.length;
+  return {
+    period: r.period,
+    real: r.real,
+    evaluation: r.evaluation,
+    say: r.real ? "Noted: that period had something real in it, so it no longer counts against the KPI." : "Noted: nothing real happened then, so it still counts as a false alarm.",
+    next: open > 0 ? `${open} flagged period${open === 1 ? " is" : "s are"} still unanswered: ask about the next one.` : "Every flagged period is answered: call calibrate again to record the result.",
+  };
+}
+
+export function calibrationStatusTool(cfg: ServerConfig, args: { kpi: string }) {
+  needProject(cfg);
+  const s = calibrationStatus(cfg.packDir, args.kpi);
+  if (!s.replayed) return { ...s, say: `${args.kpi} has not been checked for false alarms yet.`, next: "Call calibrate when the KPI is reconciled." };
+  const ev = s.evaluation!;
+  return { ...s, say: `${ev.alarms} of ${ev.judged} ordinary periods raised something (${sayRate(ev.rate)}); allowed ${sayRate(ev.allowed)}.` };
 }
 
 // --- signing in to Google without a terminal ---------------------------------------------------------------------------

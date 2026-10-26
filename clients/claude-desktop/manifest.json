@@ -44,6 +44,9 @@
   },
   "tools": [
     { "name": "check_setup", "description": "Is everything ready to answer?" },
+    { "name": "calibrate", "description": "Check a KPI for false alarms over its past periods" },
+    { "name": "label_period", "description": "Say whether something real happened in a flagged period" },
+    { "name": "calibration_status", "description": "Where the false-alarm check stands" },
     { "name": "sign_in", "description": "Open the Google sign-in page in your browser" },
     { "name": "setup_card", "description": "What you have told us before setup, and what to ask next" },
     { "name": "get_guide", "description": "The guidance for a kind of request" },

@@ -144,7 +144,7 @@ export interface ProjectSummary {
   /** "3 of 8 setup steps done", so a returning person knows where they are. */
   progress?: string;
   data: { dialect: string; tables: { name: string; rows: number }[] };
-  kpis: { kpi: string; type: string; level: Rung; unconfirmed: boolean; gap: string }[];
+  kpis: { kpi: string; type: string; level: Rung; unconfirmed: boolean; gap: string; calibration?: { pass: boolean; false_alarm_rate: number; allowed: number; quiet_periods: number } }[];
   experts: { name: string; kpi: string; task: string; status: Rung; unconfirmed_numbers: boolean }[];
   incidents: number;
   /** The last few changes of rung, newest last. */
@@ -162,7 +162,7 @@ export function projectSummary(folder: string, name?: string): ProjectSummary {
     const pack = loadPack(folder);
     kpis = Object.entries(pack.ontology.metrics).map(([kpi, m]) => {
       const rec = state?.kpis[kpi];
-      return { kpi, type: m.type, level: levelOf(rec), unconfirmed: unconfirmedNumbers(rec), gap: levelGap(rec) };
+      return { kpi, type: m.type, level: levelOf(rec), unconfirmed: unconfirmedNumbers(rec), gap: levelGap(rec), ...(rec?.calibration ? { calibration: { pass: rec.calibration.pass, false_alarm_rate: rec.calibration.false_alarm_rate, allowed: rec.calibration.allowed, quiet_periods: rec.calibration.quiet_periods } } : {}) };
     });
     experts = loadAgents(folder).map((a) => ({ name: a.name, kpi: a.kpi, task: a.task, status: a.status, unconfirmed_numbers: a.unconfirmed_numbers }));
     // a project not built here has no checks of its own on record: a KPI stands where its best expert is written to stand

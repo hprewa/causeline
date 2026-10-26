@@ -563,6 +563,8 @@ export interface SignoffKpi {
   /** The numbers it rests on were only a plausible sample, not confirmed against the person's reports. */
   unconfirmed: boolean;
   auto?: { at: string; pass: boolean; results: AutoResult[] };
+  /** The false-alarm check, when it has been run: the share of ordinary periods that raised something, against what is allowed. */
+  calibration?: { pass: boolean; false_alarm_rate: number; allowed: number; quiet_periods: number };
   checks: { id: string; kind: CheckKind; label: string; state: SignoffCheck["state"]; expected?: number; source?: string; got?: number; note?: string }[];
 }
 
@@ -578,6 +580,7 @@ export function signoffStatus(workspace: string, kpi?: string): SignoffKpi[] {
       gap: levelGap(rec),
       unconfirmed: unconfirmedNumbers(rec),
       ...(rec.auto ? { auto: rec.auto } : {}),
+      ...(rec.calibration ? { calibration: { pass: rec.calibration.pass, false_alarm_rate: rec.calibration.false_alarm_rate, allowed: rec.calibration.allowed, quiet_periods: rec.calibration.quiet_periods } } : {}),
       checks: rec.checks.map((c) => ({ id: c.id, kind: c.kind, label: c.label, state: c.state, ...(c.expected !== undefined ? { expected: c.expected, source: c.source, got: c.got } : {}), ...(c.note ? { note: c.note } : {}) })),
     }));
 }

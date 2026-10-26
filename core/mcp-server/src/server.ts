@@ -11,7 +11,7 @@ import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import type { CardAnswers } from "@causeline/builder";
 import type { AccessProblem } from "@causeline/connect-bigquery";
-import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, signInTool, withSignIn, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, calibrateTool, labelPeriodTool, calibrationStatusTool, signInTool, withSignIn, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -72,6 +72,28 @@ const costCapInput = fromJsonSchema<{ dollars?: number; gb?: number; no_limit?: 
 const signInInput = fromJsonSchema<{ client_file?: string }>(
   obj({ client_file: { type: "string", description: "The path to the Google sign-in file the user's administrator gave them (needed once). Leave out when it was already given." } }),
 );
+const calibrateInput = fromJsonSchema<{ kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean }>(
+  obj(
+    {
+      kpi: { type: "string", description: "The KPI to check for false alarms (its name in the pack)." },
+      allowed_false_alarm_rate: { type: "number", description: "Only if the user chooses a different limit, as a fraction (0.05 is one false alarm in twenty ordinary periods, the standard). Never change it to make a result pass." },
+      go_ahead: { type: "boolean", description: "True only after the user has agreed to what the replay reads (cloud data)." },
+    },
+    ["kpi"],
+  ),
+);
+const labelPeriodInput = fromJsonSchema<{ kpi: string; period: string; real: boolean; note?: string }>(
+  obj(
+    {
+      kpi: { type: "string" },
+      period: { type: "string", description: "The period label exactly as calibrate returned it (flagged[].period)." },
+      real: { type: "boolean", description: "True when the user says something real happened then (it stops counting as a false alarm); false when nothing did." },
+      note: { type: "string", description: "What they said happened, in their words." },
+    },
+    ["kpi", "period", "real"],
+  ),
+);
+const calibrationStatusInput = fromJsonSchema<{ kpi: string }>(obj({ kpi: { type: "string" } }, ["kpi"]));
 const accessHelpInput = fromJsonSchema<{ project?: string; dataset?: string; account?: string; problem?: AccessProblem }>(
   obj({
     project: { type: "string", description: "The Google Cloud project their queries are billed to; defaults to the open project's." },
@@ -339,6 +361,9 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("describe_data", "Look at the data", "Profile every table: columns, types, empty and distinct counts, samples, and suggestions (time columns, flags, measures, places and products, tables that join, columns that nest, one belonging to exactly one of another). Suggestions only: ask the user about anything in 'ask' instead of guessing. On BigQuery, when looking could read more than 1 GB it first returns needs_go_ahead with the cost in plain words and reads nothing: tell the user and call again with go_ahead true only if they agree.", goAheadInput, (a) => describeDataTool(cfg, a), true);
   builder("discover_for_kpi", "Start from one KPI", "Setting up a BigQuery dataset from one KPI instead of the whole dataset. First call (no tables): reads nothing, returns the connected tables that fit the KPI's words with why; ask the user which to look at. Second call with the confirmed tables: looks at only those and returns a draft in sentences (what is counted, over which dates, broken down by what), the risks seen (test or cancelled rows, a percent that may be a fraction, empty dates, data still arriving, several date columns, joins that lose rows) and questions to ask one at a time. A suggestion for the user to confirm, never a decision.", discoverInput, (a) => discoverForKpiTool(cfg, a));
   builder("access_help", "A message to whoever looks after the data", "When the user cannot read their data (check_connection says no permission, cannot read or cannot run queries) or has not asked for access yet: writes a ready-to-send message to their administrator naming the exact read-only roles (BigQuery Data Viewer on the dataset, BigQuery Job User on the billing project), what the access allows and does not, and the cost limit. Show it to the user to adjust and send themselves.", accessHelpInput, (a) => accessHelpTool(cfg, a), true);
+  builder("calibrate", "Check a KPI for false alarms", "Replays the KPI's analysis over its own past periods and counts how often it raises something in ordinary ones, against what the user allows (one in twenty unless they say otherwise). Needs a reconciled KPI. On cloud data it first returns needs_go_ahead with what it would read. A long replay takes several steps: it reports progress, run it again. When it raises something too often it returns the flagged periods: ask the user about each, one at a time, and record the answer with label_period. A KPI that passes becomes calibrated. Never state a rate that is not in the result.", calibrateInput, (a) => calibrateTool(cfg, callers, a));
+  builder("label_period", "Say whether something real happened in a flagged period", "Records the user's answer for a period calibrate flagged: real true means something genuine happened then, so it stops counting as a false alarm (and is worth recording as a past incident); false means nothing did. Then call calibrate again.", labelPeriodInput, (a) => labelPeriodTool(cfg, a));
+  builder("calibration_status", "Where the false-alarm check stands", "What the false-alarm check found for a KPI so far: how many ordinary periods raised something, the rate allowed, and the real events the user named.", calibrationStatusInput, (a) => calibrationStatusTool(cfg, a), true);
   builder("cost_limit", "What one question may read", "Set or read the most one question may read from BigQuery, in the user's terms: give dollars ('about $1'), gb, or no_limit. With nothing given it says the limit in force, in plain words. Say the result to the user as it is returned; do not do the money sums yourself.", costCapInput, (a) => costCapTool(cfg, a));
   builder("test_fact", "Try a draft SELECT", "Run a draft fact SELECT (one row per event, every column named, joins allowed) against the user's data and see its columns, a sample and the row count. Read-only: anything but a single SELECT is refused. Use it before save_pack.", testFactInput, (a) => testFactTool(cfg, a), true);
   builder("save_pack", "Save the business description", "Check the draft ontology and data definition (shape, how the parts fit, that every SELECT and formula runs on the user's data) and only then write the pack files and generate the query tools. Returns plain-words errors and nothing is written while there are any. Experts are saved as drafts. Never show the user YAML or SQL; use play_back.", saveInput, (a) => savePackTool(cfg, a));

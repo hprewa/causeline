@@ -398,3 +398,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A materiality floor (at least the whole's standard error) was rejected.** Why: it removed the real Wells Fargo incident, a node with a clear signal of its own inside a noisy total.
 - **A slot found inside a flat whole is reported but does not narrow the rest of the run.** Why: the change may be elsewhere (a company all week), and narrowing hid it.
 - **A day-level spread for every comparison was rejected.** Why: it broke a real surge into pieces through the rule that every bucket of a run must clear the bar on its own.
+
+### Phase 2 step 1: the calibration core
+- **Every claim counts as a false alarm until the person says it was real; real events are excluded and kept.** Why: the data cannot tell a false alarm from a real event nobody wrote down; asking, one week at a time, makes the rate honest and collects incidents as a by-product.
+- **A period the analysis declines to judge is reported and counted neither way; fewer than 8 judged periods cannot earn the rung.** Why: a refusal is the behaviour we want; with a handful of periods a zero rate says almost nothing (the upper bound is shown beside the rate).
+- **The replay keeps every outcome on disk and works in 40-second steps.** Why: a stopped run must resume, a label must not cost a new replay, and a tool call that runs a minute is cut off by clients.
+- **A cloud replay says what it would read before reading, and the first period's measured cost replaces the rough estimate.** Why: the same rule as looking at data; a replay is the largest single read in setup.
+- **The hit rate waits for step 2.** Why: it needs the held-out incidents; reporting one without them would be a number with nothing behind it.

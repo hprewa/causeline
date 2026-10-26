@@ -133,6 +133,7 @@ function kpiCard(k) {
   if (k.description) card.appendChild(h("div", { class: "lede" }, k.description));
   card.appendChild(h("div", { class: "gap" }, (NOW[k.level] || "") + (k.gap ? "To go further: " + k.gap + "." : "")));
   if (k.unconfirmed) card.appendChild(h("div", { class: "note" }, "Numbers not confirmed against your reports: answers from this KPI say so."));
+  if (k.calibration) card.appendChild(h("div", { class: "note" }, "False alarms: it raised something in " + Math.round(k.calibration.false_alarm_rate * 100) + "% of " + k.calibration.quiet_periods + " ordinary periods; you allow " + Math.round(k.calibration.allowed * 100) + "%. " + (k.calibration.pass ? "That is within what you allow." : "That is more than you allow.")));
   if (k.auto) {
     var failed = k.auto.results.filter(function (r) { return !r.ok && !r.skipped; });
     var d = h("details", failed.length ? { open: "open" } : null, h("summary", null, failed.length ? failed.length + " automatic check(s) fail" : "Automatic checks: all pass (" + k.auto.results.length + ")"));
