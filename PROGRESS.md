@@ -144,7 +144,7 @@ Calibration, held-out incidents, fault injection on the person's own data, confi
 | 2 | Held-out incidents and incident import | done (mechanics shown on SQLite and by stub; no live assistant, no BigQuery) |
 | 3 | Fault injection on the person's own data (files / SQLite) | done (clear faults, one synthetic dataset, no cloud data, no live assistant) |
 | 4 | Confidence labels on answers | done (a rule from the run and the rung; not compared with how often high answers are right; no live assistant) |
-| 5 | Proof on two packs, rates published | numbers done (contact-centre reaches verified on one seed, false-alarm 3.5% over 8 seeds; complaints on real data 39% and 20%: not calibrated); live-assistant run and final regression next |
+| 5 | Proof on two packs, rates published | done: contact-centre reaches verified on one seed and false-alarm 3.5% over 8 seeds; complaints on real data 39% and 20% (not calibrated); one live Claude Code run through the ladder; full regression green |
 | 6 | Synthetic alerts pack | not started |
 
 ## Projects and the companion page
