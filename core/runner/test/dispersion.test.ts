@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { adjustedZ, estimateDispersion, NO_DISPERSION, shortfallZ } from "../src/dispersion.js";
+import { adjustedZ, estimateDispersion, inflateZ, NO_DISPERSION, shortfallZ } from "../src/dispersion.js";
 import { zScore } from "../src/stats.js";
 import type { Bucket } from "../src/types.js";
 
@@ -46,4 +46,24 @@ test("a shortfall must beat the data's own variation to count as missing data", 
   assert.ok(shortfallZ(400, 150, NO_DISPERSION) > 4, "counting noise alone: 150 of a usual 400 is far below");
   assert.ok(shortfallZ(400, 150, { ...NO_DISPERSION, volumeS2: 0.25, history: 10 }) < 4, "a node whose volume swings by half is not missing data at 150");
   assert.equal(shortfallZ(0, 0, NO_DISPERSION), 0);
+});
+
+test("a seasonal headline z shrinks with the data's own movement and is unchanged without it", () => {
+  assert.equal(inflateZ("sum", 6, 1200, 1000, 0.25, 4, NO_DISPERSION), 6);
+  const adj = inflateZ("sum", 6, 1200, 1000, 0.25, 4, { rho: 0, s2: 0.01, volumeS2: 0, history: 10 });
+  assert.ok(adj > 0 && adj < 6);
+  const rate = inflateZ("ratio", -4, 0.88, 0.9, 0.25, 4, { rho: 0.0005, s2: 0, volumeS2: 0, history: 10 });
+  assert.ok(rate < 0 && rate > -4);
+  assert.equal(inflateZ("sum", 0, 1000, 1000, 0.25, 4, { rho: 0, s2: 0.01, volumeS2: 0, history: 10 }), 0);
+});
+
+test("a headline that moves less than the data's ordinary period-to-period swing is not significant once that swing is allowed for", () => {
+  // twelve ordinary weeks of about 10,000 rows that swing by roughly 8%: a 9% move is ordinary, though counting noise alone calls it huge
+  const weeks = series([10000, 10800, 9300, 10600, 9400, 10900, 9200, 10700, 9500, 10500, 9600, 10400].map((n) => [n, n] as [number, number]));
+  const disp = estimateDispersion(weeks, 12, "sum");
+  assert.ok(disp.s2 > 0.001, `excess relative noise is measured (${disp.s2})`);
+  const cur = { num: 10900, den: 10900, sq: 10900 };
+  const base = { num: 40000, den: 40000, sq: 40000 };
+  assert.ok(Math.abs(adjustedZ("sum", cur, base, 0.25, NO_DISPERSION)) > 6);
+  assert.ok(Math.abs(adjustedZ("sum", cur, base, 0.25, disp)) < 2);
 });

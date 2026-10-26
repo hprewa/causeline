@@ -23,3 +23,22 @@ Phase 2 of `PROGRESS.md`. Each section is one step; each ends with what was not 
 **Decision.** Alarm = a judged period (the run completed) in which the analysis claims something: a significant headline, a finding, or a masking flag other than thin cells (definition a). A period it declines to judge is reported separately ("could not judge N periods") and is not in the denominator; an error counts as could-not-judge. Every alarm counts as false until the person labels it real.
 
 **Not shown.** Whether a dispersion-adjusted headline brings the complaints rate under 1 in 20 (not tried); how many of the complaints alarms are real events (no labels yet; volume did move a lot in these weeks); a longer history than 16 weeks; other KPIs of the complaints pack (monetary relief rate); any rate for an alerts-style pack.
+
+## Step 0b: the analysis allows for the data's own movement, and holds claims inside a flat whole to a higher standard
+
+**Why.** Step 0 showed the headline test calling 11 of 11 judged complaint-volume weeks significant. A change here is a code change to the analysis, so every existing result was re-checked.
+
+**What changed (`core/runner`).**
+1. The headline z allows for the data's own period-to-period movement, estimated from earlier periods that share the period's calendar flags (`estimateDispersion`, `adjustedZ`, and `inflateZ` for the seasonal form). Unchanged when there are fewer than 5 such periods.
+2. The whole period's verdict inside the time drill is the headline's, so one run does not answer "did it change?" two ways.
+3. Inside a flat whole, a node or slot must clear a stricter bar (the family significance level is tightened tenfold, `FLAT_WHOLE_ALPHA`), a slot is judged against its own level's spread (`bucketDispersion`, used only here), and a finding is checked against the node's own last eight periods (`dropUsualFindings`, using the existing contribution verdicts); one that moves this much in ordinary periods is left out with a note, and its flag with it. A real change keeps the drill's own verdicts.
+4. A slot found inside a flat whole is reported but the rest of the run still looks at the whole period; narrowing to it hid the company-level change in the Wells Fargo case.
+
+**Tried and not kept.** (a) A materiality rule (a node must carry at least the whole's standard error): it removed the real Wells Fargo incident, whose own count rose by 190 on about 214 a week (z = 7.7) while the week's total is too noisy to notice; a stricter bar replaced it. (b) A day- and interval-level spread applied everywhere: it made one half-hour of a real surge fall to z = 3.5 against a bar of 3.53 and broke the run into pieces, so it applies only inside a flat whole.
+
+**Measured (one run each).**
+- Existing checks after the change: unit tests pass (runner 176, all packages green), contact-centre eval **25/25**, routing **38/38**, intents **16/16**, integration **8/8**, complaints eval on real BigQuery **7/7** (including the real Wells Fargo incident), purity and ladder checks pass.
+- Contact-centre replay, no faults, 4 seeds: 72 replays, 12 declined (holiday week), 60 judged, **2 raised something (3.3%)**, the same two week-8 cases as before.
+- Complaints, newest 16 complete weeks, 2 KPIs (BigQuery, about 17 GB a replay): judged-week alarm rate **71% before, 58% after** (volume 11 of 11 before, 11 of 13 after; timely rate 6 of 13 before, 4 of 13 after). The headline alone moved from 14 of 24 significant to 2 of 26. Most remaining alarms are findings under a flat headline. **This stretch is not quiet:** it holds a persistent surge in Wells Fargo checking-account complaints (z up to 27, still off in the following weeks), so those alarms may be real; they cannot be called false until the person labels them, which is what calibration's labelling step is for. The published rate will be computed on a window chosen with that in mind and say so.
+
+**Not shown.** A false-alarm rate on complaints that is not mixed up with real events; whether the remaining flat-whole findings are real; behaviour on packs without declared cycles beyond the unit tests; the cost of the extra history check on large packs (up to six day-level queries a run, only when the headline is flat); the parked sprint-3 item "benjamini-hochberg across all nodes".

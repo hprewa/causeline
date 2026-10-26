@@ -114,6 +114,56 @@ export function candidateNodes(looks: LevelLook[]): { level: string; node: strin
   return [...picked.values()].sort((a, b) => b.weight - a.weight).slice(0, MAX_NODES);
 }
 
+/** Findings checked against their own history inside a flat whole (each costs one day-level query). */
+export const MAX_JUDGED = 6;
+
+/**
+ * Findings the drill made inside a whole that did not move are checked against the node's own history: a node that contributes this much in
+ * ordinary periods is not news, and is left out (with a note saying so). The total's own spread cannot judge a node, which is far burstier
+ * week to week than the whole. A real change keeps the drill's verdicts, and a node with too little history to judge is kept.
+ */
+export async function dropUsualFindings(ctx: RunContext, stepId: string): Promise<void> {
+  if (ctx.headline?.significant) return;
+  const period = ctx.period;
+  const series = period?.periodSeries;
+  const fine = ctx.ontology.time.levels[1];
+  if (!period || !series || !fine || ctx.drafts.length === 0) return;
+  const idx = series.findIndex((b) => b.bucket === period.label);
+  if (idx < 0) return;
+  const timeLevels = new Set(ctx.ontology.time.levels);
+  const k = Math.max(1, period.baselineLabels.length);
+  const baseIdx = period.baselineLabels.map((l) => series.findIndex((b) => b.bucket === l)).filter((i) => i >= 0);
+  const first = Math.max(0, idx - HISTORY_PERIODS - k);
+  const from = [series[first].bucket_start, period.base.start].sort()[0];
+  const to = series[idx].bucket_end;
+  const parentCur = comps(series[idx]);
+  const parentBase = sum(baseIdx.map((i) => comps(series[i])));
+  const kept: FindingDraft[] = [];
+  let judged = 0;
+  for (const d of ctx.drafts) {
+    if (timeLevels.has(d.dimension) || d.role === "contributor" || judged >= MAX_JUDGED) {
+      kept.push(d);
+      continue;
+    }
+    judged++;
+    const rows = toBuckets(await ctx.tools.call(ctx.index.series(ctx.metric, fine, [d.dimension, ...Object.keys(d.scope ?? {})]), { start: from, end: to, [d.dimension]: d.value, ...(d.scope ?? {}) }, stepId));
+    const node = aggregateInto(series, rows);
+    const nodeBase = sum(baseIdx.map((i) => node[i]));
+    const now = effectOf(ctx.kind, parentCur, parentBase, node[idx], nodeBase, k, ctx.minVolume);
+    const history: number[] = [];
+    for (let j = Math.max(k, idx - HISTORY_PERIODS); j < idx; j++) {
+      const before = Array.from({ length: k }, (_, n) => j - k + n);
+      history.push(effectOf(ctx.kind, comps(series[j]), sum(before.map((i) => comps(series[i]))), node[j], sum(before.map((i) => node[i])), k, ctx.minVolume).contribution);
+    }
+    if (verdictOf(now.contribution, history, nodeBase.den / k, ctx.minVolume).verdict === "usual") {
+      ctx.seasonNotes.push(`${d.dimension} "${d.value}" was left out: while the whole did not change, it moves this much in ordinary periods`);
+      // the flag that pointed at it goes with it
+      ctx.flags = ctx.flags.filter((f) => !(f.type === "dispersion" && f.level === d.dimension && f.node === d.value));
+    } else kept.push(d);
+  }
+  ctx.drafts = kept;
+}
+
 /**
  * Who contributed how much to the change, and is that usual? For the biggest contributors the drill found, each contribution (in the KPI's
  * units, as share of the change, rate and mix) is worked out for this period and for up to HISTORY_PERIODS earlier ones against their own

@@ -89,3 +89,56 @@ export function shortfallZ(usual: number, current: number, disp: Dispersion): nu
   const sd = Math.sqrt(usual + disp.volumeS2 * usual * usual);
   return sd > 0 ? (usual - current) / sd : 0;
 }
+
+/**
+ * A z-score from the seasonal standardisation (the headline of a KPI with declared cycles), with the data's own period-to-period movement added
+ * to its standard error the way `adjustedZ` does for the plain form. `value` and `expected` are in the units of the KPI (a rate, or a period
+ * total); `k` scales a total's baseline to the period and `periods` is how many baseline periods the rate's expectation averages. With no
+ * dispersion the z comes back unchanged.
+ */
+export function inflateZ(kind: "ratio" | "sum", z: number, value: number, expected: number, k: number, periods: number, disp: Dispersion): number {
+  if (!Number.isFinite(z) || z === 0) return z;
+  const extra = kind === "sum" ? disp.s2 * expected * expected * (1 + k) : disp.rho * expected * (1 - expected) * (1 + 1 / Math.max(1, periods));
+  if (!(extra > 0)) return z;
+  const diff = value - expected;
+  const se2 = (diff / z) ** 2;
+  return diff / Math.sqrt(se2 + extra);
+}
+
+/** Fewest leave-one-out comparisons that make an estimate of a bucket level's own spread mean anything. */
+export const MIN_BUCKET_RESIDUALS = 8;
+
+/**
+ * The extra, non-counting variation of the buckets of one time level (the days of a week, the half hours of a day), estimated from the baseline
+ * buckets themselves: each is compared with the other baseline buckets at the same place in the cycles (`expectedOf`), and what is left beyond
+ * the counting noise of that comparison is the level's own spread. A day's total moves far more than a week's total does, so the week's spread
+ * cannot judge it. Zero (nothing adjusted) with fewer than MIN_BUCKET_RESIDUALS comparisons.
+ */
+export function bucketDispersion(baseline: Bucket[], expectedOf: (b: Bucket, others: Bucket[]) => { base: Components | null; matches: number }, kind: "ratio" | "sum"): Dispersion {
+  const resid: number[] = [];
+  const counting: number[] = [];
+  const weight: number[] = [];
+  for (let i = 0; i < baseline.length; i++) {
+    const b = baseline[i];
+    if (b.den <= 0) continue;
+    const e = expectedOf(b, baseline.filter((_, j) => j !== i));
+    if (!e.base || e.base.den <= 0 || e.matches < 1) continue;
+    const k = 1 / e.matches;
+    if (kind === "sum") {
+      const expected = e.base.num * k;
+      if (expected <= 0) continue;
+      resid.push(((b.num - expected) / expected) ** 2);
+      counting.push(((b.sq ?? b.num) + (e.base.sq ?? e.base.num) * k * k) / (expected * expected));
+    } else {
+      const pooled = (b.num + e.base.num) / (b.den + e.base.den);
+      const pq = pooled * (1 - pooled);
+      if (pq <= 0) continue;
+      resid.push((b.num / b.den - e.base.num / e.base.den) ** 2 / pq);
+      counting.push(1 / b.den + 1 / e.base.den);
+    }
+    weight.push(1 + k);
+  }
+  if (resid.length < MIN_BUCKET_RESIDUALS) return NO_DISPERSION;
+  const excess = Math.max(0, mean(resid.map((r, i) => (r - counting[i]) / weight[i])));
+  return kind === "sum" ? { rho: 0, s2: excess, volumeS2: 0, history: resid.length } : { rho: excess, s2: 0, volumeS2: 0, history: resid.length };
+}

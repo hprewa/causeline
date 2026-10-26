@@ -1,4 +1,5 @@
 import type { ChildRow, Components } from "./types.js";
+import { adjustedZ, type Dispersion } from "./dispersion.js";
 import { rate, sum, zScore, zSum } from "./stats.js";
 
 export interface ChildContribution {
@@ -178,7 +179,7 @@ const variance = (c: Components, mean: number) => (c.sq !== undefined && c.den >
  * would have had at its own mix of buckets. Total: contribution = total - (baseline total / matches).
  * Same Decomposition shape as the others, so masking and decisions are unchanged.
  */
-export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): Decomposition | null {
+export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum", disp?: Dispersion): Decomposition | null {
   const cur = sum(items.map((i) => i.cur));
   const judged = items.filter((i) => i.base !== null && i.base.den > 0);
   if (cur.den <= 0 || judged.length === 0) return null;
@@ -192,7 +193,7 @@ export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): De
       const expected = ok ? i.base!.num / i.matches : i.cur.num;
       const contribution = ok ? i.cur.num - expected : 0;
       change += contribution;
-      if (ok) varSum += (i.cur.sq ?? 0) + (i.base!.sq ?? 0) / (i.matches * i.matches);
+      if (ok) varSum += (i.cur.sq ?? 0) + (i.base!.sq ?? 0) / (i.matches * i.matches) + (disp?.s2 ?? 0) * expected * expected * (1 + 1 / i.matches);
       return {
         node: i.node,
         cur: i.cur,
@@ -203,7 +204,7 @@ export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): De
         mixEffect: 0,
         contribution,
         share: null,
-        z: ok ? zSum(i.cur, i.base!, 1 / i.matches) : 0,
+        z: ok ? (disp ? adjustedZ("sum", i.cur, i.base!, 1 / i.matches, disp) : zSum(i.cur, i.base!, 1 / i.matches)) : 0,
       };
     });
     const expectedTotal = cur.num - change;
@@ -229,7 +230,7 @@ export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): De
     const r0 = ok ? i.base!.num / i.base!.den : r1;
     const contribution = ok ? w * (r1! - r0!) : 0;
     change += contribution;
-    if (ok) varDiff += w * w * (variance(i.cur, r1!) / i.cur.den + variance(i.base!, r0!) / i.base!.den);
+    if (ok) varDiff += w * w * (variance(i.cur, r1!) / i.cur.den + variance(i.base!, r0!) / i.base!.den + extraRate(i, disp));
     return {
       node: i.node,
       cur: i.cur,
@@ -240,7 +241,7 @@ export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): De
       mixEffect: 0,
       contribution,
       share: null,
-      z: ok ? zScore(i.cur, i.base!) : 0,
+      z: ok ? (disp ? adjustedZ("ratio", i.cur, i.base!, 1 / i.matches, disp) : zScore(i.cur, i.base!)) : 0,
     };
   });
   for (const c of children) c.share = change === 0 ? null : c.contribution / change;
@@ -251,4 +252,11 @@ export function decomposeBuckets(items: BucketItem[], kind: "ratio" | "sum"): De
     rateTotal: change,
     mixTotal: 0,
   };
+}
+
+/** A bucket's extra variance of its rate difference from the level's own spread (zero without one). */
+function extraRate(i: BucketItem, disp?: Dispersion): number {
+  if (!disp || disp.rho <= 0 || !i.base || i.base.den <= 0 || i.cur.den <= 0) return 0;
+  const pooled = (i.cur.num + i.base.num) / (i.cur.den + i.base.den);
+  return disp.rho * pooled * (1 - pooled) * (1 + 1 / Math.max(1, i.matches));
 }

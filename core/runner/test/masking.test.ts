@@ -174,3 +174,12 @@ test("a big child that is only a little worse than its siblings is part of a gen
   assert.equal(c.decision, "drill");
   assert.equal(c.culprit, "a");
 });
+
+test("inside a flat parent a child must clear a stricter bar than inside a parent that moved", () => {
+  // one of ten children is worse at z about 3.5: enough when the parent moved, not enough to claim the flat parent is hiding it
+  const base = [child("a", 40000, 0.9, 0.9), child("b", 40000, 0.9, 0.9), child("c", 40000, 0.9, 0.9)];
+  const d = decomposeRatio([...base, ...Array.from({ length: 7 }, (_, i) => child(`x${i}`, 40000, 0.9, 0.9))])!;
+  const flat = (z: number) => ({ ...d, parent: { ...d.parent, z: 0.2, change: 0.0001 }, children: d.children.map((c) => (c.node === "a" ? { ...c, z, contribution: -0.002, rateEffect: -0.002 } : c)) });
+  assert.equal(decideLevel(flat(-3.5), opts()).culprit, null, "borderline: not reported");
+  assert.equal(decideLevel(flat(-7.7), opts()).culprit, "a", "clearly real: reported");
+});

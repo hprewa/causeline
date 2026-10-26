@@ -391,3 +391,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Phase 2 step 0: what counts as an alarm
 - **An alarm is a judged period where the analysis claims something (a significant headline, a finding, or a masking flag other than thin cells); a period it declines to judge is not counted either way and is reported.** Why: measured on the contact-centre pack (3.3% of judged weeks) and real complaints (71%); a refusal in a holiday week is the analysis being right, and counting it as a false alarm would punish the behaviour we want.
 - **The complaints headline test is the first thing to fix, ahead of the calibration core.** Why: 11 of 11 judged weeks of complaint volume read as significant; the headline z ignores week-to-week variation that the contribution tests already use (`adjustedZ`). Calibrating on top of it would only report the fault.
+
+### Phase 2 step 0b: the analysis allows for the data's own movement
+- **The headline test uses the data's own period-to-period movement, from earlier periods that share the period's calendar flags.** Why: counting noise alone called every week of real complaint volume significant; a holiday week's swing is not what an ordinary week varies by.
+- **Inside a flat whole a claim must clear a stricter bar, and a finding must be unusual for its own node.** Why: hundreds of nodes are compared, the total's spread cannot judge a node, and "the whole did nothing but this part did" is a strong claim.
+- **A materiality floor (at least the whole's standard error) was rejected.** Why: it removed the real Wells Fargo incident, a node with a clear signal of its own inside a noisy total.
+- **A slot found inside a flat whole is reported but does not narrow the rest of the run.** Why: the change may be elsewhere (a company all week), and narrowing hid it.
+- **A day-level spread for every comparison was rejected.** Why: it broke a real surge into pieces through the rule that every bucket of a run must clear the bar on its own.

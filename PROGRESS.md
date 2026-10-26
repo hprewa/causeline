@@ -132,6 +132,21 @@ Sign-in without a terminal, the engineer path, Codex run for real, a tester kit 
 | 3 | Codex run for real | two setup conversations done (one run each); question evals through Codex not scored: the account's usage limit was reached |
 | 4 | Tester kit, install guide, regression | done: kit written and regression green (runner-level 25/25, 38/38, 16/16, 8/8, complaints on BigQuery 7/7); the trial with a real person is not done |
 
+## Phase 2: trust
+
+Calibration, held-out incidents, fault injection on the person's own data, confidence labels, an alerts pack (`docs/evidence/calibration.md`; plan in the Phase 2 section of the plan file).
+
+| Step | What | State |
+|---|---|---|
+| 0 | What counts as an alarm, measured on two packs | done |
+| 0b | The analysis allows for the data's own movement; claims inside a flat whole held to a higher standard | done (existing checks unchanged: 25/25, 38/38, 16/16, 8/8, complaints 7/7; complaints replay still mixed with real events) |
+| 1 | Calibration core and tools | not started |
+| 2 | Held-out incidents and incident import | not started |
+| 3 | Fault injection on the person's own data (files / SQLite) | not started |
+| 4 | Confidence labels on answers | not started |
+| 5 | Proof on two packs, rates published | not started |
+| 6 | Synthetic alerts pack | not started |
+
 ## Projects and the companion page
 
 One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).

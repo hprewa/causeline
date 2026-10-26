@@ -79,6 +79,8 @@ export interface RunContext {
   candidates: HierarchyCandidate[];
   /** How much more the metric moves from period to period than counting noise gives; zero until the data check has estimated it. */
   dispersion: Dispersion;
+  /** The same, from earlier periods that share the period's calendar flags: what the headline's own test allows for. */
+  headlineDispersion: Dispersion;
   /** Splits of the whole window the drill looked at (a hierarchy's first level, a diluted sweep, a flat dimension). */
   looks: LevelLook[];
   contributions: Contribution[];

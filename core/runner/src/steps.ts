@@ -1,11 +1,12 @@
-import { contributionsStep, contributorsStep } from "./contributions.js";
-import { estimateDispersion, shortfallZ } from "./dispersion.js";
+import { contributionsStep, contributorsStep, dropUsualFindings } from "./contributions.js";
+import { adjustedZ, estimateDispersion, inflateZ, shortfallZ } from "./dispersion.js";
 import type { PlaybookStep } from "@causeline/schema";
 import type { RunContext } from "./context.js";
 import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./drill.js";
 import { seasonalExpectation } from "./expectation.js";
 import { resolveWindow } from "./window.js";
 import { rate, zScore, zSum } from "./stats.js";
+import type { Bucket } from "./types.js";
 import { handOverToParts } from "./handoff.js";
 import { recoveryStep } from "./recovery.js";
 import { medianOf, settledEnd } from "./tail.js";
@@ -32,6 +33,12 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
   const series = info.periodSeries ?? [];
   ctx.period = info;
   ctx.dispersion = estimateDispersion(info.periodSeries ?? [], (info.periodSeries ?? []).findIndex((b) => b.bucket === info.label), ctx.kind);
+  // the headline allows for the data's own period-to-period movement from earlier periods like this one (same calendar flags: a holiday or a peak
+  // week is judged against its own kind, so it is not part of what an ordinary period varies by)
+  const calendarSignature = (b: Bucket) => ctx.slots.calendar.map((c) => b.slots?.[c] ?? "~").join("|");
+  const own = (info.periodSeries ?? []).find((b) => b.bucket === info.label);
+  const alike = own ? (info.periodSeries ?? []).filter((b) => calendarSignature(b) === calendarSignature(own)) : info.periodSeries ?? [];
+  ctx.headlineDispersion = estimateDispersion(alike, alike.findIndex((b) => b.bucket === info.label), ctx.kind);
   // a period in the newest stretch of the data that holds far less than usual is not an event but data still arriving when it was copied
   const at = series.findIndex((b) => b.bucket === info.label);
   const volumes = series.map((b) => (ctx.kind === "sum" ? b.num : b.den));
@@ -112,7 +119,10 @@ const changeVsBaseline: StepFn = async (ctx, step) => {
     baseline,
     ...(expectation && naive !== null ? { baseline_naive: naive } : {}),
     change: value - baseline,
-    z: expectation ? expectation.z : sum ? zSum(period.curComponents, period.baseComponents, ctx.sumScale) : zScore(period.curComponents, period.baseComponents),
+    // allow for the data's own period-to-period movement, not counting noise alone (unchanged when there is too little history to estimate it)
+    z: expectation
+      ? inflateZ(ctx.kind, expectation.z, value, baseline, ctx.sumScale, period.baselineLabels.length, ctx.headlineDispersion)
+      : adjustedZ(ctx.kind, period.curComponents, period.baseComponents, sum ? ctx.sumScale : 1 / Math.max(1, period.baselineLabels.length), ctx.headlineDispersion),
     ...(fraction ? {} : { relative_change: baseline === 0 ? null : (value - baseline) / Math.abs(baseline) }),
   };
 
@@ -211,7 +221,10 @@ async function askEvidence(ctx: RunContext, stepId: string, source: string): Pro
 /** Rows of an evidence source kept in result.json: enough to read, not a data dump. */
 const EVIDENCE_SAMPLE = 10;
 
-const contributions: StepFn = async (ctx, step) => contributionsStep(ctx, step.id);
+const contributions: StepFn = async (ctx, step) => {
+  await dropUsualFindings(ctx, step.id);
+  await contributionsStep(ctx, step.id);
+};
 const contributors: StepFn = async (ctx, step) => contributorsStep(ctx, step.id);
 
 const recovery: StepFn = async (ctx, step) => recoveryStep(ctx, step.id);

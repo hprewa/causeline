@@ -196,6 +196,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     candidates: [],
     looks: [],
     dispersion: NO_DISPERSION,
+    headlineDispersion: NO_DISPERSION,
     contributions: [],
     stepKinds: new Map(),
     facts: {},

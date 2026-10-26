@@ -1,6 +1,6 @@
 import type { PathNode } from "@causeline/schema";
 import { round6, type FindingDraft, type HierarchyCandidate, type RunContext } from "./context.js";
-import { adjustedZ } from "./dispersion.js";
+import { adjustedZ, bucketDispersion } from "./dispersion.js";
 import { decomposeAgainstBaseline, decomposeBuckets, decomposeRatio, decomposeSum, type BucketItem, type Decomposition } from "./decompose.js";
 import { decideLevel, dominantRun, type LevelDecision } from "./masking.js";
 import type { Window } from "./period.js";
@@ -83,6 +83,20 @@ function addFlags(ctx: RunContext, level: string, node: string | undefined, dec:
 
 /** "when": descend the time levels finer than the period, narrowing the window to the buckets that carry the change. */
 export async function timeDrill(ctx: RunContext, stepId: string): Promise<void> {
+  const before = { window: ctx.window ? { ...ctx.window } : undefined, slotFilter: { ...ctx.slotFilter }, sumScale: ctx.sumScale };
+  const state = { masked: false };
+  await descendTime(ctx, stepId, state);
+  // a slot found inside a flat whole is reported, but the rest of the run still looks at the whole period: the change may be elsewhere (a company
+  // whose volume rose all week), and narrowing to one slot would hide it
+  if (state.masked) {
+    ctx.window = before.window;
+    for (const k of Object.keys(ctx.slotFilter)) delete ctx.slotFilter[k];
+    Object.assign(ctx.slotFilter, before.slotFilter);
+    ctx.sumScale = before.sumScale;
+  }
+}
+
+async function descendTime(ctx: RunContext, stepId: string, state: { masked: boolean }): Promise<void> {
   const period = need(ctx.period, "the period");
   ctx.window ??= { ...period.cur };
   const seasonal = ctx.slots.all.length > 0;
@@ -115,6 +129,18 @@ export async function timeDrill(ctx: RunContext, stepId: string): Promise<void> 
       const items = withExpectations(ctx, rows, baseBuckets);
       noteUnjudged(ctx, level, items);
       d = decomposeBuckets(items, ctx.kind);
+      // inside a flat whole a slot is held to the level's own spread (a day moves more than the week it sits in); inside a whole that moved it is not
+      const flatHere = (z: number) => Math.abs(z) < ctx.th.parent_z;
+      // the whole period's verdict is the headline's: the same question cannot be answered two ways in one run
+      if (d && ctx.headline && level === ctx.ontology.time.levels[1] && ctx.window && ctx.period && ctx.window.start === ctx.period.cur.start && ctx.window.end === ctx.period.cur.end && Number.isFinite(ctx.headline.z ?? NaN)) d.parent.z = ctx.headline.z ?? d.parent.z;
+      if (d && flatHere(d.parent.z)) {
+        const spread = bucketDispersion(baseBuckets, (b, others) => expectedFor(b, others, ctx.slots.all), ctx.kind);
+        const adjusted = spread.history > 0 ? decomposeBuckets(items, ctx.kind, spread) : null;
+        if (adjusted) {
+          adjusted.parent.z = d.parent.z;
+          d = adjusted;
+        }
+      }
     } else {
       d = decomposeAgainstBaseline(rows.map((b) => ({ node: b.bucket, cur: { num: b.num, den: b.den } })), period.baseComponents);
     }
@@ -159,6 +185,7 @@ export async function timeDrill(ctx: RunContext, stepId: string): Promise<void> 
     const slot = d.children.slice(run.from, run.to + 1);
     const slotDen = slot.reduce((a, c) => a + c.cur.den, 0);
     if (run.masked) {
+      state.masked = true;
       ctx.flags.push({
         level: level,
         node: label,

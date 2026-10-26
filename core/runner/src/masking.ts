@@ -109,6 +109,13 @@ function argmax(items: ChildContribution[], score: (c: ChildContribution) => num
 }
 
 /**
+ * A child hiding inside a flat whole is a stronger claim than a child moving a whole that moved: the whole says nothing happened, so the child
+ * must clear a stricter bar, or a few of the many children compared will always look worse by chance (a borderline one among hundreds). The
+ * significance level of the family is tightened tenfold when the whole is flat.
+ */
+export const FLAT_WHOLE_ALPHA = 0.001;
+
+/**
  * Decide what to do at one level of the drill: descend into a child, stop
  * (broad / insufficient volume), or descend despite a masking pattern.
  * Masking patterns, checked in this order:
@@ -201,7 +208,8 @@ export function decideLevel(d: Decomposition | null, opts: DecideOptions): Level
 
   // dispersion: flat parent hiding a significantly worse child
   if (!parentSig) {
-    const culprit = argmax(sig, (c) => c.rateEffect * adv);
+    const zFlat = Math.max(th.child_z, zCritical(eligible.length, FLAT_WHOLE_ALPHA));
+    const culprit = argmax(sig.filter((c) => Math.abs(c.z) >= zFlat), (c) => c.rateEffect * adv);
     if (culprit) {
       flags.push({
         type: "dispersion",
@@ -261,7 +269,9 @@ export function dominantRun(d: Decomposition, th: ResolvedThresholds, direction:
 
   if (!parentSig) {
     const adv = adverseSign(direction);
-    const bad = (i: number) => d.children[i].contribution * adv > 0 && Math.abs(d.children[i].z) >= zChild;
+    // a slot hiding in a flat whole must clear a stricter bar than a slot in a whole that moved
+    const zFlat = Math.max(th.child_z, zCritical(n, FLAT_WHOLE_ALPHA));
+    const bad = (i: number) => d.children[i].contribution * adv > 0 && Math.abs(d.children[i].z) >= zFlat;
     let best: Run | null = null;
     let bestWeight = 0;
     for (let from = 0; from < n; ) {
