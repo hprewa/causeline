@@ -433,3 +433,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The complaints pack is published as not calibrated (39% and 20% against one in twenty), and the analysis is not changed to improve it.** Why: the number is the finding; changing the analysis until a published number passes is what this check exists to prevent. The cause (many parts compared, a few stand out by chance or their own volatility) is recorded as the next piece of work.
 - **The complaints incidents are published as hit rate 3 of 3 but not as independent proof.** Why: the analysis was developed against them.
 - **The contact-centre pack is the one that reaches verified, on synthetic data, once end to end.** Why: it is the only one with known truth planted and a database a copy can be made of; the claim is limited to that.
+
+### False-alarm fix, step 6a
+- **The test bed is a synthetic null with 600 volatile accounts, not volatile queues or teams.** Why: volatile queues and teams (the first idea) gave 3 to 4% false alarms and did not reproduce the real failure; many volatile parts compared at once did (16% and 55%), which points at the size of the family as the missing piece.
+- **A flagged period keeps the numbers that raised it.** Why: explaining a flagged week should not need another run, and the labelling step can say it.
+- **The before of any variant is measured with the same code, with the old headline bar named in the ontology.** Why: a before from an older commit would differ in more than the change being tested.

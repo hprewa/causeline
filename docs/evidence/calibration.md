@@ -185,3 +185,23 @@ Caveats it raised, kept with the result: 11–17 Jul 2022 is the highest week in
 
 ### Regression after step 5 (from PowerShell, one run)
 Build and unit tests in every package (0 failures), purity and ladder checks, contact-centre eval **25/25**, routing **38/38**, intents **16/16**, integration **8/8**, complaints eval on real BigQuery **7/7**, and the Claude Desktop extension, single-executable and engineer-path proofs all pass (the tool list had grown since they last ran). Nothing else in the analysis changed in this step; the only code changes were the spread option, the planted-size option and a `verify_expert` message that read backwards.
+
+## The false-alarm fix on real data: step 6a, a test bed and the baseline
+
+**Why.** Step 5 found 39% (complaint volume) and 20% (timely rate) false alarms on real data. The plan was to tune a fix on synthetic data where the truth is known and then look at the real data once. That needs a synthetic null that fails the way the real data does.
+
+**What was built** (`scripts/rates.mjs`, no analysis change): `--null` chooses the ordinary data. `poisson` is steady noise (the earlier runs). `noisy-queue` and `noisy-team` give each queue's or team's weekly volume a random factor of its own (sd 8%). `many-parts` adds a further dimension of **600 accounts of very uneven size (Zipf)**, each with its own weekly volume volatility (sd 35%) and its own weekly wobble in the rate (sd 6 points), so one run compares hundreds of parts, as real data with companies or states does. Nothing is planted in any of them, so every flag is a false alarm. `--pin-parent-z` keeps the headline's old bar, so a before can be measured with the same code as the after. A flagged period in the calibration file now keeps what raised it (the headline z, each finding and the steps that made it, each flag, the drill's decisions with the part's z and how many parts it chose among, the history verdicts), so a flagged week can be explained without running it again.
+
+**The baseline (the analysis as it was at `b2b82c5`, nothing planted, 30 weeks a seed):**
+
+| data | KPI | seeds | weeks judged | raised something | rate | 95% interval |
+|---|---|---|---|---|---|---|
+| steady noise | service level | 12 | 300 | 8 | **2.7%** | 1.4% to 5.2% |
+| volatile queues | service level | 12 | 300 | 12 | **4.0%** | 2.3% to 6.9% |
+| volatile teams | service level | 12 | 300 | 9 | **3.0%** | 1.6% to 5.6% |
+| **600 accounts** | service level (a rate) | 6 | 150 | 24 | **16.0%** | 11.0% to 22.7% |
+| **600 accounts** | calls offered (a total) | 6 | 150 | 82 | **54.7%** | 46.7% to 62.4% |
+
+**What it shows.** Volatile parts alone do not reproduce the real failure (3 to 4%, within the standard). **Many volatile parts compared at once do**: 16% for a rate and 55% for a total, against 20% and 39% on the real complaints data. So the number of parts in the family, not only their volatility, is what the analysis does not yet allow for, and the many-parts null is a fair test bed for a fix. Planted-fault detection on the steady-noise data over 12 seeds, for later comparison (found of planted): a shift 1 of 12 at 2 standard errors, 4 of 12 at 3, 10 of 12 at 4, 12 of 12 at 6; an offsetting pair 1, 5, 11, 12 of 12; a missing part 12 of 12 at every size; the volume-moving fault is plantable only once in 48 and is not measured. Raw: `data/rates-baseline-*.json`.
+
+**Not shown.** That the many-parts null is how real data behaves (its sizes and volatilities are my choices; it is a test bed that reproduces the failure, not a model of the CFPB data); a fix, which is the next commits.

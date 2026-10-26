@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Result } from "@causeline/schema";
@@ -216,4 +216,26 @@ test("a spread leaves out the periods that hold a recorded incident, and says ho
   const r = await calibrate(opts(ws, d, { spread: 40 }));
   assert.ok(!d.ran.includes("2026-W20"), "the incident week was not counted as ordinary");
   assert.match(r.selection!, /39 of 39 complete periods|; 1 more left out because they hold a recorded incident/);
+});
+
+test("a flagged period keeps what raised it, in numbers, and a quiet one keeps nothing extra", async () => {
+  const ws = workspace();
+  const rich = {
+    status: "complete",
+    headline: { z: 0.4, significant: false },
+    findings: [{ rank: 1, dimension: "state", value: "DE", impact: -12.3456, evidence: ["flat", "contributions"] }],
+    masking_flags: [{ level: "state", node: "DE", type: "dispersion", detail: "parent change is not significant (z=0.4) but DE is (z=4.1)" }],
+    path: [{ level: "state", node: "DE", decision: "masked", numbers: { parent_z: 0.4, culprit_z: 4.1, children: 55 } }, { level: "product", node: "(none)", decision: "broad", numbers: {} }],
+    contributions: [{ level: "state", node: "DE", verdict: "unusual" }],
+  } as unknown as Result;
+  const d = deps(16, { "2026-W08": rich });
+  await calibrate(opts(ws, d));
+  const file = JSON.parse(readFileSync(join(ws, "calibration-ok.json"), "utf-8"));
+  const flagged = file.outcomes["2026-W08"];
+  assert.equal(flagged.alarm, true);
+  assert.deepEqual(flagged.detail.findings, [{ dimension: "state", value: "DE", impact: -12.346, steps: ["flat", "contributions"] }]);
+  assert.deepEqual(flagged.detail.decisions, [{ level: "state", node: "DE", decision: "masked", parent_z: 0.4, culprit_z: 4.1, children: 55 }]);
+  assert.deepEqual(flagged.detail.history, [{ level: "state", node: "DE", verdict: "unusual" }]);
+  assert.equal(flagged.detail.flags[0].type, "dispersion");
+  assert.equal(file.outcomes["2026-W09"].detail, undefined, "a quiet period keeps no detail");
 });

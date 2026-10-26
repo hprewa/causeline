@@ -1,0 +1,596 @@
+{
+  "when": "2026-10-26T15:27:30.748Z",
+  "variant": "baseline",
+  "null": "noisy-team",
+  "seeds": [
+    {
+      "seed": 1001,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": []
+    },
+    {
+      "seed": 1002,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": []
+    },
+    {
+      "seed": 1003,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W11",
+          "what": [
+            "a significant change in the headline (up)"
+          ],
+          "detail": {
+            "headline": {
+              "z": 3.696,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_3",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1004,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W08",
+          "what": [
+            "a significant change in the headline (down)",
+            "1 finding, the first in site s_4"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.133,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "site",
+                "value": "s_4",
+                "impact": -0.012,
+                "effect": "rate",
+                "steps": [
+                  "where",
+                  "cross_check",
+                  "recovery"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [
+              {
+                "level": "site",
+                "node": "s_4",
+                "decision": "drill",
+                "parent_z": -2.13,
+                "culprit_z": -3.4,
+                "children": 4
+              }
+            ],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unknown"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "unknown"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1005,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W19",
+          "what": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in queue billing"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.024,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "queue",
+                "value": "billing",
+                "impact": -0.007,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              },
+              {
+                "dimension": "call_reason",
+                "value": "question",
+                "impact": -0.006,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "question",
+                "verdict": "unusual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1006,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 2,
+      "flagged": [
+        {
+          "period": "2026-W08",
+          "what": [
+            "a significant change in the headline (up)"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.555,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "tech",
+                "verdict": "unknown"
+              },
+              {
+                "level": "call_reason",
+                "node": "cancel",
+                "verdict": "unknown"
+              }
+            ]
+          }
+        },
+        {
+          "period": "2026-W27",
+          "what": [
+            "a significant change in the headline (up)"
+          ],
+          "detail": {
+            "headline": {
+              "z": 3.501,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1007,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": []
+    },
+    {
+      "seed": 1008,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W24",
+          "what": [
+            "1 finding, the first in interval 30m 2026-06-21 10:30"
+          ],
+          "detail": {
+            "headline": {
+              "z": -0.864,
+              "significant": false
+            },
+            "findings": [
+              {
+                "dimension": "interval_30m",
+                "value": "2026-06-21 10:30",
+                "impact": -0.001,
+                "effect": "rate",
+                "steps": [
+                  "when"
+                ]
+              }
+            ],
+            "flags": [
+              {
+                "type": "dispersion",
+                "level": "interval_30m",
+                "node": "2026-06-21 10:30",
+                "detail": "the period-level change is not significant (z=-1.3) but 2026-06-21 10:30 is significantly worse"
+              }
+            ],
+            "decisions": [
+              {
+                "level": "interval_30m",
+                "node": "2026-06-21 10:30",
+                "decision": "masked",
+                "parent_z": -1.332,
+                "culprit_z": null,
+                "children": 168
+              }
+            ],
+            "history": [
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1009,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": []
+    },
+    {
+      "seed": 1010,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W14",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in site s_2"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.33,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "site",
+                "value": "s_2",
+                "impact": 0.011,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "payment",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1011,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W10",
+          "what": [
+            "a significant change in the headline (down)"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.253,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "payment",
+                "verdict": "usual"
+              },
+              {
+                "level": "team",
+                "node": "team_12",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    },
+    {
+      "seed": 1012,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W10",
+          "what": [
+            "a significant change in the headline (up)",
+            "2 findings, the first in call reason fault"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.486,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "call_reason",
+                "value": "fault",
+                "impact": 0.008,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              },
+              {
+                "dimension": "team",
+                "value": "team_01",
+                "impact": 0.006,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              },
+              {
+                "level": "team",
+                "node": "team_01",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": []
+    }
+  ],
+  "weeks": 30,
+  "sizes": [],
+  "markdown": "### False alarms (baseline), 12 seeds of 30 weeks with nothing planted, noisy-team data\n\n| | weeks judged | raised something | rate | 95% interval | declined to judge |\n|---|---|---|---|---|---|\n| seed 1001 | 25 | 0 | 0.0% | | 1 |\n| seed 1002 | 25 | 0 | 0.0% | | 1 |\n| seed 1003 | 25 | 1 | 4.0% | | 1 |\n| seed 1004 | 25 | 1 | 4.0% | | 1 |\n| seed 1005 | 25 | 1 | 4.0% | | 1 |\n| seed 1006 | 25 | 2 | 8.0% | | 1 |\n| seed 1007 | 25 | 0 | 0.0% | | 1 |\n| seed 1008 | 25 | 1 | 4.0% | | 1 |\n| seed 1009 | 25 | 0 | 0.0% | | 1 |\n| seed 1010 | 25 | 1 | 4.0% | | 1 |\n| seed 1011 | 25 | 1 | 4.0% | | 1 |\n| seed 1012 | 25 | 1 | 4.0% | | 1 |\n| **all** | **300** | **9** | **3.0%** | 1.6% to 5.6% | 12 |\n"
+}

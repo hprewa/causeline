@@ -147,6 +147,19 @@ Calibration, held-out incidents, fault injection on the person's own data, confi
 | 5 | Proof on two packs, rates published | done: contact-centre reaches verified on one seed and false-alarm 3.5% over 8 seeds; complaints on real data 39% and 20% (not calibrated); one live Claude Code run through the ladder; full regression green |
 | 6 | Synthetic alerts pack | not started |
 
+## False-alarm fix on real data (follows Phase 2 step 5)
+
+Real complaints data raised something in 39% and 20% of ordinary weeks. Plan: an alarm budget, one family for the run, a node judged on its own longer history; tuned on a synthetic null with many volatile parts, checked once on the real data.
+
+| Step | What | State |
+|---|---|---|
+| 6a | Flagged-week detail kept; synthetic nulls (volatile parts, 600 accounts); the baseline | done (the 600-account null reproduces the failure: 16% and 55%) |
+| 6b | Alarm budget and a t-corrected headline bar | written and unit-tested; guards and its measurements next |
+| 6c | One family for the whole run | not started |
+| 6d | A node judged on its own, longer history | not started |
+| 6e | The real sample once more (about $4) | not started |
+| 6f | Close: regression, docs | not started |
+
 ## Projects and the companion page
 
 One folder per project under a home folder, a registry, and read-only localhost pages next to the sign-off screen (`docs/evidence/projects.md`).

@@ -42,8 +42,36 @@ export interface PeriodOutcome {
   why: string[];
   /** Why it was not judged. */
   reason?: string;
+  /** For a judged alarm: what raised it, in numbers (kept so a flagged week can be explained without running it again). */
+  detail?: AlarmDetail;
   bytes?: number;
   at: string;
+}
+
+/** The evidence behind a flagged period: the headline, each finding with the steps that produced it, each flag. */
+export interface AlarmDetail {
+  headline: { z: number | null; significant: boolean } | null;
+  findings: { dimension: string; value: string; impact: number; effect?: string; steps: string[] }[];
+  flags: { type: string; level: string; node?: string; detail?: string }[];
+  /** The drill's decisions that named a part: where it looked, what it chose, the whole's z and the part's z, and how many parts it was choosing among. */
+  decisions: { level: string; node: string; decision: string; parent_z: number | null; culprit_z: number | null; children: number | null }[];
+  /** Each finding's part judged against its own history, where that was done. */
+  history: { level: string; node: string; verdict: string }[];
+}
+
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+
+/** A compact record of what a run said, for the periods that raised something. */
+export function alarmDetail(r: Pick<Result, "headline" | "findings" | "masking_flags" | "path" | "contributions">): AlarmDetail {
+  return {
+    headline: r.headline ? { z: num(r.headline.z), significant: r.headline.significant === true } : null,
+    findings: (r.findings ?? []).map((f) => ({ dimension: f.dimension, value: f.value, impact: num(f.impact) ?? 0, ...(f.effect ? { effect: f.effect } : {}), steps: f.evidence })),
+    flags: (r.masking_flags ?? []).map((f) => ({ type: f.type, level: f.level, ...(f.node ? { node: f.node } : {}), ...(f.detail ? { detail: f.detail } : {}) })),
+    decisions: (r.path ?? [])
+      .filter((p) => p.decision === "drill" || p.decision === "masked")
+      .map((p) => ({ level: p.level, node: p.node, decision: p.decision, parent_z: num(p.numbers.parent_z), culprit_z: num(p.numbers.culprit_z), children: num(p.numbers.children) })),
+    history: (r.contributions ?? []).map((c) => ({ level: c.level, node: c.node, verdict: c.verdict })),
+  };
 }
 
 interface Label {
@@ -336,7 +364,7 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
     else if (result.status !== "complete") file.outcomes[b.bucket] = { ...base, status: "not_judged", alarm: false, why: [], reason: result.stopped_reason ? `${result.stopped_reason}${result.stopped_detail ? `: ${result.stopped_detail}` : ""}` : "it stopped" };
     else {
       const a = alarmOf(result);
-      file.outcomes[b.bucket] = { ...base, status: "judged", alarm: a.alarm, why: a.why };
+      file.outcomes[b.bucket] = { ...base, status: "judged", alarm: a.alarm, why: a.why, ...(a.alarm ? { detail: alarmDetail(result) } : {}) };
     }
     if (file.first_bytes === undefined && bytes !== undefined && bytes > 0) file.first_bytes = bytes;
     writeFile(opts.workspace, file);
