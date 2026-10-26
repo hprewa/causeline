@@ -426,3 +426,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The reasons are worked out from the run and quoted from its fields.** Why: the guide forbids stating a number no tool returned; a label with reasons the assistant makes up would break that.
 - **An answer that finds nothing is at most moderate, and says only that nothing stands out.** Why: the analysis not seeing something is not evidence that nothing happened.
 - **The label is added after the run, not part of the result file.** Why: it depends on the expert's rung at the time, which can change, while the result file is a record of what the run found.
+
+### Phase 2 step 5: the published rates
+- **The complaints weeks were labelled by an independent reviewer under a rule written beforehand, not by the analysis' author.** Why: the person had not looked at the data, and the author of the analysis must not decide which of its flags were real; both the unlabelled and the labelled rate are published.
+- **A holiday week counts as a real event.** Why: the week really does have fewer complaints, so the analysis noticing it is correct, not a false alarm; the rule was stated before anyone looked at a verdict.
+- **The complaints pack is published as not calibrated (39% and 20% against one in twenty), and the analysis is not changed to improve it.** Why: the number is the finding; changing the analysis until a published number passes is what this check exists to prevent. The cause (many parts compared, a few stand out by chance or their own volatility) is recorded as the next piece of work.
+- **The complaints incidents are published as hit rate 3 of 3 but not as independent proof.** Why: the analysis was developed against them.
+- **The contact-centre pack is the one that reaches verified, on synthetic data, once end to end.** Why: it is the only one with known truth planted and a database a copy can be made of; the claim is limited to that.

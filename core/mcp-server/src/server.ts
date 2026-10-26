@@ -75,12 +75,13 @@ const signInInput = fromJsonSchema<{ client_file?: string }>(
 const injectFaultsInput = fromJsonSchema<{ kpi: string; seed?: number }>(
   obj({ kpi: { type: "string", description: "The KPI to test." }, seed: { type: "number", description: "Leave out; only to repeat an earlier run exactly." } }, ["kpi"]),
 );
-const calibrateInput = fromJsonSchema<{ kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean }>(
+const calibrateInput = fromJsonSchema<{ kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean; spread_periods?: number }>(
   obj(
     {
       kpi: { type: "string", description: "The KPI to check for false alarms (its name in the pack)." },
       allowed_false_alarm_rate: { type: "number", description: "Only if the user chooses a different limit, as a fraction (0.05 is one false alarm in twenty ordinary periods, the standard). Never change it to make a result pass." },
       go_ahead: { type: "boolean", description: "True only after the user has agreed to what the replay reads (cloud data)." },
+      spread_periods: { type: "number", description: "Only if the newest periods are not ordinary ones (a surge the user knows of): replay this many periods spread evenly through the whole history instead of the newest 26. The choice is said in the result." },
     },
     ["kpi"],
   ),

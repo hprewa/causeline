@@ -1,0 +1,142 @@
+{
+  "seed": "1",
+  "weeks": 30,
+  "steps": [
+    {
+      "step": "the description is saved",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "three numbers from the files are confirmed: reconciled",
+      "ok": true,
+      "detail": "reconciled: replay it over ordinary past periods and show it rarely raises a false alarm"
+    },
+    {
+      "step": "the replay finishes",
+      "ok": true,
+      "detail": "3 call(s): I replayed the newest 26 complete periods (2026-02-02 to 2026-08-02). Of the 25 ordinary periods I could judge, 2 raised something (about 1 in 13). You allow about 1 in 20. 1 period was not judged (the analysis said it could not compare it fairly) and is not counted. That is more than you allow, so the KPI stays reconciled."
+    },
+    {
+      "step": "after the answers the KPI is calibrated",
+      "ok": true,
+      "detail": "2 flagged of 25 judged before the answers, 0 of 23 after; I replayed the newest 26 complete periods (2026-02-02 to 2026-08-02). Of the 23 ordinary periods I could judge, 0 raised something (none). You allow about 1 in 20. 1 period was not judged (the analysis said it could not compare it fairly) and is not counted. 2 were left out because you said something real happened then. It stays quiet enoug"
+    },
+    {
+      "step": "the first incident helps and the second is kept aside",
+      "ok": true,
+      "detail": "[false,true]"
+    },
+    {
+      "step": "planted faults are tried",
+      "ok": true,
+      "detail": "In a copy of a quiet period (2026-07-27 to 2026-08-02) I planted 3 kinds of fault and the analysis found 3 of them. The same period with nothing planted stayed quiet. Your own data was not touched. a shift in one part: found; one part worse while another got better: found; volume moving between parts: could not be planted in this data (no two queue have rates far enough apart for moving rows betwe"
+    },
+    {
+      "step": "every fault that could be planted is found and the unchanged period stayed quiet",
+      "ok": true,
+      "detail": "{\"summary\":{\"planted\":3,\"found\":3,\"not_applicable\":1},\"control\":{\"quiet\":true,\"detail\":\"nothing raised\"}}"
+    },
+    {
+      "step": "both recorded incidents are found",
+      "ok": true,
+      "detail": "[[\"incident_1_service_level\",true,false],[\"incident_2_service_level\",true,true]]"
+    },
+    {
+      "step": "the expert is verified",
+      "ok": true,
+      "detail": "verified: "
+    }
+  ],
+  "calibration": {
+    "before": {
+      "judged": 25,
+      "not_judged": 1,
+      "real_events": 0,
+      "alarms": 2,
+      "rate": 0.08,
+      "upper": 0.2496651212295782,
+      "allowed": 0.05,
+      "enough": true,
+      "pass": false,
+      "flagged": [
+        {
+          "period": "2026-W13",
+          "start": "2026-03-30",
+          "end": "2026-04-05",
+          "at": "2026-10-26T12:15:39.141Z",
+          "status": "judged",
+          "alarm": true,
+          "why": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in team team_08"
+          ]
+        },
+        {
+          "period": "2026-W22",
+          "start": "2026-06-01",
+          "end": "2026-06-07",
+          "at": "2026-10-26T12:15:01.433Z",
+          "status": "judged",
+          "alarm": true,
+          "why": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in team team_05"
+          ]
+        }
+      ]
+    },
+    "after": {
+      "judged": 23,
+      "not_judged": 1,
+      "real_events": 2,
+      "alarms": 0,
+      "rate": 0,
+      "upper": 0.14312112541726274,
+      "allowed": 0.05,
+      "enough": true,
+      "pass": true,
+      "flagged": []
+    }
+  },
+  "faults": [
+    {
+      "id": "segment_shift",
+      "kind": "segment_shift",
+      "applicable": true,
+      "what": "80 of the 1009 rows of general that favour it were swapped for ones that count against it",
+      "pass": true,
+      "at": "2026-10-26T12:16:25.436Z"
+    },
+    {
+      "id": "offsetting_pair",
+      "kind": "offsetting_pair",
+      "applicable": true,
+      "what": "general was made worse (80 of the 1009 rows of general that favour it were swapped for ones that count against it) while billing was made better (77 of the 995 rows of billing that count against it were swapped for ones that favour it)",
+      "pass": true,
+      "at": "2026-10-26T12:16:31.805Z"
+    },
+    {
+      "id": "mix_shift",
+      "kind": "mix_shift",
+      "applicable": false,
+      "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+      "pass": false,
+      "at": "2026-10-26T12:16:31.937Z"
+    },
+    {
+      "id": "data_gap",
+      "kind": "data_gap",
+      "applicable": true,
+      "what": "all the rows of general were removed, as if its data had not arrived (1009 rows)",
+      "pass": true,
+      "at": "2026-10-26T12:16:33.272Z"
+    }
+  ],
+  "hit_rate": 1,
+  "held_out": {
+    "passed": 1,
+    "total": 1
+  },
+  "level": "verified"
+}

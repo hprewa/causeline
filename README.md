@@ -27,6 +27,17 @@ published counts). Every deep dive carries a table of who contributed how much, 
 the two real incidents the analysis once missed (a bank's sales-practices week; a data-breach week) are now found. Planned next:
 branching playbooks and hand-offs between KPIs, a minimal explorer, and easier setup. See `PROGRESS.md`; the proof for each step is in `docs/evidence/`.
 
+## How far the analysis is trusted (measured)
+
+A KPI climbs four rungs, each earned by a check that was run: **draft**, **reconciled** (its numbers match your own reports), **calibrated** (replayed over its own history it raises something in at most one ordinary period in twenty) and **verified** (it finds an incident kept aside, or faults planted in a copy of your data). Measured so far (`docs/evidence/calibration.md`, where the counts, intervals, scripts and the things not shown are):
+
+| pack | false alarms in ordinary periods | planted faults found | recorded incidents |
+|---|---|---|---|
+| contact centre (synthetic) | 7 of 200 weeks, 3.5% (95% interval 1.7% to 7.0%) | a shift of 4 standard errors or more: 7 or 8 of 8; of 3: about a third; of 2: none; a missing part: always declined | reaches *verified* end to end on one seed |
+| complaints (real CFPB data) | 7 of 18 weeks (39%) for volume, 4 of 20 (20%) for the timely rate, after an independent reviewer labelled the real weeks | not available on cloud data | 3 of 3 found, but the analysis was developed against them |
+
+On real data the analysis does **not** yet meet the standard: it raises something in too many ordinary weeks when it compares many parts of a week with no overall change. That is stated here because it is the number, and it is the next thing to improve.
+
 ## How it is built (and why it is not tied to one use case)
 
 | Layer | File or package | Holds |

@@ -367,11 +367,12 @@ export function describeCalibration(r: CalibrationReport) {
       next: "Tell the user this in plain words and ask whether to go ahead. If they agree, call calibrate again with go_ahead set to true; if not, nothing is read.",
     };
   }
-  const looked = `I have looked at ${r.progress.done} of ${r.progress.total} past periods.`;
+  const looked = `I have looked at ${r.progress.done} of ${r.progress.total} past periods${r.selection ? ` (${r.selection})` : ""}.`;
   if (r.stage === "running") {
     return { ...r, say: `${looked} So far ${ev!.alarms} of the ${ev!.judged} I could judge raised something.`, next: "Say the progress in a few words and call calibrate again to continue; it picks up where it stopped." };
   }
-  const base = `Of the ${ev!.judged} ordinary periods I could judge, ${ev!.alarms} raised something (${sayRate(ev!.rate)}). You allow ${sayRate(ev!.allowed)}.`;
+  const chosen = r.selection ? ` I replayed ${r.selection}.` : "";
+  const base = `${chosen.trim()}${chosen ? " " : ""}Of the ${ev!.judged} ordinary periods I could judge, ${ev!.alarms} raised something (${sayRate(ev!.rate)}). You allow ${sayRate(ev!.allowed)}.`;
   const skipped = ev!.not_judged > 0 ? ` ${ev!.not_judged} period${ev!.not_judged === 1 ? " was" : "s were"} not judged (the analysis said it could not compare ${ev!.not_judged === 1 ? "it" : "them"} fairly) and ${ev!.not_judged === 1 ? "is" : "are"} not counted.` : "";
   const real = ev!.real_events > 0 ? ` ${ev!.real_events} ${ev!.real_events === 1 ? "was" : "were"} left out because you said something real happened then.` : "";
   if (!ev!.enough) {
@@ -389,10 +390,10 @@ export function describeCalibration(r: CalibrationReport) {
   };
 }
 
-export async function calibrateTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean }) {
+export async function calibrateTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; allowed_false_alarm_rate?: number; go_ahead?: boolean; spread_periods?: number }) {
   needProject(cfg);
   if (!args?.kpi) throw new Error("say which KPI to calibrate");
-  const r = await calibrate({ workspace: cfg.packDir, kpi: args.kpi, makeTools: () => callers.caller(), corePlaybooksDir: cfg.corePlaybooksDir, allowed: args.allowed_false_alarm_rate, goAhead: args.go_ahead });
+  const r = await calibrate({ workspace: cfg.packDir, kpi: args.kpi, makeTools: () => callers.caller(), corePlaybooksDir: cfg.corePlaybooksDir, allowed: args.allowed_false_alarm_rate, goAhead: args.go_ahead, ...(args.spread_periods ? { spread: Math.round(args.spread_periods) } : {}) });
   return describeCalibration(r);
 }
 

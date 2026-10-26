@@ -193,7 +193,7 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
   writeFileSync(join(opts.workspace, "agents", `${agent.name}.yaml`), stringify(agent, { lineWidth: 0 }), "utf-8");
   syncExperts(opts.workspace, opts.kpi, level, `the recorded incident check ${independent ? "passed" : "found its incidents"} and its KPI is ${level}`, "verify_expert");
   const stillNeeds: string[] = [];
-  if (!independent) stillNeeds.push(`it found ${cases.length === 1 ? "the incident" : "the incidents"} you recorded, but ${cases.length === 1 ? "that one was" : "none was"} kept aside while the analysis was set up, so it is not independent proof: record another incident and keep it aside, or plant faults in your own data`);
+  if (!independent) stillNeeds.push(`it found ${cases.length === 1 ? "the incident" : "the incidents"} you recorded, but ${cases.length === 1 ? "that one was not" : "none was"} kept aside: ${cases.length === 1 ? "it was" : "they were"} available while the analysis was set up, so it is not independent proof. Record another incident and keep it aside, or plant faults in your own data`);
   if (level !== "verified") stillNeeds.push(`the incident check ran, and ${opts.kpi} stands as ${level}: ${levelGap(readState(opts.workspace)!.kpis[opts.kpi])}`);
   return { kpi: opts.kpi, verified: level === "verified", reasons: stillNeeds, cases, level, hit_rate, held_out: aboutHeldOut };
 }

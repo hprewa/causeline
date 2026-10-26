@@ -136,3 +136,13 @@ test("a run can stop and resume, and its result follows the KPI to its rung", as
   assert.equal(existsSync(join(ws, "faults-ok_rate.json")), true);
   assert.equal(levelOf(readState(ws)!.kpis.ok_rate), cal.evaluation!.pass ? "verified" : "reconciled");
 });
+
+test("a smaller planted size plants a smaller change, and the default is the six standard errors it always was", async () => {
+  const ws = await ordinary();
+  await checked(ws);
+  const big = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 21, kinds: ["segment_shift"] });
+  const small = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 21, sigmas: 2, kinds: ["segment_shift"] });
+  const swapped = (what: string) => Number(/^(\d+) of the/.exec(what)![1]);
+  assert.ok(swapped(small.outcomes[0].what) < swapped(big.outcomes[0].what), `${small.outcomes[0].what} vs ${big.outcomes[0].what}`);
+  await assert.rejects(injectFaults({ workspace: ws, kpi: "ok_rate", sigmas: 0 }), /positive number of standard errors/);
+});

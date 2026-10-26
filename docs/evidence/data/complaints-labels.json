@@ -1,0 +1,19 @@
+{
+  "complaint_volume": {
+    "2011-W52": true,
+    "2014-W16": false,
+    "2014-W47": true,
+    "2016-W34": false,
+    "2017-W13": false,
+    "2021-W19": false,
+    "2021-W50": false,
+    "2022-W28": false,
+    "2023-W06": false
+  },
+  "timely_response_rate": {
+    "2011-W52": false,
+    "2013-W07": false,
+    "2016-W03": false,
+    "2023-W06": false
+  }
+}

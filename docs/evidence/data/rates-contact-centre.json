@@ -1,0 +1,1190 @@
+{
+  "when": "2026-10-26T12:17:30.331Z",
+  "seeds": [
+    {
+      "seed": 1001,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "29 of the 1022 rows of general that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.5 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "general was made worse (29 of the 1022 rows of general that favour it were swapped for ones that count against it) while sales was made better (27 of the 991 rows of sales that count against it were swapped for ones that favour it)",
+          "detail": "it did not name general and raised no masking flag; the headline moved by -0.6 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of general were removed, as if its data had not arrived (1022 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "43 of the 1022 rows of general that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "general was made worse (43 of the 1022 rows of general that favour it were swapped for ones that count against it) while sales was made better (40 of the 991 rows of sales that count against it were swapped for ones that favour it)",
+          "detail": "it did not name general; the headline moved by -0.6 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of general were removed, as if its data had not arrived (1022 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "58 of the 1022 rows of general that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "general was made worse (58 of the 1022 rows of general that favour it were swapped for ones that count against it) while sales was made better (53 of the 991 rows of sales that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of general were removed, as if its data had not arrived (1022 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "86 of the 1022 rows of general that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "general was made worse (86 of the 1022 rows of general that favour it were swapped for ones that count against it) while sales was made better (80 of the 991 rows of sales that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of general were removed, as if its data had not arrived (1022 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "28 of the 981 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by 0.0 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (28 of the 981 rows of billing that favour it were swapped for ones that count against it) while tech was made better (26 of the 951 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by 1.0 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (981 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "42 of the 981 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.5 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (42 of the 981 rows of billing that favour it were swapped for ones that count against it) while tech was made better (39 of the 951 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by 0.9 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (981 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "56 of the 981 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (56 of the 981 rows of billing that favour it were swapped for ones that count against it) while tech was made better (52 of the 951 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (981 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "84 of the 981 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (84 of the 981 rows of billing that favour it were swapped for ones that count against it) while tech was made better (77 of the 951 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (981 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1003,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W11",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in call reason fault"
+          ]
+        }
+      ],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "28 of the 1005 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.6 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (28 of the 1005 rows of billing that favour it were swapped for ones that count against it) while tech was made better (27 of the 1004 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by 0.4 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1005 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "42 of the 1005 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.1 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (42 of the 1005 rows of billing that favour it were swapped for ones that count against it) while tech was made better (41 of the 1004 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing; the headline moved by 0.4 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1005 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "56 of the 1005 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.6 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (56 of the 1005 rows of billing that favour it were swapped for ones that count against it) while tech was made better (54 of the 1004 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing; the headline moved by 0.4 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1005 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "84 of the 1005 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (84 of the 1005 rows of billing that favour it were swapped for ones that count against it) while tech was made better (81 of the 1004 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1005 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1004,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 0,
+      "flagged": [],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "28 of the 1025 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.3 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (28 of the 1025 rows of billing that favour it were swapped for ones that count against it) while tech was made better (28 of the 1006 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by -0.3 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1025 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "42 of the 1025 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.8 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (42 of the 1025 rows of billing that favour it were swapped for ones that count against it) while tech was made better (42 of the 1006 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by -0.3 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1025 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "56 of the 1025 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (56 of the 1025 rows of billing that favour it were swapped for ones that count against it) while tech was made better (56 of the 1006 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1025 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "83 of the 1025 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (83 of the 1025 rows of billing that favour it were swapped for ones that count against it) while tech was made better (83 of the 1006 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1025 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1005,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W19",
+          "what": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in queue billing"
+          ]
+        }
+      ],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "28 of the 1018 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by 0.0 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (28 of the 1018 rows of billing that favour it were swapped for ones that count against it) while sales was made better (28 of the 1006 rows of sales that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by 1.1 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1018 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "42 of the 1018 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.5 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (42 of the 1018 rows of billing that favour it were swapped for ones that count against it) while sales was made better (41 of the 1006 rows of sales that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1018 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "55 of the 1018 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (55 of the 1018 rows of billing that favour it were swapped for ones that count against it) while sales was made better (55 of the 1006 rows of sales that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1018 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "83 of the 1018 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (83 of the 1018 rows of billing that favour it were swapped for ones that count against it) while sales was made better (82 of the 1006 rows of sales that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1018 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1006,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 3,
+      "flagged": [
+        {
+          "period": "2026-W08",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in queue general"
+          ]
+        },
+        {
+          "period": "2026-W13",
+          "what": [
+            "a significant change in the headline (down)"
+          ]
+        },
+        {
+          "period": "2026-W27",
+          "what": [
+            "a significant change in the headline (up)",
+            "2 findings, the first in site s_2"
+          ]
+        }
+      ],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "30 of the 1048 rows of sales that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.6 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "sales was made worse (30 of the 1048 rows of sales that favour it were swapped for ones that count against it) while tech was made better (28 of the 1026 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name sales and raised no masking flag; the headline moved by -0.7 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of sales were removed, as if its data had not arrived (1048 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "44 of the 1048 rows of sales that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "sales was made worse (44 of the 1048 rows of sales that favour it were swapped for ones that count against it) while tech was made better (42 of the 1026 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of sales were removed, as if its data had not arrived (1048 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "59 of the 1048 rows of sales that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "sales was made worse (59 of the 1048 rows of sales that favour it were swapped for ones that count against it) while tech was made better (56 of the 1026 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of sales were removed, as if its data had not arrived (1048 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "88 of the 1048 rows of sales that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "sales was made worse (88 of the 1048 rows of sales that favour it were swapped for ones that count against it) while tech was made better (84 of the 1026 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of sales were removed, as if its data had not arrived (1048 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1007,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W15",
+          "what": [
+            "1 finding, the first in interval 30m 2026-04-18 19:00"
+          ]
+        }
+      ],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "28 of the 1044 rows of tech that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.8 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "tech was made worse (28 of the 1044 rows of tech that favour it were swapped for ones that count against it) while general was made better (28 of the 1023 rows of general that count against it were swapped for ones that favour it)",
+          "detail": "it did not name tech and raised no masking flag; the headline moved by 0.2 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of tech were removed, as if its data had not arrived (1044 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "42 of the 1044 rows of tech that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.3 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "tech was made worse (42 of the 1044 rows of tech that favour it were swapped for ones that count against it) while general was made better (41 of the 1023 rows of general that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of tech were removed, as if its data had not arrived (1044 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "56 of the 1044 rows of tech that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "tech was made worse (56 of the 1044 rows of tech that favour it were swapped for ones that count against it) while general was made better (55 of the 1023 rows of general that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of tech were removed, as if its data had not arrived (1044 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "84 of the 1044 rows of tech that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "tech was made worse (84 of the 1044 rows of tech that favour it were swapped for ones that count against it) while general was made better (82 of the 1023 rows of general that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of tech were removed, as if its data had not arrived (1044 rows)",
+          "control_quiet": true
+        }
+      ]
+    },
+    {
+      "seed": 1008,
+      "judged": 25,
+      "not_judged": 1,
+      "alarms": 1,
+      "flagged": [
+        {
+          "period": "2026-W17",
+          "what": [
+            "a significant change in the headline (down)",
+            "1 finding, the first in site s_4"
+          ]
+        }
+      ],
+      "faults": [
+        {
+          "sigmas": 2,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "29 of the 1040 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.4 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (29 of the 1040 rows of billing that favour it were swapped for ones that count against it) while tech was made better (27 of the 991 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by -0.7 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 2,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1040 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "43 of the 1040 rows of billing that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.8 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "billing was made worse (43 of the 1040 rows of billing that favour it were swapped for ones that count against it) while tech was made better (40 of the 991 rows of tech that count against it were swapped for ones that favour it)",
+          "detail": "it did not name billing and raised no masking flag; the headline moved by -0.7 standard errors (not significant)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 3,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1040 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "57 of the 1040 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (57 of the 1040 rows of billing that favour it were swapped for ones that count against it) while tech was made better (54 of the 991 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 4,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1040 rows)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "85 of the 1040 rows of billing that favour it were swapped for ones that count against it",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": true,
+          "what": "billing was made worse (85 of the 1040 rows of billing that favour it were swapped for ones that count against it) while tech was made better (80 of the 991 rows of tech that count against it were swapped for ones that favour it)",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "mix_shift",
+          "applicable": false,
+          "pass": false,
+          "what": "no two queue have rates far enough apart for moving rows between them to change anything",
+          "control_quiet": true
+        },
+        {
+          "sigmas": 6,
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of billing were removed, as if its data had not arrived (1040 rows)",
+          "control_quiet": true
+        }
+      ]
+    }
+  ],
+  "weeks": 30,
+  "sizes": [
+    2,
+    3,
+    4,
+    6
+  ],
+  "markdown": "### False alarms, 8 seeds of 30 weeks with nothing planted\n\n| | weeks judged | raised something | rate | 95% interval | declined to judge |\n|---|---|---|---|---|---|\n| seed 1001 | 25 | 0 | 0.0% | | 1 |\n| seed 1002 | 25 | 0 | 0.0% | | 1 |\n| seed 1003 | 25 | 1 | 4.0% | | 1 |\n| seed 1004 | 25 | 0 | 0.0% | | 1 |\n| seed 1005 | 25 | 1 | 4.0% | | 1 |\n| seed 1006 | 25 | 3 | 12.0% | | 1 |\n| seed 1007 | 25 | 1 | 4.0% | | 1 |\n| seed 1008 | 25 | 1 | 4.0% | | 1 |\n| **all** | **200** | **7** | **3.5%** | 1.7% to 7.0% | 8 |\n\n### Planted faults found, by kind and size (found of planted; the unchanged week raised nothing in 32 of 32 runs)\n\n| kind | 2 standard errors | 3 standard errors | 4 standard errors | 6 standard errors |\n|---|---|---|---|---|\n| segment shift | 0 of 8 (0.0%; 0.0% to 32.4%) | 2 of 8 (25.0%; 7.1% to 59.1%) | 7 of 8 (87.5%; 52.9% to 97.8%) | 8 of 8 (100.0%; 67.6% to 100.0%) |\n| offsetting pair | 0 of 8 (0.0%; 0.0% to 32.4%) | 3 of 8 (37.5%; 13.7% to 69.4%) | 7 of 8 (87.5%; 52.9% to 97.8%) | 8 of 8 (100.0%; 67.6% to 100.0%) |\n| mix shift | not plantable in 8 of 8 | not plantable in 8 of 8 | not plantable in 8 of 8 | not plantable in 8 of 8 |\n| data gap | 8 of 8 (100.0%; 67.6% to 100.0%) | 8 of 8 (100.0%; 67.6% to 100.0%) | 8 of 8 (100.0%; 67.6% to 100.0%) | 8 of 8 (100.0%; 67.6% to 100.0%) |"
+}

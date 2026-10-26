@@ -1,0 +1,228 @@
+{
+  "project": "yukti-dev",
+  "spread": 20,
+  "when": "2026-10-26T14:19:54.449Z",
+  "kpis": {
+    "complaint_volume": {
+      "selection": "20 of 590 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 2 more left out because they hold a recorded incident",
+      "replayed": 20,
+      "bytes": 328737385770,
+      "usd": 2.0546086610625,
+      "unlabelled": {
+        "judged": 20,
+        "alarms": 9,
+        "not_judged": 0,
+        "real_events": 0
+      },
+      "declined": [],
+      "flagged": [
+        {
+          "period": "2011-W52",
+          "words": "26\u201331 December 2011",
+          "what": [
+            "a significant change in the headline (down)",
+            "1 finding, the first in day 2011-12-26..2011-12-27"
+          ]
+        },
+        {
+          "period": "2014-W16",
+          "words": "21\u201327 April 2014",
+          "what": [
+            "1 finding, the first in state DE"
+          ]
+        },
+        {
+          "period": "2014-W47",
+          "words": "24\u201330 November 2014",
+          "what": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in day 2014-11-27..2014-11-28"
+          ]
+        },
+        {
+          "period": "2016-W34",
+          "words": "22\u201328 August 2016",
+          "what": [
+            "1 finding, the first in subissue Disclosure verification of debt / Not given enough info to verify debt"
+          ]
+        },
+        {
+          "period": "2017-W13",
+          "words": "27 March \u2013 2 April 2017",
+          "what": [
+            "2 findings, the first in submitted via Web"
+          ]
+        },
+        {
+          "period": "2021-W19",
+          "words": "10\u201316 May 2021",
+          "what": [
+            "3 findings, the first in company name BBVA FINANCIAL CORPORATION"
+          ]
+        },
+        {
+          "period": "2021-W50",
+          "words": "13\u201319 December 2021",
+          "what": [
+            "3 findings, the first in submitted via Web"
+          ]
+        },
+        {
+          "period": "2022-W28",
+          "words": "11\u201317 July 2022",
+          "what": [
+            "1 finding, the first in state RI"
+          ]
+        },
+        {
+          "period": "2023-W06",
+          "words": "6\u201312 February 2023",
+          "what": [
+            "2 findings, the first in submitted via Web"
+          ]
+        }
+      ],
+      "labelled": {
+        "judged": 18,
+        "alarms": 7,
+        "real_events": 2,
+        "rate": 0.3888888888888889,
+        "upper": 0.6138133141934383,
+        "pass": false
+      },
+      "level": "reconciled",
+      "say": "I replayed 20 of 590 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 2 more left out because they hold a recorded incident. Of the 18 ordinary periods I could judge, 7 raised something (about 1 in 3). You allow about 1 in 20. 2 were left out because you said something real happened then. That is more than you allow, so the KPI stays reconciled.",
+      "incidents": {
+        "found": [
+          {
+            "id": "incident_1_complaint_volume",
+            "pass": true,
+            "held_out": false
+          },
+          {
+            "id": "incident_2_complaint_volume",
+            "pass": true,
+            "held_out": true
+          }
+        ],
+        "hit_rate": 1,
+        "verified": false,
+        "reasons": [
+          "the incident check ran, and complaint_volume stands as reconciled: replay it over ordinary past periods and show it rarely raises a false alarm"
+        ],
+        "level": "reconciled"
+      }
+    },
+    "timely_response_rate": {
+      "selection": "20 of 591 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 1 more left out because they hold a recorded incident",
+      "replayed": 20,
+      "bytes": 286241482454,
+      "usd": 1.7890092653375,
+      "unlabelled": {
+        "judged": 20,
+        "alarms": 4,
+        "not_judged": 0,
+        "real_events": 0
+      },
+      "declined": [],
+      "flagged": [
+        {
+          "period": "2011-W52",
+          "words": "26\u201331 December 2011",
+          "what": [
+            "a significant change in the headline (up)",
+            "2 findings, the first in company name BANK OF AMERICA, NATIONAL ASSOCIATION"
+          ]
+        },
+        {
+          "period": "2013-W07",
+          "words": "18\u201324 February 2013",
+          "what": [
+            "1 finding, the first in company name PNC Bank N.A."
+          ]
+        },
+        {
+          "period": "2016-W03",
+          "words": "18\u201324 January 2016",
+          "what": [
+            "a significant change in the headline (down)",
+            "2 findings, the first in subproduct Debt collection / Other (i.e. phone, health club, etc.)"
+          ]
+        },
+        {
+          "period": "2023-W06",
+          "words": "6\u201312 February 2023",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in company name BANK OF AMERICA, NATIONAL ASSOCIATION"
+          ]
+        }
+      ],
+      "labelled": {
+        "judged": 20,
+        "alarms": 4,
+        "real_events": 0,
+        "rate": 0.2,
+        "upper": 0.4160217220257599,
+        "pass": false
+      },
+      "level": "reconciled",
+      "say": "I replayed 20 of 591 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 1 more left out because they hold a recorded incident. Of the 20 ordinary periods I could judge, 4 raised something (about 1 in 5). You allow about 1 in 20. That is more than you allow, so the KPI stays reconciled.",
+      "incidents": {
+        "found": [
+          {
+            "id": "incident_3_timely_response_rate",
+            "pass": true,
+            "held_out": false
+          }
+        ],
+        "hit_rate": 1,
+        "verified": false,
+        "reasons": [
+          "it found the incident you recorded, but that one was kept aside while the analysis was set up, so it is not independent proof: record another incident and keep it aside, or plant faults in your own data",
+          "the incident check ran, and timely_response_rate stands as reconciled: replay it over ordinary past periods and show it rarely raises a false alarm"
+        ],
+        "level": "reconciled"
+      }
+    }
+  },
+  "incidents": [
+    {
+      "id": "incident_1_complaint_volume",
+      "kpi": "complaint_volume",
+      "text": "Why did complaint volume rise in the week of 12 September 2016?",
+      "held_out": false
+    },
+    {
+      "id": "incident_2_complaint_volume",
+      "kpi": "complaint_volume",
+      "text": "Why did complaint volume jump in the week of 4 September 2017?",
+      "held_out": true
+    },
+    {
+      "id": "incident_3_timely_response_rate",
+      "kpi": "timely_response_rate",
+      "text": "The timely response rate went up in the week of 4 September 2017. Did companies get better at responding?",
+      "held_out": false
+    }
+  ],
+  "labels": {
+    "complaint_volume": {
+      "2011-W52": true,
+      "2014-W16": false,
+      "2014-W47": true,
+      "2016-W34": false,
+      "2017-W13": false,
+      "2021-W19": false,
+      "2021-W50": false,
+      "2022-W28": false,
+      "2023-W06": false
+    },
+    "timely_response_rate": {
+      "2011-W52": false,
+      "2013-W07": false,
+      "2016-W03": false,
+      "2023-W06": false
+    }
+  }
+}

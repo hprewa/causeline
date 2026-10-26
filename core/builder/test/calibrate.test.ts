@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Result } from "@causeline/schema";
@@ -176,4 +176,44 @@ test("the rate, its upper bound and its words", () => {
   assert.equal(sayRate(0), "none");
   assert.ok(wilsonUpper(0, 8) > 0.3);
   assert.equal(wilsonUpper(0, 0), 1);
+});
+
+test("a spread picks periods evenly through the whole history, says how it chose, and keeps what it already knew when the choice changes", async () => {
+  const ws = workspace();
+  const d = deps(44, {});
+  const r = await calibrate(opts(ws, d, { spread: 10 }));
+  assert.equal(r.stage, "done");
+  assert.equal(d.ran.length, 10);
+  assert.equal(r.progress.total, 10);
+  assert.match(r.selection!, /^10 of 40 complete periods, evenly spaced from 2026-02-02 to /);
+  // first and last of the usable periods are in; the gaps are even
+  assert.equal([...d.ran].sort()[0], "2026-W05");
+  assert.equal([...d.ran].sort().at(-1), "2026-W44");
+  const idx = [...d.ran].sort().map((p) => Number(p.slice(-2)));
+  const gaps = idx.slice(1).map((v, i) => v - idx[i]);
+  assert.ok(Math.max(...gaps) - Math.min(...gaps) <= 1, `even: ${gaps}`);
+  // a larger spread reuses what was replayed where the periods coincide, and only runs the rest
+  const more = await calibrate(opts(ws, d, { spread: 19 }));
+  assert.equal(more.progress.total, 19);
+  assert.ok(d.ran.length < 10 + 19, "some periods of the first choice were reused");
+  assert.equal(new Set(d.ran).size, d.ran.length, "no period ran twice");
+});
+
+test("a spread leaves out the periods that hold a recorded incident, and says how many", async () => {
+  const ws = workspace();
+  mkdirSync(join(ws, "evals"), { recursive: true });
+  writeFileSync(
+    join(ws, "evals", "cases.yaml"),
+    [
+      "- id: incident_1_ok",
+      "  question: Why did ok change?",
+      "  inputs: { metric: ok, period: 2026-W20, playbook: metric_change }",
+      "  expect:",
+      "    top_finding: { dimension: site, value: north }",
+    ].join("\n") + "\n",
+  );
+  const d = deps(44, {});
+  const r = await calibrate(opts(ws, d, { spread: 40 }));
+  assert.ok(!d.ran.includes("2026-W20"), "the incident week was not counted as ordinary");
+  assert.match(r.selection!, /39 of 39 complete periods|; 1 more left out because they hold a recorded incident/);
 });

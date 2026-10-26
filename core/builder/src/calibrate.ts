@@ -60,6 +60,8 @@ interface CalibrationFile {
   adjustments: { at: string; from: number; to: number }[];
   /** What the first period read, for the estimate of the rest. */
   first_bytes?: number;
+  /** How the periods were chosen the last time, in words. */
+  selection?: string;
   outcomes: Record<string, PeriodOutcome>;
   labels: Record<string, Label>;
 }
@@ -177,7 +179,10 @@ export interface CalibrateOptions {
   allowed?: number;
   /** The person agreed to what the replay reads. */
   goAhead?: boolean;
+  /** The newest this many periods (default 26). Ignored when `spread` is given. */
   maxPeriods?: number;
+  /** Instead of the newest periods, this many spread evenly through the whole history (the newest weeks of real data are often not ordinary ones). */
+  spread?: number;
   chunkMs?: number;
   baseline?: number;
   /** Replace the real run (the tests). */
@@ -195,6 +200,8 @@ export interface CalibrationReport {
   estimate?: { periods: number; bytes_per_period: number; total_bytes: number; measured: boolean };
   progress: { done: number; total: number };
   evaluation?: Evaluation;
+  /** Which periods were replayed and why, in words (stored with the outcomes so a published rate says how its periods were chosen). */
+  selection?: string;
   /** Periods that raised something, in words, for the person to say whether something real happened. */
   flagged: { period: string; words: string; what: string[] }[];
   /** Periods the analysis declined to judge, with why. */
@@ -260,6 +267,14 @@ function realDeps(opts: CalibrateOptions): CalibrationDeps {
   };
 }
 
+/** n items spread evenly through a list, first and last included (all of them when there are no more than n). Deterministic: no seed. */
+export function spreadEvenly<T>(items: T[], n: number): T[] {
+  if (!(n >= 1)) throw new Error("spread needs at least one period");
+  if (items.length <= n) return items;
+  if (n === 1) return [items[items.length - 1]];
+  return Array.from({ length: n }, (_, i) => items[Math.round((i * (items.length - 1)) / (n - 1))]);
+}
+
 const wordsOf = (b: { bucket_start: string; bucket_end: string }) => dayWords(b.bucket_start.slice(0, 10), b.bucket_end.slice(0, 10));
 
 /**
@@ -291,10 +306,15 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
   // the periods to replay: complete ones with a baseline before them, the newest `max`, without the incidents the person recorded
   const all = await deps.periods();
   const incidents = incidentWindows(opts.workspace, opts.kpi);
-  const candidates = all
-    .slice(deps.baseline)
-    .slice(-(opts.maxPeriods ?? DEFAULT_PERIODS))
-    .filter((b) => !overlapsIncident(b, incidents));
+  const pool = all.slice(deps.baseline);
+  const usable = pool.filter((b) => !overlapsIncident(b, incidents));
+  const candidates = opts.spread !== undefined ? spreadEvenly(usable, opts.spread) : pool.slice(-(opts.maxPeriods ?? DEFAULT_PERIODS)).filter((b) => !overlapsIncident(b, incidents));
+  const span = candidates.length > 0 ? `${candidates[0].bucket_start.slice(0, 10)} to ${candidates[candidates.length - 1].bucket_end.slice(0, 10)}` : "";
+  const left = pool.length - usable.length;
+  file.selection =
+    opts.spread !== undefined
+      ? `${candidates.length} of ${usable.length} complete periods, evenly spaced from ${span}${left > 0 ? `; ${left} more left out because they hold a recorded incident` : ""}`
+      : `the newest ${candidates.length} complete periods (${span})${left > 0 ? `; periods holding a recorded incident left out` : ""}`;
   const todo = candidates.filter((b) => file!.outcomes[b.bucket] === undefined);
 
   // what it reads, said before anything is read on a cloud database
@@ -303,7 +323,7 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
     const per = file.first_bytes ?? (deps.tableBytes ? Math.round((await deps.tableBytes()) * SCANS_PER_PERIOD) : 0);
     const total = per * todo.length;
     if (total > GO_AHEAD_BYTES) {
-      return { kpi: opts.kpi, stage: "needs_go_ahead", reasons: [], estimate: { periods: todo.length, bytes_per_period: per, total_bytes: total, measured }, progress: { done: candidates.length - todo.length, total: candidates.length }, flagged: [], not_judged: [] };
+      return { kpi: opts.kpi, stage: "needs_go_ahead", reasons: [], estimate: { periods: todo.length, bytes_per_period: per, total_bytes: total, measured }, progress: { done: candidates.length - todo.length, total: candidates.length }, selection: file.selection, flagged: [], not_judged: [] };
     }
   }
 
@@ -330,7 +350,7 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
   const ev = evaluate(outcomes, file.labels, file.allowed);
   const flagged = ev.flagged.map((o) => ({ period: o.period, words: dayWords(o.start, o.end), what: o.why }));
   const notJudged = outcomes.filter((o) => o.status === "not_judged").map((o) => ({ period: o.period, words: dayWords(o.start, o.end), reason: o.reason ?? "" }));
-  if (have.length < candidates.length) return { kpi: opts.kpi, stage: "running", reasons: [], progress, evaluation: ev, flagged, not_judged: notJudged };
+  if (have.length < candidates.length) return { kpi: opts.kpi, stage: "running", reasons: [], progress, selection: file.selection, evaluation: ev, flagged, not_judged: notJudged };
 
   // every period has an outcome: record the verdict on the KPI
   let level: Level = levelOf(rec);
@@ -345,7 +365,7 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
   });
   syncExperts(opts.workspace, opts.kpi, level, `calibration ${ev.pass ? "passed" : "did not pass"}`, "calibrate");
   void pending;
-  return { kpi: opts.kpi, stage: "done", reasons: [], progress, evaluation: ev, flagged, not_judged: notJudged, level, gap: levelGap(readState(opts.workspace)!.kpis[opts.kpi]) };
+  return { kpi: opts.kpi, stage: "done", reasons: [], progress, selection: file.selection, evaluation: ev, flagged, not_judged: notJudged, level, gap: levelGap(readState(opts.workspace)!.kpis[opts.kpi]) };
 }
 
 /** The person says whether something real happened in a period that raised something. A real one stops counting against the KPI. */

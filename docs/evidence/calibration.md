@@ -94,3 +94,76 @@ The analysis runs on each copy with the project's own query tools; a shift must 
 **Shown.** 7 unit tests on a table of cases: strong evidence from a verified expert is high with the reasons in words; the same evidence is held to low for a draft (with the unconfirmed-numbers sentence and what would lift it), moderate for reconciled and calibrated; no rung gives more than its ceiling for any evidence; a flat whole is weaker than a changed one; an expected-usual node and thin data lower the evidence; an answer that finds nothing says only that; a declined or exploratory answer is none. In the integration run over a real Toolbox, a real answer carries the label and at least two reasons, and the note telling the assistant to say it. Unit tests pass in every package (runner 183), contact-centre 25/25, routing 38/38, intents 16/16, integration 8/8 (results that do not use the label are unchanged, because it is added after the run).
 
 **Not shown.** That people read the label as intended (no one outside this work has seen it); that the thresholds (two points for high) match how right the answers actually are: the label is a rule, and it has not been compared with how often high answers turn out right, which is what the held-out and planted-fault checks of the earlier steps measure for the expert as a whole; a live assistant saying it in its own words; the explorer's answers (labelled none); the sign-off and project pages (they show the rung and the false-alarm rate, not the per-answer label).
+
+## Step 5: the proof on two packs, and the rates
+
+Numbers measured in this step; the scripts that made them and their raw outputs are named under each table (`docs/evidence/data/`). Every rate has its count and an interval, and where a number could be read two ways both are given.
+
+### Contact-centre (synthetic, SQLite): the whole ladder, then the rates
+
+**The full ladder, once, through the real server** (`scripts/ladder-proof.mjs`, seed 1, 30 weeks, two real incidents planted: a team short-staffed in week 13 and another in week 22). A script plays the model and the person; the person knows what really happened, so it answers "was something real going on?" truthfully and gives numbers worked out from the raw files, never from the system under test. In the order the build guide gives:
+1. Description saved; three numbers from the files confirmed (a week, one centre, one day, from different periods and kinds): **reconciled**.
+2. False-alarm replay of 26 periods: 25 judged, 1 declined (the holiday week), **2 raised something, and they were exactly the two weeks with planted incidents**; both were answered "real"; after that, 0 of 23 ordinary weeks raised something: **calibrated**.
+3. The two incidents recorded through `propose_incident` and `add_incident`: the first can help set the analysis up, the second is kept aside by default.
+4. Faults planted in a copy of a quiet week: **3 of 3 plantable kinds found** (a shift, an offsetting pair, a missing part) with the unchanged week quiet; the fourth (volume moving between queues) could not be planted because the queues' rates are too close.
+5. `verify_expert`: both incidents found (hit rate 1 of 1, 1 of 1 kept aside): **verified**.
+Raw: `data/ladder-contact-centre-seed1.json`. One seed, one run: it shows the path works end to end, not how often it does.
+
+**False-alarm rate with nothing planted** (`scripts/rates.mjs`, 8 seeds of 30 weeks, the analysis' own tools, no model):
+
+| | weeks judged | raised something | rate | 95% interval | declined to judge |
+|---|---|---|---|---|---|
+| all 8 seeds | 200 | 7 | **3.5%** | 1.7% to 7.0% | 8 (one holiday week per seed) |
+
+Per seed 0 to 3 of 25 (seed 1006 had 3, 12%). This is within the one in twenty allowed, with an upper end of 7%.
+
+**Planted faults found, by kind and size** (the same script; sizes are in standard errors of the part the fault is planted in; found of planted, with a 95% interval; the unchanged week raised nothing in all 32 runs):
+
+| kind | 2 | 3 | 4 | 6 |
+|---|---|---|---|---|
+| a shift in one part | 0 of 8 (0% to 32%) | 2 of 8 (7% to 59%) | 7 of 8 (53% to 98%) | 8 of 8 (68% to 100%) |
+| one part worse, another better | 0 of 8 (0% to 32%) | 3 of 8 (14% to 69%) | 7 of 8 (53% to 98%) | 8 of 8 (68% to 100%) |
+| a part's data missing (met by declining) | 8 of 8 | 8 of 8 | 8 of 8 | 8 of 8 |
+| volume moving between parts | not plantable | not plantable | not plantable | not plantable |
+
+Read: on this data the analysis finds a shift of about four standard errors or more nearly always, finds a three-standard-error shift about a third of the time, and does not see two. Missing data is always declined. The mix kind could not be planted in any of the 32 cases (the pack's queues have rates too close for moving volume between them to change the whole by more than chance), so **it is not measured here**. The faults come from seeds the analysis was never tuned on; the 25 hand-written cases are not used and not counted.
+
+### Complaints (real, BigQuery): the same check on the CFPB's public data
+
+**Setup** (`scripts/complaints-signoff.mjs` then `scripts/complaints-calibrate.mjs`, project `yukti-dev`): the pack signed off against the CFPB's live published counts; the three real incidents the pack knows recorded (Wells Fargo's sales practices, September 2016, and Equifax's breach, September 2017, for complaint volume; Equifax for the timely response rate); then 20 periods **spread evenly through the whole history** (the newest weeks hold a persistent real surge) for each of two KPIs. The rule is stored with the outcomes: "20 of 590 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 2 more left out because they hold a recorded incident" (volume) and "20 of 591 complete periods, evenly spaced from 2011-12-26 to 2023-02-12; 1 more left out because they hold a recorded incident" (timely rate). Nothing was declined as not comparable in this sample. Cost: volume 329 GB ($2.05), timely rate 286 GB ($1.79) at list price, plus about 10 GB for the sign-off.
+
+**Who said which weeks were real.** The person had not looked at the data, so the 13 flagged weeks were judged independently by a separate model (Opus) working only from the dates and a fixed rule written beforehand ("real" = a documented cause: a change in the database, a news, regulatory or company event, or a documented calendar effect such as a holiday week; "not real" = an ordinary week; "unsure" = cannot be established), using the CFPB's own public weekly counts for the 6 to 8 weeks either side and outside sources. Its answers are in `data/complaints-labels.json`.
+
+| week | measure | verdict | reason (from its report) |
+|---|---|---|---|
+| 26–31 Dec 2011 | volume | **real** | Christmas week: 390 against about 490–600 before and 730–830 after; recurs every Christmas |
+| 24–30 Nov 2014 | volume | **real** | Thanksgiving week: 2,158 against about 2,700–3,140 around it; recurs every year |
+| 21–27 Apr 2014, 22–28 Aug 2016, 27 Mar–2 Apr 2017, 10–16 May 2021, 11–17 Jul 2022, 6–12 Feb 2023 | volume | not real | inside the range of the surrounding weeks |
+| 13–19 Dec 2021 | volume | not real (medium) | the total was flat; Experian's daily count jumped from about 120 to 376–489 while the other two bureaus fell back; no documented cause was found |
+| 26–31 Dec 2011, 18–24 Feb 2013, 18–24 Jan 2016, 6–12 Feb 2023 | timely rate | not real | inside the range of the surrounding weeks |
+
+Caveats it raised, kept with the result: 11–17 Jul 2022 is the highest week in its window (low to medium confidence); 6–12 Feb 2023 is the last week of the copy the analysis reads, which ends on 12 Feb 2023, and the pack's own notes say its newest weeks were still filling in, so those two flags may be the copy's truncation and not an event (the reviewer saw today's live data, where the week is ordinary). A person who knew the data better might label differently; the labelling rule counts "unsure" and "not real" the same, so the rate would not change for those.
+
+**False-alarm rate:**
+
+| KPI | periods judged | raised something | rate, every flag counted (an upper bound) | after the reviewer's labels | recorded incidents found |
+|---|---|---|---|---|---|
+| complaint volume | 20 | 9 | 45% (26% to 66%) | **7 of 18, 39%** (95% interval 20% to 61%) | 2 of 2 |
+| timely response rate | 20 | 4 | 20% (8% to 42%) | **4 of 20, 20%** (95% interval 8% to 42%) | 1 of 1 |
+
+**Neither KPI is calibrated** on this data: the standard is one false alarm in twenty ordinary periods, and the rates are 39% and 20%. Both stay *reconciled*. The analysis was not changed to improve these numbers. Raw: `data/complaints-calibration.json`.
+
+**What the flagged weeks look like.** Most are a week with a non-significant headline in which the analysis reports one or two findings in a small part (a state such as DE or RI, a sub-issue, a company, the web channel). That is the weakness the earlier steps reduced but did not remove: when many parts are compared (about 55 states, over a thousand companies), a few stand out by chance or by their own volatility, and the checks against a part's own history and the stricter bar inside a flat week do not catch all of them. It is the main thing standing between this pack and *calibrated*, and it is a finding of this step, not something this step fixes.
+
+**Recorded incidents.** All three were found (hit rate 3 of 3). **They are not independent evidence**: the analysis was developed against both real incidents (they motivated sprint 3 and are in the regression suite), and the one for the timely rate is in it too. The tool marks the second volume incident as kept aside by default, which here is only nominal. So no pack of these two reaches *verified*: complaints cannot (no independent evidence, and fault injection is not available on cloud data), and the contact-centre pack did, on synthetic data.
+
+### Where this leaves Phase 2's done-when
+- **One pack reaches `verified` through the full ladder:** yes, the synthetic contact-centre pack, one seed end to end through the real server (rates over 8 seeds above). Not a real-data pack.
+- **False-alarm and hit rates published for two packs:** yes, both with counts and intervals. The real-data pack does not pass the calibration standard, and the numbers say so.
+
+### Not shown
+- Whether the contact-centre results hold on any real data: the synthetic data has steady noise, which is what the analysis' tests assume.
+- The complaints rates come from 20 chosen periods per KPI (the interval is wide: 20% to 61% for volume after labelling), from one dataset, with labels from one independent reviewer, not from the person; the early years of the database (2011 to 2013, when it was small and growing) are in the sample.
+- The sizes at which planted faults are found depend on how a fault is built; mix shifts between parts were not measured; faults on cloud data were not planted.
+- One run of the whole ladder; no rate for how often a person gets through it.
+- A live assistant following the guide through calibration, labelling and fault planting (the next commit tries it once).

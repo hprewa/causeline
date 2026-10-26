@@ -41,6 +41,7 @@ interface FaultsFile {
   kpi: string;
   key: string;
   seed: number;
+  sigmas?: number;
   period: string;
   start: string;
   end: string;
@@ -51,9 +52,11 @@ interface FaultsFile {
 
 export const FAULT_KINDS: FaultKind[] = ["segment_shift", "offsetting_pair", "mix_shift", "data_gap"];
 const CHUNK_MS = 40_000;
-/** A planted change is sized to be about this many standard errors for the part it is planted in, so that it is real enough for an honest test. */
-const SIGMAS = 6;
-const SHARES = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9];
+/** A planted change is sized to be about this many standard errors for the part it is planted in, so that it is real enough for an honest test (a smaller size measures how small a fault the analysis still finds). */
+export const DEFAULT_SIGMAS = 6;
+/** The most of a part's rows that a planted change may touch, and the least (a small planted size must be allowed to be small). */
+const MAX_SHARE = 0.9;
+const MIN_SHARE = 0.02;
 /** The share of every other part's rows moved into the worst part in a mix shift (enough to change the whole's rate by several standard errors). */
 /** The most of every other part that a mix shift may move. */
 const MAX_MOVE = 0.9;
@@ -112,6 +115,7 @@ interface Plan {
   denominator: string;
   kind: "ratio" | "sum";
   higherIsBetter: boolean;
+  sigmas: number;
 }
 
 const where = (plan: Plan) => `substr(${q(plan.time)}, 1, 10) BETWEEN '${plan.window.start}' AND '${plan.window.end}'`;
@@ -141,15 +145,15 @@ function swapsFor(plan: Plan, rows: { r: number }[], remove: { r: number }[], po
   if (plan.kind === "sum") {
     const total = rows.reduce((a, x) => a + x.r, 0);
     const spread = Math.sqrt(rows.reduce((a, x) => a + x.r * x.r, 0)) * Math.sqrt(1 + 1 / baseline);
-    const share = total > 0 ? Math.min(SHARES[SHARES.length - 1], Math.max(SHARES[0], (SIGMAS * spread) / total)) : SHARES[SHARES.length - 1];
+    const share = total > 0 ? Math.min(MAX_SHARE, Math.max(MIN_SHARE, (plan.sigmas * spread) / total)) : MAX_SHARE;
     return Math.max(1, Math.round(share * n));
   }
   const m = mean(rows.map((x) => x.r));
   const sd = Math.sqrt(mean(rows.map((x) => (x.r - m) ** 2)));
   const se = (sd / Math.sqrt(n)) * Math.sqrt(1 + 1 / baseline);
   const gap = Math.abs(mean(pool.map((x) => x.r)) - mean(remove.map((x) => x.r))); // what one swapped row moves the total by
-  const needed = gap > 0 ? Math.ceil((SIGMAS * se * n) / gap) : remove.length;
-  return Math.min(Math.round(SHARES[SHARES.length - 1] * remove.length), Math.max(Math.round(SHARES[0] * remove.length), needed), remove.length);
+  const needed = gap > 0 ? Math.ceil((plan.sigmas * se * n) / gap) : remove.length;
+  return Math.min(Math.round(MAX_SHARE * remove.length), Math.max(1, needed), remove.length);
 }
 
 /** Make a part worse (or, with `better`, better), keeping its volume. For a total, add rows (when high is bad) or take them away. */
@@ -237,9 +241,9 @@ function plant(kind: FaultKind, db: SqlDb, plan: Plan, rand: () => number): Plan
   const perUnit = others.reduce((a, p) => a + p.rows.length * (mean(p.rows.map((x) => x.r)) - rTo), 0) / total;
   const overall = mean(ps.flatMap((p) => p.rows.map((x) => x.r)));
   const se = Math.sqrt((overall * (1 - overall)) / total) * Math.sqrt(1 + 1 / baseline);
-  const need = (SIGMAS * se) / Math.abs(perUnit || 1e-9);
+  const need = (plan.sigmas * se) / Math.abs(perUnit || 1e-9);
   if (!(Math.abs(perUnit) > 0) || need > MAX_MOVE) return { skip: `the ${dim} rates are too close for moving rows between them to change the whole by more than chance would (it would take moving ${Math.round(Math.min(need, 9.99) * 100)}% of every other part)` };
-  const move = Math.min(MAX_MOVE, Math.max(0.2, need));
+  const move = Math.min(MAX_MOVE, Math.max(MIN_SHARE, need));
   // a mix shift is new volume of the destination's kind in place of volume of the others': rows leave the others, and the same number of rows like the
   // destination's arrive (copies of its own), so no part's rate changes and only the weights do
   const leaving = others.flatMap((p) => pick(p.rows, move, rand).map((x) => x.rid));
@@ -254,7 +258,7 @@ function plant(kind: FaultKind, db: SqlDb, plan: Plan, rand: () => number): Plan
 }
 
 /** The fact the KPI counts over, and what is needed to plant faults in it. Throws, in words, when it cannot be done. */
-function planFor(pack: PackDefinition, kpi: string, window: { start: string; end: string }): Plan {
+function planFor(pack: PackDefinition, kpi: string, window: { start: string; end: string }, sigmas: number): Plan {
   const metric = pack.ontology.metrics[kpi];
   if (!metric) throw new Error(`"${kpi}" is not a KPI in this pack`);
   if (metric.type === "product") throw new Error(`${kpi} is a product of other KPIs; plant faults in its parts (${metric.drivers.join(", ")})`);
@@ -263,13 +267,15 @@ function planFor(pack: PackDefinition, kpi: string, window: { start: string; end
   const dimension = pack.ontology.dimensions.find((d) => fact.concepts.includes(d));
   if (!dimension) throw new Error(`${kpi} has no flat dimension in its data to plant a fault in (its parts are only in hierarchies); this is not supported yet`);
   const numerator = "numerator" in formula ? formula.numerator : formula.value;
-  return { fact: formula.fact, table: "__fact", time: fact.time, dimension, window, numerator, denominator: "numerator" in formula ? formula.denominator : "1", kind: metric.type === "ratio" ? "ratio" : "sum", higherIsBetter: metric.direction === "higher_is_better" };
+  return { fact: formula.fact, table: "__fact", time: fact.time, dimension, window, numerator, denominator: "numerator" in formula ? formula.denominator : "1", kind: metric.type === "ratio" ? "ratio" : "sum", higherIsBetter: metric.direction === "higher_is_better", sigmas };
 }
 
 export interface InjectOptions {
   workspace: string;
   kpi: string;
   seed?: number;
+  /** How big to make each planted change, in standard errors of the part it is planted in (default 6). */
+  sigmas?: number;
   corePlaybooksDir?: string;
   chunkMs?: number;
   /** Which kinds to plant (default all). */
@@ -305,14 +311,16 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
   const pack = loadPack(opts.workspace, { requireMeta: true });
   const kinds = opts.kinds ?? FAULT_KINDS;
   const seed = opts.seed ?? 42;
+  const sigmas = opts.sigmas ?? DEFAULT_SIGMAS;
+  if (!(sigmas > 0)) throw new Error("the size of a planted change must be a positive number of standard errors");
 
   let file = readFile(opts.workspace, opts.kpi);
   const key = kpiKey(opts.workspace, opts.kpi, baseline);
-  if (!file || file.key !== key || file.seed !== seed || file.period !== win.period) {
-    file = { version: 1, kpi: opts.kpi, key, seed, period: win.period, start: win.start, end: win.end, outcomes: {} };
+  if (!file || file.key !== key || file.seed !== seed || (file.sigmas ?? DEFAULT_SIGMAS) !== sigmas || file.period !== win.period) {
+    file = { version: 1, kpi: opts.kpi, key, seed, sigmas, period: win.period, start: win.start, end: win.end, outcomes: {} };
   }
   const todo = kinds.filter((k) => file!.outcomes[k] === undefined);
-  const plan = planFor(pack, opts.kpi, { start: win.start, end: win.end });
+  const plan = planFor(pack, opts.kpi, { start: win.start, end: win.end }, sigmas);
   const playbook = loadPlaybook("metric_change", opts.workspace, opts.corePlaybooksDir);
   const deadline = Date.now() + (opts.chunkMs ?? CHUNK_MS);
 
