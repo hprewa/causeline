@@ -11,7 +11,7 @@ import { getGuide, GUIDE_NAMES, loadGuides } from "./guides.js";
 import { causelineHome, ToolboxInstaller } from "@causeline/runner";
 import type { CardAnswers } from "@causeline/builder";
 import type { AccessProblem } from "@causeline/connect-bigquery";
-import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, calibrateTool, labelPeriodTool, calibrationStatusTool, signInTool, withSignIn, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
+import { saveSetupCardTool, setupCardTool, acceptSampleTool, addIncidentTool, buildStatusTool, confirmNumberTool, connectBigQueryTool, connectFilesTool, describeDataTool, discoverForKpiTool, costCapTool, accessHelpTool, proposeIncidentTool, calibrateTool, labelPeriodTool, calibrationStatusTool, signInTool, withSignIn, proposeChecksTool, runChecksTool, signoffStatusTool, playBackTool, reconcileMetricTool, savePackTool, testFactTool, verifyExpertTool, analyzeSeasonalityTool, checkDataTool, generateToolsTool, listPlaybooks, routeTool, runPlaybookTool, scanKpisTool, validatePackTool, type Callers, type RunArgs, type SeasonalityArgs } from "./handlers.js";
 
 const text = (data: unknown) => JSON.stringify(data, null, 2);
 const ok = (data: object) => ({ content: [{ type: "text" as const, text: text(data) }], structuredContent: data as Record<string, unknown> });
@@ -201,8 +201,25 @@ const incidentInput = fromJsonSchema<Record<string, unknown>>(
     finding: { type: "object", description: "Where the user knows it was: {dimension, value, scope?} for example {dimension: 'kind', value: 'K3', scope: {place: 'P2'}}." },
     question: { type: "string", description: "The question as the user would ask it." },
     mention: { type: "array", items: { type: "string" }, description: "Words the answer should contain." },
+    held_out: { type: "boolean", description: "Keep this incident aside: it is looked at only when the expert is checked and never used to adjust anything. Leave out to use the default (the first incident of a KPI can help while it is set up; later ones are kept aside)." },
     anywhere: { type: "boolean", description: "Set when the analysis may report what the user said among several findings (for example both one value and another that describes the same records), not only first. Say so to the user; the default is that it must be first." },
   }, ["kpi", "finding", "question"]),
+);
+const proposeIncidentInput = fromJsonSchema<Record<string, unknown>>(
+  obj(
+    {
+      kpi: { type: "string" },
+      text: { type: "string", description: "What the user pasted or said about the incident, kept as its wording." },
+      period_words: { type: "string", description: "When, in their words (for example 'week 7' or 'the week of 12 September'). Leave out when you give dates." },
+      start_date: { type: "string", description: "Or the first day, YYYY-MM-DD (with end_date)." },
+      end_date: { type: "string", description: "Or the last day, YYYY-MM-DD, included." },
+      finding: { type: "object", description: "Where it was, as you read it: {dimension, value, scope?}. The tool checks it against the data; do not invent a value the text does not give." },
+      question: { type: "string", description: "The question the user would ask about it." },
+      mention: { type: "array", items: { type: "string" } },
+      held_out: { type: "boolean", description: "Only if the user asks to keep it aside or to let it help set up." },
+    },
+    ["kpi", "finding"],
+  ),
 );
 const verifyInput = fromJsonSchema<{ kpi: string }>(obj({ kpi: { type: "string" } }, ["kpi"]));
 
@@ -387,7 +404,8 @@ export function createServer(cfg: ServerConfig, callers: Callers, screen: Signof
   builder("open_project_page", "Open the project's page", "Open a page on this computer that shows the open project at a glance: each KPI and how far it is trusted, the experts, how the steps decide what to do next, and every answer given so far. It is read-only and has a link to the sign-off page. Returns its address (give it to the user if the browser did not open). Offer it when the user asks where things stand or wants to see the evidence behind an answer.", null, async () => ({ ...(await screen.open(undefined, "home")), note: "The page is local to this computer and works until this session ends." }));
   builder("open_signoff", "Open the sign-off screen", "Open a page on this computer where the user can enter numbers from their own reports, see ours beside them, and confirm or flag each one. Returns its address (give it to the user if the browser did not open). Everything on it is also available through confirm_number; offer it when there are several numbers to check or the user would rather click than type.", openSignoffInput, async (a: { kpi?: string }) => ({ ...(await screen.open(a?.kpi)), note: "The page is local to this computer and works until this session ends. Anything the user confirms there shows in signoff_status." }));
   builder("add_incident", "Record a past incident", "Remember a past incident the user knows the cause of (period, where it was, how they would ask) as a test case run on their real data. Ask the user for one per KPI.", incidentInput, (a) => addIncidentTool(cfg, a as never));
-  builder("verify_expert", "Check an expert against the user's incident", "Run the KPI's recorded incidents through the analysis. Needs a reconciled KPI (see confirm_number). When every incident is found where the user said, the check is stored; the expert becomes verified only once it has also been calibrated over ordinary past periods, so say what is still missing. Say plainly what failed otherwise.", verifyInput, (a) => verifyExpertTool(cfg, a));
+  builder("propose_incident", "Check a described incident before recording it", "When the user describes a past incident in their own words (a pasted post-mortem or email, or a sentence), read it, fill in when and where as you understood it, and call this. It checks the period exists, the dimension is one the data can be broken down by and the value really had activity then, and returns the exact add_incident arguments or what could not be placed (with the values that do exist). Nothing is recorded: read the sentence to the user, and call add_incident only when they agree.", proposeIncidentInput, (a) => proposeIncidentTool(cfg, callers, a as never), true);
+  builder("verify_expert", "Check an expert against the user's incident", "Run the KPI's recorded incidents through the analysis. Needs a reconciled KPI (see confirm_number). The incidents kept aside count as independent proof; one that helped while the analysis was set up does not. The expert becomes verified only when an incident kept aside was found AND the KPI is calibrated, so say what is still missing. A miss on an incident kept aside is reported without what was found instead: never adjust the definition to make it pass. It returns the share of incidents found (hit_rate).", verifyInput, (a) => verifyExpertTool(cfg, a));
 
   // --- the running intent: a question built up over messages, checked against the data, then run ------------------------
   const intent = new IntentService(cfg, callers);

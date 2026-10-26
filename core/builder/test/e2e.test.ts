@@ -112,6 +112,20 @@ test("from raw CSVs to a reconciled expert whose incident is found, step by step
     assert.equal(checked.level, "reconciled");
     assert.match(checked.reasons.join("; "), /replay it over ordinary past periods/);
     assert.equal(loadAgents(ws).find((a) => a.kpi === "service_level" && a.task === "deep_rca")!.status, "reconciled");
+    // the one incident was available while the analysis was set up, so finding it is not independent proof
+    assert.match(checked.reasons.join("; "), /not independent proof/);
+    assert.equal(checked.hit_rate, 1);
+    assert.equal(readState(ws)!.kpis.service_level.verification!.pass, false);
+
+    // a second incident is kept aside by default: finding it is the independent proof, and its share is kept
+    const aside = addIncident({ workspace: ws, kpi: "service_level", period: "2026-W07", finding: { dimension: "team", value: "team_05" }, question: "And what happened to service level in week 7?" });
+    assert.equal(aside.held_out, true);
+    const again = await verifyExpert({ workspace: ws, kpi: "service_level" });
+    assert.deepEqual(again.held_out, { passed: 1, total: 1 });
+    assert.equal(again.hit_rate, 1);
+    assert.equal(readState(ws)!.kpis.service_level.verification!.pass, true);
+    assert.equal(again.level, "reconciled", "still only as trusted as its KPI: calibration has not been run");
+    assert.doesNotMatch(again.reasons.join("; "), /not independent proof/);
   } finally {
     await server.stop();
   }

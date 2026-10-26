@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { calibrate, calibrationStatus, labelPeriod, sayRate, type CalibrationReport, discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { proposeIncident, calibrate, calibrationStatus, labelPeriod, sayRate, type CalibrationReport, discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { sayBytes, sayUsd, accessMessage, beginSignIn, bigQueryProject, hasClientFile, hasOwnSignIn, saveClientFile, signInInUse, useOwnSignIn, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
@@ -289,6 +289,14 @@ export async function reconcileMetricTool(cfg: ServerConfig, callers: Callers, a
 }
 
 export const addIncidentTool = (cfg: ServerConfig, args: Parameters<typeof addIncident>[0] extends infer T ? Omit<T & object, "workspace"> : never) => addIncident({ workspace: cfg.packDir, ...(args as object) } as Parameters<typeof addIncident>[0]);
+
+/** Check a pasted account of a past incident against the data and return the exact arguments for recording it, for the person to confirm. */
+export async function proposeIncidentTool(cfg: ServerConfig, callers: Callers, args: { kpi: string; text?: string; period_words?: string; start_date?: string; end_date?: string; finding: { dimension: string; value: string; scope?: Record<string, string> }; question?: string; mention?: string[]; held_out?: boolean }) {
+  needProject(cfg);
+  if (!args?.kpi || !args?.finding?.dimension || !args?.finding?.value) throw new Error("give the KPI and where the incident was (dimension and value) as you understood it from what the user wrote");
+  const p = await proposeIncident({ workspace: cfg.packDir, tools: await callers.caller(), ...args });
+  return { ...p, next: p.ok ? "Read the 'say' sentence to the user and ask if that is right. Only when they agree, call add_incident with exactly add_incident (nothing changed)." : "Tell the user what could not be placed, in plain words, and ask for what is missing or the correct value (the suggestions list real ones). Do not guess; call propose_incident again with their answer." };
+}
 
 export const verifyExpertTool = (cfg: ServerConfig, args: { kpi: string }) => verifyExpert({ workspace: cfg.packDir, kpi: args.kpi, toolbox: cfg.toolboxBinary, corePlaybooksDir: cfg.corePlaybooksDir });
 

@@ -141,7 +141,7 @@ Calibration, held-out incidents, fault injection on the person's own data, confi
 | 0 | What counts as an alarm, measured on two packs | done |
 | 0b | The analysis allows for the data's own movement; claims inside a flat whole held to a higher standard | done (existing checks unchanged: 25/25, 38/38, 16/16, 8/8, complaints 7/7; complaints replay still mixed with real events) |
 | 1 | Calibration core and tools | done (unit tests and one real run on contact-centre data through the server; BigQuery, the hit rate and a live assistant not shown) |
-| 2 | Held-out incidents and incident import | not started |
+| 2 | Held-out incidents and incident import | done (mechanics shown on SQLite and by stub; no live assistant, no BigQuery) |
 | 3 | Fault injection on the person's own data (files / SQLite) | not started |
 | 4 | Confidence labels on answers | not started |
 | 5 | Proof on two packs, rates published | not started |

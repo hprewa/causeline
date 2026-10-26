@@ -79,13 +79,15 @@ export interface IncidentInput {
   anywhere?: boolean;
   /** Words the cause records or the answer should contain (for example "hub outage"). */
   mention?: string[];
+  /** Keep it aside: looked at only when the expert is checked, never to adjust anything. Default: kept aside once the KPI already has another incident. */
+  held_out?: boolean;
 }
 
 /**
  * Remember a past incident the user knows the answer to as an eval case against their real data. It is run by the
  * same runner and scored by the same scorer as every other case.
  */
-export function addIncident(opts: IncidentInput): { id: string; file: string } {
+export function addIncident(opts: IncidentInput): { id: string; file: string; held_out: boolean } {
   const pack = loadPack(opts.workspace);
   if (!pack.ontology.metrics[opts.kpi]) throw new Error(`"${opts.kpi}" is not a KPI in this pack`);
   const concepts = [...Object.values(pack.ontology.hierarchies).flat(), ...pack.ontology.dimensions];
@@ -107,10 +109,11 @@ export function addIncident(opts: IncidentInput): { id: string; file: string } {
   };
   const cases = EvalCases.parse([...existing, c]);
   writeFileSync(file, stringify(cases, { lineWidth: 0 }), "utf-8");
+  const held_out = opts.held_out ?? state.incidents.filter((i) => i.kpi === opts.kpi).length >= 1;
   updateState(opts.workspace, (s) => {
-    s.incidents.push({ id, kpi: opts.kpi, text: opts.question });
+    s.incidents.push({ id, kpi: opts.kpi, text: opts.question, held_out });
   });
-  return { id, file };
+  return { id, file, held_out };
 }
 
 export interface Verification {
@@ -120,7 +123,10 @@ export interface Verification {
   /** Where the expert stands now. */
   level?: Level;
   reasons: string[];
-  cases: { id: string; pass: boolean; detail: string }[];
+  cases: { id: string; pass: boolean; detail: string; held_out: boolean }[];
+  /** Recorded incidents found out of all recorded, and the same for the ones kept aside. */
+  hit_rate?: number;
+  held_out?: { passed: number; total: number };
 }
 
 /**
@@ -140,28 +146,53 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
   if (reasons.length > 0) return { kpi: opts.kpi, verified: false, reasons, cases: [] };
 
   const outcomes = await runEvals({ packDir: opts.workspace, only: mine.map((i) => i.id), workRoot: join(opts.workspace, "runs", "verify"), reuse: false, toolbox: opts.toolbox, corePlaybooksDir: opts.corePlaybooksDir });
-  const cases = outcomes.map((o) => ({ id: o.id, pass: "pass" in o.runner && o.runner.pass, detail: "checks" in o.runner ? o.runner.checks.filter((c) => !c.ok).map((c) => c.detail ?? c.name).join("; ") : o.runner.error }));
-  const verified = cases.length > 0 && cases.every((c) => c.pass);
-  if (!verified) return { kpi: opts.kpi, verified: false, reasons: cases.filter((c) => !c.pass).map((c) => `${c.id} did not find what you said happened: ${c.detail}`), cases };
+  const aside = new Set(mine.filter((i) => i.held_out).map((i) => i.id));
+  const cases = outcomes.map((o) => ({ id: o.id, held_out: aside.has(o.id), pass: "pass" in o.runner && o.runner.pass, detail: "checks" in o.runner ? o.runner.checks.filter((c) => !c.ok).map((c) => c.detail ?? c.name).join("; ") : o.runner.error }));
+  const found = cases.filter((c) => c.pass);
+  const allFound = cases.length > 0 && found.length === cases.length;
+  const heldFound = found.filter((c) => c.held_out).map((c) => c.id);
+  const tuningFound = found.filter((c) => !c.held_out).map((c) => c.id);
+  const heldTotal = cases.filter((c) => c.held_out).length;
+  const hit_rate = cases.length > 0 ? found.length / cases.length : 0;
+  const faults = rec?.verification?.faults_passed ?? [];
+  // proof the analysis finds what it was not set up on: a kept-aside incident found, or faults planted in the person's own data found
+  const independent = allFound && (heldFound.length > 0 || faults.length > 0);
+  const aboutHeldOut = { passed: heldFound.length, total: heldTotal };
 
-  // store the incident check on the KPI, and write (or update) the KPI's deep-dive expert at the KPI's rung
+  // keep what was found and how often; a miss takes verification away (an expert that stops finding what it found is not verified)
   const level = (() => {
     const out = { level: "draft" as Level };
     updateState(opts.workspace, (s) => {
       const k = s.kpis[opts.kpi];
       const before = levelOf(k);
-      k.verification = { at: new Date().toISOString(), pass: true, incidents_passed: cases.map((c) => c.id) };
+      k.verification = { at: new Date().toISOString(), pass: independent, incidents_passed: found.map((c) => c.id), held_out_passed: heldFound, tuning_passed: tuningFound, hit_rate, ...(faults.length > 0 ? { faults_passed: faults } : {}) };
       k.level = levelOf(k);
       out.level = k.level;
-      logChange(s, `kpi:${opts.kpi}`, before, out.level, `the recorded incident${cases.length === 1 ? "" : "s"} (${cases.map((c) => c.id).join(", ")}) passed`, "verify_expert");
+      logChange(s, `kpi:${opts.kpi}`, before, out.level, independent ? `the incident${heldFound.length === 1 ? "" : "s"} kept aside (${heldFound.join(", ")}) ${heldFound.length === 1 ? "was" : "were"} found` : allFound ? "the recorded incidents were found, but none was kept aside" : `${cases.length - found.length} of ${cases.length} recorded incidents were not found`, "verify_expert");
     });
     return out.level;
   })();
+  if (!allFound) {
+    return {
+      kpi: opts.kpi,
+      verified: false,
+      level,
+      hit_rate,
+      held_out: aboutHeldOut,
+      cases: cases.map((c) => (c.held_out && !c.pass ? { ...c, detail: "what was found instead is not shown" } : c)),
+      // an incident kept aside is not explained: the person would be tempted to bend the analysis to fit it
+      reasons: cases.filter((c) => !c.pass).map((c) => (c.held_out ? `${c.id} (kept aside) was not found; what the analysis said instead is not shown, so it cannot be adjusted to fit` : `${c.id} did not find what you said happened: ${c.detail}`)),
+    };
+  }
+
+  // the expert exists at its KPI's rung once its incidents are found
   const existing = loadAgents(opts.workspace).find((a) => a.kpi === opts.kpi && a.task === "deep_rca");
   const agent = AgentDef.parse({ ...(existing ?? { name: `${opts.kpi.replace(/_/g, "-")}-deep-rca`, kpi: opts.kpi, task: "deep_rca", examples: mine.map((i) => i.text) }), status: existing?.status ?? "draft", ladder: 2 });
   mkdirSync(join(opts.workspace, "agents"), { recursive: true });
   writeFileSync(join(opts.workspace, "agents", `${agent.name}.yaml`), stringify(agent, { lineWidth: 0 }), "utf-8");
-  syncExperts(opts.workspace, opts.kpi, level, `the recorded incident check passed and its KPI is ${level}`, "verify_expert");
-  const stillNeeds = level === "verified" ? [] : [`the incident check passed, and ${opts.kpi} stands as ${level}: ${levelGap(readState(opts.workspace)!.kpis[opts.kpi])}`];
-  return { kpi: opts.kpi, verified: level === "verified", reasons: stillNeeds, cases, level };
+  syncExperts(opts.workspace, opts.kpi, level, `the recorded incident check ${independent ? "passed" : "found its incidents"} and its KPI is ${level}`, "verify_expert");
+  const stillNeeds: string[] = [];
+  if (!independent) stillNeeds.push(`it found ${cases.length === 1 ? "the incident" : "the incidents"} you recorded, but ${cases.length === 1 ? "that one was" : "none was"} kept aside while the analysis was set up, so it is not independent proof: record another incident and keep it aside, or plant faults in your own data`);
+  if (level !== "verified") stillNeeds.push(`the incident check ran, and ${opts.kpi} stands as ${level}: ${levelGap(readState(opts.workspace)!.kpis[opts.kpi])}`);
+  return { kpi: opts.kpi, verified: level === "verified", reasons: stillNeeds, cases, level, hit_rate, held_out: aboutHeldOut };
 }

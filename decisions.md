@@ -405,3 +405,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The replay keeps every outcome on disk and works in 40-second steps.** Why: a stopped run must resume, a label must not cost a new replay, and a tool call that runs a minute is cut off by clients.
 - **A cloud replay says what it would read before reading, and the first period's measured cost replaces the rough estimate.** Why: the same rule as looking at data; a replay is the largest single read in setup.
 - **The hit rate waits for step 2.** Why: it needs the held-out incidents; reporting one without them would be a number with nothing behind it.
+
+### Phase 2 step 2: incidents kept aside
+- **The first incident of a KPI may help set the analysis up; later ones are kept aside by default.** Why: one incident cannot be both the evidence and what the analysis was shaped by; the person can override either way, and the guide says plainly that a single incident proves little.
+- **`verify_expert` still needs only a reconciled KPI, not a calibrated one.** Why: the rung already needs both, and letting the incident check come first is more useful to the person than a refusal; the earlier plan to require calibration was dropped.
+- **For an incident kept aside, a miss shows no detail.** Why: a detailed miss invites bending the definition until it passes, which is what keeping it aside is meant to prevent.
+- **A pasted incident is validated against the data, never guessed.** Why: a wrong incident (a value that had no activity, a week outside the data) would make "verified" mean nothing; the tool lists the real values instead.
