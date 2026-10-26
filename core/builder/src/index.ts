@@ -18,3 +18,4 @@ export * from "./cost-cap.js";
 export * from "./discover.js";
 export * from "./calibrate.js";
 export * from "./incident-import.js";
+export * from "./inject.js";

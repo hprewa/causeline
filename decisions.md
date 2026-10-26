@@ -411,3 +411,11 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **`verify_expert` still needs only a reconciled KPI, not a calibrated one.** Why: the rung already needs both, and letting the incident check come first is more useful to the person than a refusal; the earlier plan to require calibration was dropped.
 - **For an incident kept aside, a miss shows no detail.** Why: a detailed miss invites bending the definition until it passes, which is what keeping it aside is meant to prevent.
 - **A pasted incident is validated against the data, never guessed.** Why: a wrong incident (a value that had no activity, a week outside the data) would make "verified" mean nothing; the tool lists the real values instead.
+
+### Phase 2 step 3: faults planted in a copy of the person's data
+- **Faults are made by adding, swapping and removing whole rows of a scratch copy.** Why: it works for any KPI formula and any layout without knowing the formula, and the person's data is never at risk.
+- **A rate shift keeps the volume (rows are swapped); only the missing-data fault changes it.** Why: removing rows made the newest period look unfinished and the analysis declined, which says nothing about whether it can find a shift.
+- **Planted sizes are about six standard errors, or the fault is declared impossible in this data.** Why: a fixed size is undetectable in some data and silly in other; a stated size makes the result honest about what it tests.
+- **All the planted faults that can be planted must be found, and the unchanged period must stay quiet.** Why: one miss means the analysis cannot be trusted with that kind of problem; a noisy control means any finding proves nothing.
+- **A missing part is met by declining for any data reason.** Why: the analysis may call it data quality or data still arriving depending on where in the data the period is; what matters is that it does not blame a cause.
+- **Cloud data is refused for now.** Why: it is read-only and cannot be copied cheaply; a capped extract is a later decision.

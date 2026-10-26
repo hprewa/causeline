@@ -203,6 +203,26 @@ export interface CalibrationReport {
   gap?: string;
 }
 
+/** What a KPI means for the checks that depend on it: its definition, the fact it counts over, the time levels, the baseline and the alarm rule. */
+function meaningOf(pack: ReturnType<typeof loadPack>, kpi: string, baseline: number): string {
+  const factName = pack.data.metrics[kpi]?.fact;
+  return JSON.stringify({ metric: pack.ontology.metrics[kpi], data: pack.data.metrics[kpi], fact: factName ? pack.data.facts[factName] : null, levels: pack.ontology.time, baseline, rule: ALARM_RULE_VERSION });
+}
+
+/** The same fingerprint `calibrate` keeps its outcomes under, so that other checks can tell whether they were made for the KPI as it is now. */
+export function kpiKey(workspace: string, kpi: string, baseline = 4): string {
+  return createHash("sha256").update(meaningOf(loadPack(workspace, { requireMeta: true }), kpi, baseline)).digest("hex").slice(0, 16);
+}
+
+/** The ordinary periods the false-alarm check found for a KPI, newest first: judged, raised nothing, and not called real by the person. Empty when it has not been run. */
+export function quietPeriods(workspace: string, kpi: string): PeriodOutcome[] {
+  const file = readFile(workspace, kpi);
+  if (!file) return [];
+  return Object.values(file.outcomes)
+    .filter((o) => o.status === "judged" && !o.alarm && file.labels[o.period]?.real !== true)
+    .sort((a, b) => b.start.localeCompare(a.start));
+}
+
 function realDeps(opts: CalibrateOptions): CalibrationDeps {
   const pack = loadPack(opts.workspace, { requireMeta: true });
   const def = pack.ontology.metrics[opts.kpi];
@@ -212,8 +232,7 @@ function realDeps(opts: CalibrateOptions): CalibrationDeps {
   const level = pack.ontology.time.levels[0];
   const playbook = loadPlaybook("metric_change", opts.workspace, opts.corePlaybooksDir);
   const baseline = opts.baseline ?? 4;
-  const factName = pack.data.metrics[opts.kpi]?.fact;
-  const meaning = JSON.stringify({ metric: def, data: pack.data.metrics[opts.kpi], fact: factName ? pack.data.facts[factName] : null, levels: pack.ontology.time, baseline, rule: ALARM_RULE_VERSION });
+  const meaning = meaningOf(pack, opts.kpi, baseline);
   return {
     baseline,
     key: () => createHash("sha256").update(meaning).digest("hex").slice(0, 16),

@@ -63,7 +63,7 @@ export interface KpiRecord {
   /** Replay over ordinary past periods: the share that raised a false alarm against what the person allows. Set by calibration. */
   calibration?: { at: string; pass: boolean; false_alarm_rate: number; allowed: number; quiet_periods: number; hit_rate?: number };
   /** Known incidents the analysis was not tuned on, and faults planted in the person's own data, that it found. Set by verification. */
-  verification?: { at: string; pass: boolean; incidents_passed: string[]; /** The ones that were kept aside, found: the independent proof. */ held_out_passed?: string[]; /** The ones that were available while the analysis was set up, found: not independent. */ tuning_passed?: string[]; /** Recorded incidents found out of all recorded. */ hit_rate?: number; faults_passed?: string[] };
+  verification?: { at: string; pass: boolean; incidents_passed: string[]; /** The ones that were kept aside, found: the independent proof. */ held_out_passed?: string[]; /** The ones that were available while the analysis was set up, found: not independent. */ tuning_passed?: string[]; /** Recorded incidents found out of all recorded. */ hit_rate?: number; faults_passed?: string[]; /** How many kinds of fault could be planted in this data; all must be found for them to count. */ faults_total?: number };
 }
 
 const overlaps = (c: { window: { start: string; end: string } }, s: { start: string; end: string }) => c.window.start !== "" && c.window.start <= s.end && c.window.end >= s.start;

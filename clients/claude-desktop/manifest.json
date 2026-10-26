@@ -44,6 +44,7 @@
   },
   "tools": [
     { "name": "check_setup", "description": "Is everything ready to answer?" },
+    { "name": "inject_faults", "description": "Plant known faults in a copy of your data to check the analysis finds them" },
     { "name": "propose_incident", "description": "Check a described past incident before recording it" },
     { "name": "calibrate", "description": "Check a KPI for false alarms over its past periods" },
     { "name": "label_period", "description": "Say whether something real happened in a flagged period" },

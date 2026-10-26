@@ -154,9 +154,10 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
   const tuningFound = found.filter((c) => !c.held_out).map((c) => c.id);
   const heldTotal = cases.filter((c) => c.held_out).length;
   const hit_rate = cases.length > 0 ? found.length / cases.length : 0;
-  const faults = rec?.verification?.faults_passed ?? [];
+  const faultsKept = rec?.verification?.faults_passed ?? [];
+  const faultsClear = (rec?.verification?.faults_total ?? 0) > 0 && faultsKept.length === rec!.verification!.faults_total;
   // proof the analysis finds what it was not set up on: a kept-aside incident found, or faults planted in the person's own data found
-  const independent = allFound && (heldFound.length > 0 || faults.length > 0);
+  const independent = allFound && (heldFound.length > 0 || faultsClear);
   const aboutHeldOut = { passed: heldFound.length, total: heldTotal };
 
   // keep what was found and how often; a miss takes verification away (an expert that stops finding what it found is not verified)
@@ -165,7 +166,7 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
     updateState(opts.workspace, (s) => {
       const k = s.kpis[opts.kpi];
       const before = levelOf(k);
-      k.verification = { at: new Date().toISOString(), pass: independent, incidents_passed: found.map((c) => c.id), held_out_passed: heldFound, tuning_passed: tuningFound, hit_rate, ...(faults.length > 0 ? { faults_passed: faults } : {}) };
+      k.verification = { at: new Date().toISOString(), pass: independent, incidents_passed: found.map((c) => c.id), held_out_passed: heldFound, tuning_passed: tuningFound, hit_rate, ...(faultsKept.length > 0 || rec?.verification?.faults_total ? { faults_passed: faultsKept, faults_total: rec?.verification?.faults_total } : {}) };
       k.level = levelOf(k);
       out.level = k.level;
       logChange(s, `kpi:${opts.kpi}`, before, out.level, independent ? `the incident${heldFound.length === 1 ? "" : "s"} kept aside (${heldFound.join(", ")}) ${heldFound.length === 1 ? "was" : "were"} found` : allFound ? "the recorded incidents were found, but none was kept aside" : `${cases.length - found.length} of ${cases.length} recorded incidents were not found`, "verify_expert");

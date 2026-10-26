@@ -63,3 +63,20 @@ test("a labelled period must exist, and the answer must be yes or no", async () 
   assert.throws(() => labelPeriodTool(cfg, { kpi: "ok", period: "2026-W07", real: undefined as never }), /real true or false/);
   assert.match((calibrationStatusTool({ packDir: mkdtempSync(join(tmpdir(), "cs-")) } as ServerConfig, { kpi: "ok" }) as { say: string }).say, /has not been checked/);
 });
+
+test("planted faults are told in plain words: what was found, that the data was not touched, and that a miss does not count", async () => {
+  const { describeFaults } = await import("../src/handlers.js");
+  const outcome = (kind: string, pass: boolean, applicable = true) => ({ id: kind, kind, applicable, pass, what: applicable ? `planted ${kind}` : "no second part", at: "" });
+  const all = describeFaults({ kpi: "ok", stage: "done", reasons: [], progress: { done: 4, total: 4 }, period: { label: "2026-W11", words: "2026-03-09 to 2026-03-15" }, control: { quiet: true, detail: "nothing raised" }, outcomes: [outcome("segment_shift", true), outcome("offsetting_pair", true), outcome("mix_shift", true), outcome("data_gap", true)] as never, level: "verified", summary: { planted: 4, found: 4, not_applicable: 0 } }) as { say: string; next: string };
+  assert.match(all.say, /planted 4 kinds of fault and the analysis found 4 of them\. The same period with nothing planted stayed quiet\. Your own data was not touched\./);
+  assert.match(all.say, /counts as independent proof, so the KPI is now verified/);
+  const miss = describeFaults({ kpi: "ok", stage: "done", reasons: [], progress: { done: 4, total: 4 }, period: { label: "p", words: "w" }, control: { quiet: true, detail: "" }, outcomes: [outcome("segment_shift", true), outcome("offsetting_pair", false), outcome("mix_shift", true, false), outcome("data_gap", true)] as never, level: "calibrated", summary: { planted: 3, found: 2, not_applicable: 1 } }) as { say: string; next: string };
+  assert.match(miss.say, /one part worse while another got better: NOT found/);
+  assert.match(miss.say, /volume moving between parts: could not be planted in this data \(no second part\)/);
+  assert.match(miss.say, /That does not count as proof/);
+  assert.match(miss.next, /Never change the KPI's definition/);
+  const noisy = describeFaults({ kpi: "ok", stage: "done", reasons: [], progress: { done: 1, total: 1 }, period: { label: "p", words: "w" }, control: { quiet: false, detail: "1 finding(s)" }, outcomes: [outcome("segment_shift", true)] as never, level: "reconciled", summary: { planted: 1, found: 1, not_applicable: 0 } }) as { say: string };
+  assert.match(noisy.say, /was NOT quiet \(1 finding\(s\)\), so these results do not count/);
+  assert.match(noisy.say, /That does not count as proof/);
+  assert.match((describeFaults({ kpi: "ok", stage: "not_ready", reasons: ["Run the false-alarm check first."], progress: { done: 0, total: 0 }, outcomes: [] }) as { say: string }).say, /Run the false-alarm check first/);
+});

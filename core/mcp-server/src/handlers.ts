@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { parse } from "yaml";
 import { checkGenerated, generateForPack } from "@causeline/generate";
-import { proposeIncident, calibrate, calibrationStatus, labelPeriod, sayRate, type CalibrationReport, discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
+import { injectFaults, type InjectReport, proposeIncident, calibrate, calibrationStatus, labelPeriod, sayRate, type CalibrationReport, discoverForKpi, costCap, openData, readState, setCostCap, acceptSample, addIncident, buildStatus, cardStatus, readCard, saveCard, type CardAnswers, markSeasonalityAnalysed, confirmPlayBack, confirmNumber, connectFiles, decide, describeData, playBack, proposeChecks, recordNumber, reconcileMetric, runChecks, savePack, signoffStatus, testFact, verifyExpert } from "@causeline/builder";
 import { sayBytes, sayUsd, accessMessage, beginSignIn, bigQueryProject, hasClientFile, hasOwnSignIn, saveClientFile, signInInUse, useOwnSignIn, type AccessProblem, budgetBytes, capGbFromDollars, connectBigQuery, defaultCapGb, sayCap, setupReadEstimate } from "@causeline/connect-bigquery";
 import { effectiveExperts, routeWithData, scanKpis } from "@causeline/router";
 import { analyseSeasonality, backtest, renderSeasonalityBlock, runDataChecks, type BacktestResult } from "@causeline/onboard";
@@ -416,6 +416,35 @@ export function calibrationStatusTool(cfg: ServerConfig, args: { kpi: string }) 
   if (!s.replayed) return { ...s, say: `${args.kpi} has not been checked for false alarms yet.`, next: "Call calibrate when the KPI is reconciled." };
   const ev = s.evaluation!;
   return { ...s, say: `${ev.alarms} of ${ev.judged} ordinary periods raised something (${sayRate(ev.rate)}); allowed ${sayRate(ev.allowed)}.` };
+}
+
+// --- planting faults in a copy of the person's own data ---------------------------------------------------------------------
+
+const KIND_WORDS: Record<string, string> = { segment_shift: "a shift in one part", offsetting_pair: "one part worse while another got better", mix_shift: "volume moving between parts", data_gap: "one part's data missing" };
+
+export function describeFaults(r: InjectReport) {
+  if (r.stage === "not_ready") return { ...r, say: r.reasons.join(" "), next: "Tell the user in plain words why this cannot be done yet, and what to do first." };
+  if (r.stage === "running") {
+    return { ...r, say: `I have tried ${r.progress.done} of ${r.progress.total} kinds of fault so far.`, next: "Say the progress in a few words and call inject_faults again to continue; it picks up where it stopped." };
+  }
+  const s = r.summary!;
+  const lines = r.outcomes.map((o) => (o.applicable ? `${KIND_WORDS[o.kind]}: ${o.pass ? "found" : "NOT found"}` : `${KIND_WORDS[o.kind]}: could not be planted in this data (${o.what})`));
+  const control = r.control?.quiet ? "The same period with nothing planted stayed quiet." : `The same period with nothing planted was NOT quiet (${r.control?.detail}), so these results do not count.`;
+  const base = `In a copy of a quiet period (${r.period!.words}) I planted ${s.planted} kind${s.planted === 1 ? "" : "s"} of fault and the analysis found ${s.found} of them. ${control} Your own data was not touched.`;
+  const all = s.planted > 0 && s.found === s.planted && r.control?.quiet === true;
+  return {
+    ...r,
+    say: `${base} ${lines.join("; ")}.${all ? ` That counts as independent proof, so the KPI is now ${r.level}.` : " That does not count as proof."}`,
+    next: all
+      ? "Say the result, then say which rung the KPI is on and what (if anything) is still missing."
+      : "Say plainly which kinds were not found (outcomes[].what and detail say what was planted and what the analysis said). Never change the KPI's definition or anything else to make a planted fault pass: that makes the check mean nothing.",
+  };
+}
+
+export async function injectFaultsTool(cfg: ServerConfig, args: { kpi: string; seed?: number }) {
+  needProject(cfg);
+  if (!args?.kpi) throw new Error("say which KPI to plant faults for");
+  return describeFaults(await injectFaults({ workspace: cfg.packDir, kpi: args.kpi, seed: args.seed, corePlaybooksDir: cfg.corePlaybooksDir }));
 }
 
 // --- signing in to Google without a terminal ---------------------------------------------------------------------------
