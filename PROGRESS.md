@@ -154,7 +154,7 @@ Real complaints data raised something in 39% and 20% of ordinary weeks. Plan: an
 | Step | What | State |
 |---|---|---|
 | 6a | Flagged-week detail kept; synthetic nulls (volatile parts, 600 accounts); the baseline | done (the 600-account null reproduces the failure: 16% and 55%) |
-| 6b | Alarm budget and a t-corrected headline bar | written and unit-tested; guards and its measurements next |
+| 6b | Alarm budget and a t-corrected headline bar | done, opt-in (as the default it cost one of the 25 planted cases and 2 tests for little gain on totals) |
 | 6c | One family for the whole run | not started |
 | 6d | A node judged on its own, longer history | not started |
 | 6e | The real sample once more (about $4) | not started |

@@ -1,6 +1,6 @@
 import type { Thresholds } from "@causeline/schema";
 import type { ChildContribution, Decomposition } from "./decompose.js";
-import { zCritical } from "./stats.js";
+import { tInv, zCritical } from "./stats.js";
 import type { Direction } from "./types.js";
 
 export type ResolvedThresholds = Required<Thresholds>;
@@ -12,6 +12,8 @@ export const DEFAULT_THRESHOLDS: ResolvedThresholds = {
   coverage_ratio: 0.5,
   contributor_share: 0.25,
   parent_z: 2,
+  // the share of false alarms allowed in a period of ordinary data (one in twenty), which the headline and the findings share
+  alarm_budget: 0.05,
   child_z: 3,
   onset_z: 2,
   // onboarding's seasonality analysis: real (p) and big enough to matter (amplitude), and seen enough times to judge
@@ -19,6 +21,21 @@ export const DEFAULT_THRESHOLDS: ResolvedThresholds = {
   season_amplitude: 0.03,
   season_min_repeats: 3,
 };
+
+/** The share of the alarm budget the headline may spend; the findings share the rest (see `findingsLevel`). */
+export const HEADLINE_SHARE = 0.2;
+export const FINDINGS_SHARE = 0.6;
+
+/**
+ * The z a headline must reach to count as a real change, from the alarm budget rather than a fixed number: the headline's level is a fifth of the
+ * budget (0.01 for one in twenty), and when the data's own movement was estimated from `history` earlier periods the bar is the Student t quantile for
+ * history - 1 degrees of freedom, so a spread learned from a few periods is not treated as known. With too little history to estimate it, the
+ * normal quantile.
+ */
+export function headlineBar(budget: number, history: number): number {
+  const level = budget * HEADLINE_SHARE;
+  return tInv(1 - level / 2, history >= 5 ? history - 1 : Infinity);
+}
 
 /** Defaults, then each override layer in order (ontology, then run inputs). */
 export function resolveThresholds(...layers: (Thresholds | undefined)[]): ResolvedThresholds {

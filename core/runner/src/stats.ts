@@ -76,3 +76,77 @@ export function zCritical(k: number, alpha = 0.01): number {
   const family = Math.max(1, k);
   return normInv(1 - alpha / family / 2);
 }
+
+/** ln of the gamma function (Lanczos). */
+function lgamma(x: number): number {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x;
+  let tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (const k of c) ser += k / ++y;
+  return -tmp + Math.log((2.5066282746310005 * ser) / x);
+}
+
+/** The regularised incomplete beta function I_x(a, b) (continued fraction). */
+function betai(x: number, a: number, b: number): number {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const front = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  const frac = (xx: number, aa: number, bb: number): number => {
+    const tiny = 1e-30;
+    let c = 1;
+    let d = 1 - ((aa + bb) * xx) / (aa + 1);
+    if (Math.abs(d) < tiny) d = tiny;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= 300; m++) {
+      const m2 = 2 * m;
+      let aaN = (m * (bb - m) * xx) / ((aa + m2 - 1) * (aa + m2));
+      d = 1 + aaN * d;
+      if (Math.abs(d) < tiny) d = tiny;
+      c = 1 + aaN / c;
+      if (Math.abs(c) < tiny) c = tiny;
+      d = 1 / d;
+      h *= d * c;
+      aaN = (-(aa + m) * (aa + bb + m) * xx) / ((aa + m2) * (aa + m2 + 1));
+      d = 1 + aaN * d;
+      if (Math.abs(d) < tiny) d = tiny;
+      c = 1 + aaN / c;
+      if (Math.abs(c) < tiny) c = tiny;
+      d = 1 / d;
+      const del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < 3e-16) break;
+    }
+    return h;
+  };
+  return x < (a + 1) / (a + b + 2) ? (front * frac(x, a, b)) / a : 1 - (front * frac(1 - x, b, a)) / b;
+}
+
+/** P(T <= t) for Student's t with df degrees of freedom. */
+export function tCdf(t: number, df: number): number {
+  const tail = 0.5 * betai(df / (df + t * t), df / 2, 0.5);
+  return t >= 0 ? 1 - tail : tail;
+}
+
+/**
+ * Quantile of Student's t: the t with P(T <= t) = p. With an estimated spread the test statistic is not normal: a spread learned from n periods
+ * makes the tails heavier by an amount that shrinks as n grows. With no degrees of freedom to speak of (df not finite) it is the normal quantile.
+ */
+export function tInv(p: number, df: number): number {
+  if (p <= 0 || p >= 1) throw new RangeError("p must be in (0, 1)");
+  if (!Number.isFinite(df) || df > 1e6) return normInv(p);
+  if (p === 0.5) return 0;
+  if (p < 0.5) return -tInv(1 - p, df);
+  let lo = 0;
+  let hi = 1;
+  while (tCdf(hi, df) < p && hi < 1e9) hi *= 2;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (tCdf(mid, df) < p) lo = mid;
+    else hi = mid;
+    if (hi - lo < 1e-12 * Math.max(1, hi)) break;
+  }
+  return (lo + hi) / 2;
+}

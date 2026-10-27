@@ -50,6 +50,8 @@ export interface RunContext {
   minVolume: number;
   direction: Direction;
   th: ResolvedThresholds;
+  /** Thresholds a pack or the run set by name: these are used as given, never replaced by a value worked out from the alarm budget. */
+  pinned: Set<string>;
   tools: ToolCaller;
   /** Finds a tool by what it answers; the runner never builds a tool name. */
   index: ToolIndex;

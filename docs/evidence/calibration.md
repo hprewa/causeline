@@ -205,3 +205,23 @@ Build and unit tests in every package (0 failures), purity and ladder checks, co
 **What it shows.** Volatile parts alone do not reproduce the real failure (3 to 4%, within the standard). **Many volatile parts compared at once do**: 16% for a rate and 55% for a total, against 20% and 39% on the real complaints data. So the number of parts in the family, not only their volatility, is what the analysis does not yet allow for, and the many-parts null is a fair test bed for a fix. Planted-fault detection on the steady-noise data over 12 seeds, for later comparison (found of planted): a shift 1 of 12 at 2 standard errors, 4 of 12 at 3, 10 of 12 at 4, 12 of 12 at 6; an offsetting pair 1, 5, 11, 12 of 12; a missing part 12 of 12 at every size; the volume-moving fault is plantable only once in 48 and is not measured. Raw: `data/rates-baseline-*.json`.
 
 **Not shown.** That the many-parts null is how real data behaves (its sizes and volatilities are my choices; it is a test bed that reproduces the failure, not a model of the CFPB data); a fix, which is the next commits.
+
+## The false-alarm fix, step 6b: a headline bar from an alarm budget (measured; opt-in)
+
+**The change** (`headlineBar`, `tInv` in `core/runner/src/stats.ts` and `masking.ts`; `alarm_budget` in the ontology thresholds): the headline's bar for "this is a real change" comes from the alarm budget (a fifth of it, 0.01 for one in twenty) and from how well the data's own movement is known: a Student t quantile with (earlier periods minus one) degrees of freedom instead of the fixed z of 2, falling back to the normal quantile when too little history exists to estimate it. A bar named by a pack or a run (`parent_z`) always wins. The quantile function is exact (from the incomplete beta function) and matches the published tables.
+
+**Measured, 6b as the default (the same code, compared with the baseline above):**
+
+| data and KPI | baseline | with 6b |
+|---|---|---|
+| steady noise, service level, 12 seeds of 30 weeks | 8 of 300 false alarms (2.7%) | **1 of 300 (0.3%)**, interval 0.1% to 1.9% |
+| 600 accounts, service level (a rate), 6 seeds | 24 of 150 (16.0%) | **14 of 150 (9.3%)**, interval 5.6% to 15.1% |
+| 600 accounts, calls offered (a total), 6 seeds | 82 of 150 (54.7%) | **78 of 150 (52.0%)**, interval 44.1% to 59.8% |
+
+Planted faults on the steady-noise data (found of 12): a shift 1, 2, 10, 12 at 2, 3, 4, 6 standard errors (baseline 1, 4, 10, 12); an offsetting pair 1, 5, 11, 12 (baseline 1, 5, 11, 12); a missing part 12 of 12 at every size. So at 4 standard errors and above nothing was lost; at 3 a shift was found 2 times in 12 instead of 4.
+
+**What it cost, on the guards:** the contact-centre eval fell to **24 of 25**: `share_shift_to_one_agent`, a planted effect of 3.1 standard errors in week 7, which has only six earlier weeks to learn the data's normal movement from; the honest bar for five degrees of freedom at one in a hundred is 4.0, so the headline was not called significant and the clear agent-level effect behind it was not searched for. Two runner unit tests (a weekly cycle, the trend) failed for the same reason.
+
+**Decision (the user's):** the benefit is real on a rate with long history and almost nil on a total, where the false alarms come from findings about individual parts and not from the headline; the cost falls on short histories. So **6b is opt-in**: a pack or run that sets `alarm_budget` gets the derived bar; everyone else keeps the fixed threshold, every guard passes (25/25, runner 186), and the headline bar is revisited after the work on findings (6c and 6d), which targets the actual source for totals. Raw: `data/rates-6b-*.json`.
+
+**Not shown.** Whether 6b plus the findings controls together make a different trade-off; what a pack with a very long history gains from it in practice (the steady-noise result suggests a lot, on one kind of data).

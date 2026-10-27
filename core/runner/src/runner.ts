@@ -186,6 +186,7 @@ export async function runPlaybook(given: RunOptions): Promise<Result> {
     minVolume: def.min_volume,
     direction: def.direction,
     th,
+    pinned: new Set([...Object.keys(ontology.thresholds ?? {}), ...Object.keys(thresholdInputs(inputs))]),
     tools,
     index: new ToolIndex(opts.meta),
     inputs,

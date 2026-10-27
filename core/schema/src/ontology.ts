@@ -177,6 +177,8 @@ export const Thresholds = z
     parent_z: z.number().positive(),
     /** z-score a child's rate change needs to be a candidate culprit. */
     child_z: z.number().positive(),
+    /** The share of ordinary periods that may raise a false alarm (0.05 is one in twenty). The headline's bar and the findings' bar are worked out from it, unless `parent_z` is set. */
+    alarm_budget: z.number().positive().lt(1),
     /** z-score for a trend bucket to count as part of the change's onset. */
     onset_z: z.number().positive(),
     /** Seasonality analysis: p-value a cycle must beat to count as statistically real. */
