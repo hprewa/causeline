@@ -68,6 +68,20 @@ export function scoreRunner(result: Result, expect: Expectation): Score {
     );
     checks.push({ name: `finding_included:${want.dimension}=${want.value}`, ok: hit, detail: `findings: ${result.findings.map((f) => `${f.dimension}=${f.value}`).join("; ") || "none"}` });
   }
+  for (const want of expect.findings_within ?? []) {
+    // bucket labels sort as text (they are dates and times written largest unit first), so a stretch is inside another when both its ends are
+    const ends = (v: string): [string, string] => {
+      const [first, last] = v.split("..");
+      return [first, last ?? first];
+    };
+    const [from, to] = ends(want.value);
+    const hit = result.findings.some((f) => {
+      if (f.dimension !== want.dimension) return false;
+      const [a, b] = ends(f.value);
+      return a >= from && b <= to;
+    });
+    checks.push({ name: `finding_within:${want.dimension}=${want.value}`, ok: hit, detail: `findings: ${result.findings.map((f) => `${f.dimension}=${f.value}`).join("; ") || "none"}` });
+  }
   for (const want of expect.handoffs_include ?? []) {
     const h = result.handoffs.find((x) => x.metric === want.metric);
     checks.push({ name: `handoff:${want.metric}`, ok: !!h && h.headline?.significant === (want.significant ?? true), detail: h ? `handed over to ${h.metric}; its change is ${h.headline?.significant ? "real" : "not real"}` : `hand-offs: ${result.handoffs.map((x) => x.metric).join(", ") || "none"}` });

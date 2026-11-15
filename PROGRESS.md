@@ -48,8 +48,8 @@ Evidence: `docs/evidence/noise.md`.
 | 2.1 | Each part judged by its own spread, steadied by its siblings | done: quiet weeks raising something 8 of 40 to 2 of 40 on new seeds, 5 of 6 to 2 of 6 on the guide's; all 100 ordinary noise cases and 25 of 25 still pass; 9 gaps closed. Costs queries (528 to 922 on the main eval). The rate table was not re-run (stopped for low memory) |
 | 2.2 | The headline's bar when the spread was learned from few periods (a t quantile at the same significance level) | done: quiet weeks raising something 2 of 40 to 1 of 40 on new seeds; 25 of 25 and all ordinary noise cases still pass. The stricter opt-in bar was tried as the default and again lost one planted case, so it stays opt-in. Rate table after both steps: false alarms 24 of 400 to 14 of 400 over four noise levels, detection unchanged (32 of 48 and 42 of 48); the 2-point level alone did not move (6 of 100), not yet diagnosed |
 | 2.3 | A part found under a flat whole must stand apart from its own parent (replaces "noisy becomes a note", which would have lost the four agent weeks found today) | tried, not adopted: it kept the four planted agents and removed neither false alarm; the two false alarms are as far from their teams as a planted one (small units, Phase 3) |
-| 2.4 | A material effect as well as a significant one | not started |
-| 2.5 | False discovery rate across the run, only if the rates still miss | not started |
+| 2.4, 2.5 | A material effect; false discovery rate across the run | not built, by decision: the diagnosis says neither is the cause of what remains (the headline test's own rate, and small units) |
+| | Outages on noisy data counted by the planted stretch (`findings_within`, a change to what ten cases assert, agreed with the owner) | done: 9 of 10 found; faults on top of noise 29 of 30. Regression after 2.1 and 2.2 green (eval 25 of 25, routing 38 of 38, intents 16 of 16, integration 8 of 8, delivery pack 8 of 8 with its 2 gaps) |
 | 3 | The fault planter in the detector's units | not started |
 | 4 | Calibration on short history (D7) | not started |
 

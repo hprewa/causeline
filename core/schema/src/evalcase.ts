@@ -30,6 +30,12 @@ export const Expectation = z
     top_finding: TopFindingExpectation.optional(),
     /** Each of these must be among the reported findings, in any position (the culprit and a finding that describes the same records another way can tie for first). */
     findings_include: z.array(TopFindingExpectation).optional(),
+    /**
+     * A finding in this dimension must lie inside this stretch of buckets, written `first..last` like a finding's own value (a single bucket is its
+     * own stretch). For a fault planted over a known stretch of time when noise moves where its edges are found: naming part of the stretch counts,
+     * naming anything outside it does not.
+     */
+    findings_within: z.array(z.object({ dimension: z.string().min(1), value: z.string().min(1) })).optional(),
     /** KPIs the run must have handed over to; `significant` (default true) says whether that KPI's own change must be real. */
     handoffs_include: z.array(z.object({ metric: z.string().min(1), significant: z.boolean().optional() })).optional(),
     /** The run must not have handed over to any other KPI. */
@@ -69,6 +75,7 @@ export const Expectation = z
     (e) =>
       e.top_finding !== undefined ||
       (e.findings_include?.length ?? 0) > 0 ||
+      (e.findings_within?.length ?? 0) > 0 ||
       (e.handoffs_include?.length ?? 0) > 0 ||
       e.no_handoffs === true ||
       (e.must_mention?.length ?? 0) > 0 ||

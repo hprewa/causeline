@@ -487,3 +487,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The narrower rule (stand apart from your own parent) was tried and removed.** Why: on the cases it was meant for it changed nothing; the false alarms and a planted agent sit at the same distance from their teams (z 3.45, 3.47 against 3.41), so no bar separates them without being picked from those very cases.
 - **The remaining false alarms on the rate table are the headline test's own rate, and the default level stays where it is.** Why: lowering it is the owner's decision and the stricter bar cost a planted case.
 - **The outage cases that find part of the planted stretch stay marked as gaps.** Why: no eval case is edited to make it pass; whether an overlapping stretch counts is put to the owner.
+
+### Build guide Phase 2: counting an outage by the planted stretch
+- **The ten outage-on-noise cases now pass when a finding lies inside the planted stretch (`findings_within`).** Why: the owner agreed that naming part of a planted outage is finding it; the old cases expected the exact stretch the clean data gives. Both counts are published (3 and 9 of 10).
+- **"Inside" and not merely "overlapping".** Why: a finding that covers the whole day overlaps any outage; one that reaches outside the planted stretch claims time when nothing was planted. This is stricter than what was asked for.
+- **The clean-data outage case keeps its exact expectation.** Why: no shipped eval case is changed.
+- **The material-effect rule and the false discovery rate are not built.** Why: agreed with the owner; what remains is the headline's own rate and units too small for one week.

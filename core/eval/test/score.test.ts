@@ -163,3 +163,16 @@ test("runner: findings_include accepts the culprit in any position, and fails wh
   assert.match(JSON.stringify(missing.checks), /findings: d2=Web; d1=Y/);
   assert.equal(scoreRunner(two, expectation({ findings_include: [{ dimension: "d1", value: "Y", effect: "mix" }] })).pass, false, "the effect must match too");
 });
+
+test("runner: findings_within accepts a stretch inside the planted one, and nothing that reaches outside it", () => {
+  const found = (value: string) => result({ findings: [{ rank: 1, dimension: "slot", value, impact: -0.01, evidence: ["when"], effect: "rate" }] });
+  const want = expectation({ findings_within: [{ dimension: "slot", value: "2026-02-11 12:00..2026-02-11 13:30" }] });
+  assert.equal(scoreRunner(found("2026-02-11 12:00..2026-02-11 13:30"), want).pass, true, "the whole stretch");
+  assert.equal(scoreRunner(found("2026-02-11 12:30..2026-02-11 13:00"), want).pass, true, "part of it");
+  assert.equal(scoreRunner(found("2026-02-11 13:00"), want).pass, true, "one bucket of it");
+  assert.equal(scoreRunner(found("2026-02-11 11:30..2026-02-11 13:00"), want).pass, false, "starts before it");
+  assert.equal(scoreRunner(found("2026-02-11 13:00..2026-02-11 14:00"), want).pass, false, "ends after it");
+  assert.equal(scoreRunner(found("2026-02-12 12:00..2026-02-12 13:00"), want).pass, false, "another day");
+  assert.equal(scoreRunner(result({ findings: [{ rank: 1, dimension: "d1", value: "2026-02-11 12:30", impact: -0.01, evidence: ["flat"], effect: "rate" }] }), want).pass, false, "another dimension");
+  assert.equal(scoreRunner(result({ findings: [] }), want).pass, false, "nothing found");
+});

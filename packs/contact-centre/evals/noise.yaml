@@ -614,7 +614,8 @@
   expect:
     no_findings: true
 
-# Part 2: the same wobble with a real fault planted; the fault must still be found
+# Part 2: the same wobble with a real fault planted; the fault must still be found. The outage is planted on Wednesday 11 February from
+# 12:00 to 14:00 (the half hours 12:00 to 13:30); with the wobble its edges move, so a finding anywhere inside that stretch counts.
 
 - id: understaffed_with_noisy_team_s401
   setup: "--seed 401 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
@@ -691,38 +692,35 @@
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_team_s402
   setup: "--seed 402 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_team_s403
   setup: "--seed 403 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_team_s404
   setup: "--seed 404 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_team_s405
   setup: "--seed 405 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_queue_s401
   setup: "--seed 401 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
@@ -730,38 +728,35 @@
   inputs: { metric: service_level, period: 2026-W06 }
   gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_queue_s402
   setup: "--seed 402 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_queue_s403
   setup: "--seed 403 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_queue_s404
   setup: "--seed 404 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: block_outage_with_noisy_queue_s405
   setup: "--seed 405 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
   question: "Week 6 service level looks normal. Is anything wrong inside it?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
   expect:
-    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+    findings_within: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:30" }]
 
 - id: long_calls_with_noisy_team_s401
   setup: "--seed 401 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"

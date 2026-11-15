@@ -443,3 +443,42 @@ quietly.
 - **The expected 0.8 is a back-of-envelope figure** from a normal tail, not a simulation.
 - **Steps not started:** a material-effect rule, the false discovery rate across a run, the fault planter in the detector's
   units, calibration on short history, and anything on real complaints data.
+
+## Phase 2: outages on noisy data counted by the planted stretch, and the regression after steps 2.1 and 2.2
+
+**A change to what ten cases assert, agreed with the owner (15 November).** The outage is planted on Wednesday 11 February
+from 12:00 to 14:00, the half hours 12:00 to 13:30. The ten noise cases expected the exact stretch the clean-data case
+finds (12:00 to 13:00). With the wobble the edges move, and a run that named 12:30 to 13:30 failed. The cases now use a new
+expectation, `findings_within`: a finding in that dimension must lie inside the planted stretch. Naming part of the stretch
+counts; a finding that starts before it or ends after it, on another day or in another dimension, does not. The analysis
+did not change. The clean-data case in the shipped eval still expects its exact stretch.
+
+| Outage on noisy data, 10 cases | Exact stretch (old rule) | Inside the planted stretch (new rule) |
+|---|---|---|
+| Found | 3 | 9 |
+| Not found | 7 | 1 (`block_outage_with_noisy_queue_s401`: nothing raised) |
+
+Faults on top of the wobble found, all three kinds: 29 of 30 (97%), against the guide's target of at least 90%. Under the
+old rule it is 23 of 30. Six gap markers came off; ten remain in the noise suite (one quiet week from the headline, two
+quiet weeks from single agents, one outage, six small-unit weeks).
+
+**Regression on the code of steps 2.1 and 2.2** (the checks those commits had not re-run):
+
+| Check | Result |
+|---|---|
+| Unit tests, all packages | pass (one new for `findings_within`) |
+| Main eval | 25 of 25 |
+| Routing | 38 of 38, 5 known gaps open |
+| Intents | 16 of 16 |
+| Integration | 8 of 8 |
+| Delivery pack | 8 of 8, the same 2 gaps open (the quiet week W30 still raises a finding; the combination is still two findings) |
+| Purity, ladder names | pass |
+
+### Not shown
+
+- **The whole noise suite was not re-run after this change;** only the ten outage cases were, since nothing else in it
+  changed.
+- **"Inside the planted stretch" says nothing about how much of the outage was named.** A single half hour of the four
+  counts the same as all four.
+- **The delivery pack did not improve:** its quiet week and its planted-fault check (`inject_faults`) are untouched by
+  steps 2.1 and 2.2; the planter is step 3.
