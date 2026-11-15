@@ -477,3 +477,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A bar set by name in a pack or a run is used as given, with no correction.** Why: the earlier decision that an explicit setting always wins.
 - **A unit test that asserted a naive comparison is called significant now asserts the contrast it was written to show.** Why: the run reads z -2.23 against a bar of 2.26; the test's point is that the naive comparison shows a large drop and the like-for-like one does not, which still holds. No eval case was changed.
 - **The noise suite is run in parts of 30 cases in the foreground.** Why: long background runs were stopped by the machine for low memory three times.
+
+### Build guide Phase 2: the rate table after steps 2.1 and 2.2
+- **The rate table is published with the level that did not improve stated first among its findings.** Why: 6 of 100 at the 2-point wobble is the number the guide's target names; the eval cases improving does not replace it.
+- **The after table is a separate data file; the Phase 0 file is kept as the before.** Why: a before overwritten by an after cannot be checked.

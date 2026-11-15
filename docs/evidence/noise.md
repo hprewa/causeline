@@ -352,3 +352,33 @@ comparison reads a 30-point drop and the like-for-like comparison reads none.
   cautious setting at the point where least is known. Not changed here.
 - **One false alarm from the headline remains,** and one sample of 40 cannot tell 2.5% from the 5% target either way.
 - **Real complaints data was not run.**
+
+## Phase 2, the rate table after steps 2.1 and 2.2
+
+`node scripts/noise-rates.mjs --levels 0,0.01,0.02,0.03 --seeds 4 --sizes 4,6`, the same command, seeds and weeks as the
+Phase 0 table (15 November, committed code at step 2.2). Data: `docs/evidence/data/noise-rates-after-2.2.json`; the before
+is `docs/evidence/data/noise-rates.json`.
+
+| Wobble (points) | Quiet weeks judged | Raised something, before | After | False-alarm rate after | 95% interval | Faults found at 4 standard errors, before | After | At 6 standard errors, before | After |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 100 | 1 | 1 | 1.0% | 0.2% to 5.4% | 10 of 12 | 9 of 12 | 12 of 12 | 12 of 12 |
+| 1 | 100 | 5 | 2 | 2.0% | 0.6% to 7.0% | 8 of 12 | 8 of 12 | 10 of 12 | 10 of 12 |
+| 2 | 100 | 6 | 6 | 6.0% | 2.8% to 12.5% | 8 of 12 | 8 of 12 | 10 of 12 | 10 of 12 |
+| 3 | 100 | 12 | 5 | 5.0% | 2.2% to 11.2% | 5 of 12 | 7 of 12 | 10 of 12 | 10 of 12 |
+| All four | 400 | 24 | 14 | 3.5% | 2.1% to 5.8% | 31 of 48 | 32 of 48 | 42 of 48 | 42 of 48 |
+
+- False alarms over the four levels fell from 24 of 400 to 14 of 400. Detection did not fall: 32 of 48 against 31 of 48 at
+  4 standard errors, 42 of 48 both times at 6.
+- **The 2-point level did not move: 6 of 100 before and after,** while the levels on either side fell. This is the level
+  the guide's target is stated at, and it is still just above one in twenty. The week-6 eval cases at the same wobble fell
+  from 8 of 40 to 1 of 40, so the two measures now disagree in the other direction. What raises these six weeks has not been
+  looked at; they are later weeks with longer histories, where step 2.2 changes the bar little.
+- One planted fault at 4 standard errors that was found on clean data is now missed (10 to 9 of 12); two more are found at
+  the 3-point level. With 12 a cell these are within chance.
+
+### Not shown
+
+- **Why the 2-point level is unchanged.** Not diagnosed.
+- **Four seeds a level,** as before; the nightly run uses six and has not run.
+- **Wobble by team only.**
+- **Integration tests, routing, intents and the delivery pack are still not re-run** for steps 2.1 and 2.2.
