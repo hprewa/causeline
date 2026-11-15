@@ -493,3 +493,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **"Inside" and not merely "overlapping".** Why: a finding that covers the whole day overlaps any outage; one that reaches outside the planted stretch claims time when nothing was planted. This is stricter than what was asked for.
 - **The clean-data outage case keeps its exact expectation.** Why: no shipped eval case is changed.
 - **The material-effect rule and the false discovery rate are not built.** Why: agreed with the owner; what remains is the headline's own rate and units too small for one week.
+
+### Build guide Phase 2, step 3: the planter's units
+- **A planted size is in the standard errors the analysis judges by, worked out with the analysis's own estimator.** Why: two definitions of "six standard errors" made the check fail faults that were inside ordinary movement; sharing the code keeps the two from drifting apart again.
+- **When a size cannot be planted the planter says so and plants nothing.** Why: a smaller fault under the name of a larger one would make the count of faults found mean nothing. It already did this; the mix shift at 6 units on the delivery data is now such a case.
+- **The older detection numbers are kept beside the new ones and labelled "old sizing".** Why: the unit changed, so the two are not the same measure; showing only the new would look like the analysis got better at finding faults.
+- **The smallest size reliably found is not stated yet.** Why: twelve faults a cell cannot support the word reliably.

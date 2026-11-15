@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-13T12:36:09.799Z",
+  "when": "2026-11-15T20:19:19.118Z",
   "kpi": "on_time_rate",
   "data_seed": 42,
   "plant_seed": 5,
@@ -15,28 +15,27 @@
       "sigmas": 4,
       "control_quiet": true,
       "planted": 4,
-      "found": 1,
+      "found": 2,
       "outcomes": [
         {
           "kind": "segment_shift",
           "applicable": true,
           "pass": false,
-          "what": "53 of the 2044 rows of wh_north that favour it were swapped for ones that count against it",
-          "detail": "findings: none; the headline moved by -0.1 standard errors (not significant)"
+          "what": "90 of the 2044 rows of wh_north that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -1.0 standard errors (not significant)"
         },
         {
           "kind": "offsetting_pair",
           "applicable": true,
           "pass": false,
-          "what": "wh_north was made worse (53 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (57 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)",
+          "what": "wh_north was made worse (90 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (93 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)",
           "detail": "it did not name wh_north and raised no masking flag; the headline moved by 1.2 standard errors (not significant)"
         },
         {
           "kind": "mix_shift",
           "applicable": true,
-          "pass": false,
-          "what": "54% of the rows of every other warehouse were replaced by rows like those of wh_east (3289 rows): no part got worse, only the mix changed",
-          "detail": "findings: none; the headline moved by -0.6 standard errors (not significant)"
+          "pass": true,
+          "what": "76% of the rows of every other warehouse were replaced by rows like those of wh_east (4593 rows): no part got worse, only the mix changed"
         },
         {
           "kind": "data_gap",
@@ -49,28 +48,26 @@
     {
       "sigmas": 6,
       "control_quiet": true,
-      "planted": 4,
-      "found": 2,
+      "planted": 3,
+      "found": 3,
       "outcomes": [
         {
           "kind": "segment_shift",
           "applicable": true,
-          "pass": false,
-          "what": "79 of the 2044 rows of wh_north that favour it were swapped for ones that count against it",
-          "detail": "findings: none; the headline moved by -0.7 standard errors (not significant)"
+          "pass": true,
+          "what": "135 of the 2044 rows of wh_north that favour it were swapped for ones that count against it"
         },
         {
           "kind": "offsetting_pair",
           "applicable": true,
-          "pass": false,
-          "what": "wh_north was made worse (79 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (85 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)",
-          "detail": "it did not name wh_north and raised no masking flag; the headline moved by 1.3 standard errors (not significant)"
+          "pass": true,
+          "what": "wh_north was made worse (135 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (139 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)"
         },
         {
           "kind": "mix_shift",
-          "applicable": true,
-          "pass": true,
-          "what": "82% of the rows of every other warehouse were replaced by rows like those of wh_east (4932 rows): no part got worse, only the mix changed"
+          "applicable": false,
+          "pass": false,
+          "what": "the warehouse rates are too close for moving rows between them to change the whole by more than chance would (it would take moving 114% of every other part)"
         },
         {
           "kind": "data_gap",

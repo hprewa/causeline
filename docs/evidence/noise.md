@@ -482,3 +482,60 @@ quiet weeks from single agents, one outage, six small-unit weeks).
   counts the same as all four.
 - **The delivery pack did not improve:** its quiet week and its planted-fault check (`inject_faults`) are untouched by
   steps 2.1 and 2.2; the planter is step 3.
+
+## Phase 2, step 3: planted faults sized in the detector's own units
+
+**The hypothesis, confirmed in the code.** `core/builder/src/inject.ts` sized a planted change at so many standard errors
+of counting noise for the part it was planted in. Since step 2.1 the analysis judges a part by counting noise plus the
+part's own week-to-week spread. In data that moves from week to week, "six standard errors" of counting noise sat inside
+ordinary movement: on the delivery data the 6-unit shift was 79 rows of 2,044 and moved the headline by 0.7 standard errors.
+
+**The change.** The planter now works out the spread the analysis would judge by, with the analysis's own estimator
+(`shrinkSpreads`, the same code): the periods before the planted window, each as long as it, up to twelve; each part's
+excess pulled toward the typical excess of the parts; the whole's own for a mix shift. A size is that many of those
+standard errors. In steady data nothing changes. The analysis itself is not changed by this step.
+
+**Delivery data** (`node scripts/deliveries-inject.mjs --seed 5 --sizes 4,6`; data seed 42, planted in 2026-W33; the week
+with nothing planted stays quiet; `docs/evidence/data/deliveries-inject.json`):
+
+| Fault | 4 units, before | 4 units, now | 6 units, before | 6 units, now |
+|---|---|---|---|---|
+| One warehouse gets worse | missed (53 rows) | missed (90 rows) | missed (79 rows) | found (135 rows) |
+| One worse while another gets better | missed | missed | missed | found |
+| The mix moves toward the worst warehouse | missed | found | found | cannot be planted at this size |
+| One warehouse's rows do not arrive | declined | declined | declined | declined |
+| Found of those that could be planted | 1 of 4 | 2 of 4 | 2 of 4 | 3 of 3 |
+
+At 6 units every fault that can be planted is found, which is the guide's target for this pack. The mix shift at 6 units
+would need more rows moved than the other warehouses hold (their rates are close), and the planter says so instead of
+planting something smaller under the same name.
+
+**Contact-centre data** (`node scripts/noise-rates.mjs --levels 0,0.02 --seeds 4 --sizes 4,6`, the same seeds as the
+earlier tables; `docs/evidence/data/noise-rates-planter.json`):
+
+| Wobble (points) | Found at 4 units, old sizing | New sizing | Found at 6 units, old sizing | New sizing | Quiet weeks raising something |
+|---|---|---|---|---|---|
+| 0 | 9 of 12 | 10 of 12 | 12 of 12 | 12 of 12 | 1 of 100 (unchanged) |
+| 2 | 8 of 12 | 8 of 12 | 10 of 12 | 12 of 12 | 6 of 100 (unchanged) |
+
+With the wobble, all twelve 6-unit faults are now found (10 before). The false-alarm counts are the same as in the table
+after step 2.2, as they must be: this step does not touch the analysis.
+
+**Checks:** all unit tests pass (550; one new: in data whose parts move, the same size in standard errors is a bigger
+change in rows). Integration: 8 of 8. Purity and ladder names pass.
+
+### Not shown
+
+- **A detection curve.** Two sizes (4 and 6) on two datasets, 12 faults a cell on one and 3 or 4 on the other. Not a curve
+  of size against share found, and far too few to state the smallest size reliably found.
+- **`verified` does not yet state the smallest size found,** and the confidence label does not carry it (the guide's step
+  3.3). The rung still needs every plantable fault found at the default 6 units, now in the detector's units.
+- **Planted faults on BigQuery are still refused** with a plain reason (the data cannot be copied here); a scratch dataset
+  with a cost go-ahead is not built.
+- **The planter reads the periods before the window, not the periods with the same calendar flags** the analysis reads. In
+  data with holidays or peak weeks the two can differ; not measured.
+- **The wobble levels 1 and 3 points and the 4-unit faults on the delivery data's shifts** were not looked at further. A
+  4-unit shift is at about the bar a part must clear under a flat whole, so missing some is expected, not shown to be right.
+- **The main eval and the noise suite were not re-run for this step;** the analysis code did not change (the runner gained
+  only two exports).
+- **Calibration on short history (D7) is not started.**

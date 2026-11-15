@@ -13,7 +13,7 @@ independent run of November 2026 on commit `16b198c`; "Measured here" is this re
 | False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | was 5 of 6 on the same seeds and 8 of 40 on new seeds; after Phase 2 step 2.2: 2 of 6 and 1 of 40 (`docs/evidence/noise.md`) | at most 5% |
 | False-alarm rate, real complaints data | 39% and 20% | 39% and 20% (`docs/evidence/calibration.md`) | at most 10% |
 | Unseen planted faults found | 11 of 12 | not re-measured | at least 11 of 12, on a larger set |
-| Faults found by `inject_faults` on a noisy pack | 1 of 3 | 1 of 4 at 4 units, 2 of 4 at 6 units | all at 6 units |
+| Faults found by `inject_faults` on a noisy pack | 1 of 3 | was 2 of 4 at 6 units; after Phase 2 step 3: 3 of 3 plantable at 6 units, 2 of 4 at 4 units | all at 6 units |
 | Unsupported numbers in live answers | 2 of 5 runs had one | not re-measured | 0 in 100 |
 | Combination cause named as one finding | no | no (tracked as a gap) | yes |
 | Benchmark margin over a plain agent with SQL | not measured | not measured | published, with intervals |
@@ -50,7 +50,7 @@ Evidence: `docs/evidence/noise.md`.
 | 2.3 | A part found under a flat whole must stand apart from its own parent (replaces "noisy becomes a note", which would have lost the four agent weeks found today) | tried, not adopted: it kept the four planted agents and removed neither false alarm; the two false alarms are as far from their teams as a planted one (small units, Phase 3) |
 | 2.4, 2.5 | A material effect; false discovery rate across the run | not built, by decision: the diagnosis says neither is the cause of what remains (the headline test's own rate, and small units) |
 | | Outages on noisy data counted by the planted stretch (`findings_within`, a change to what ten cases assert, agreed with the owner) | done: 9 of 10 found; faults on top of noise 29 of 30. Regression after 2.1 and 2.2 green (eval 25 of 25, routing 38 of 38, intents 16 of 16, integration 8 of 8, delivery pack 8 of 8 with its 2 gaps) |
-| 3 | The fault planter in the detector's units | not started |
+| 3 | The fault planter in the detector's units | done for the sizing: delivery data at 6 units 3 of 3 plantable faults found (was 2 of 4); contact-centre with a 2-point wobble 12 of 12 at 6 units (was 10). Not done: a detection curve, the smallest size stated on `verified` and in the label, planted faults on BigQuery |
 | 4 | Calibration on short history (D7) | not started |
 
 ## Parked

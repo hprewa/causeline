@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { scoreRunner } from "@causeline/eval";
 import { generateForPack } from "@causeline/generate";
-import { loadPlaybook, runPlaybook } from "@causeline/runner";
+import { loadPlaybook, MIN_DISPERSION_PERIODS, rawExcess, runPlaybook, shrinkSpreads, SPREAD_PERIODS, type Components } from "@causeline/runner";
 import { loadPack, type Expectation, type PackDefinition, type Result } from "@causeline/schema";
 import { kpiKey, quietPeriods, type PeriodOutcome } from "./calibrate.js";
 import { logChange, levelOf, readState, updateState, type Level } from "./state.js";
@@ -52,7 +52,12 @@ interface FaultsFile {
 
 export const FAULT_KINDS: FaultKind[] = ["segment_shift", "offsetting_pair", "mix_shift", "data_gap"];
 const CHUNK_MS = 40_000;
-/** A planted change is sized to be about this many standard errors for the part it is planted in, so that it is real enough for an honest test (a smaller size measures how small a fault the analysis still finds). */
+/**
+ * A planted change is sized to be about this many standard errors for the part it is planted in, so that it is real enough for an honest test (a
+ * smaller size measures how small a fault the analysis still finds). The standard error is the one the analysis itself judges that part by:
+ * counting noise plus the part's own period-to-period spread (see `detectorSpread`). Sized on counting noise alone, a "six standard error" fault
+ * in data that moves from week to week sat inside ordinary movement and was rightly not reported.
+ */
 export const DEFAULT_SIGMAS = 6;
 /** The most of a part's rows that a planted change may touch, and the least (a small planted size must be allowed to be small). */
 const MAX_SHARE = 0.9;
@@ -118,6 +123,62 @@ interface Plan {
   sigmas: number;
 }
 
+/** The extra period-to-period variation the analysis allows for, as it would estimate it: for each part of the dimension, and for the whole. */
+interface Spread {
+  /** A rate's rho (a multiple of p(1 - p)) or a total's s2 (a multiple of its mean squared) for one part. */
+  of(value: string): number;
+  whole: number;
+  /** Earlier periods it rests on (0: none could be read, and sizes are in counting noise alone). */
+  periods: number;
+}
+
+const NO_SPREAD: Spread = { of: () => 0, whole: 0, periods: 0 };
+
+/**
+ * The spread the analysis judges by, worked out here the way the analysis does it (the runner's own estimator, `shrinkSpreads`): the periods
+ * before the window, each as long as the window, up to as many as the analysis reads; each part's excess over counting noise pulled toward the
+ * typical excess of the parts; the whole's from its own series, as the headline's is (none with fewer periods than the headline needs). The
+ * analysis reads periods with the same calendar flags; here they are simply the periods before, which is the same thing in data with no flags.
+ */
+function detectorSpread(db: SqlDb, plan: Plan): Spread {
+  const day = (s: string) => Math.round(Date.parse(`${s}T00:00:00Z`) / 86400000);
+  const start = day(plan.window.start);
+  const length = day(plan.window.end) - start + 1;
+  if (!(length > 0)) return NO_SPREAD;
+  const from = new Date((start - SPREAD_PERIODS * length) * 86400000).toISOString().slice(0, 10);
+  const num = `(${plan.numerator})`;
+  const den = plan.kind === "ratio" ? `(${plan.denominator})` : "1";
+  const rows = rowsOf(
+    db,
+    `SELECT substr(${q(plan.time)}, 1, 10) AS d, ${q(plan.dimension)} AS v, SUM(${num}) AS num, SUM(${den}) AS den, SUM(${num} * ${num}) AS sq FROM ${q(plan.table)} ` +
+      `WHERE substr(${q(plan.time)}, 1, 10) >= '${from}' AND substr(${q(plan.time)}, 1, 10) < '${plan.window.start}' AND ${q(plan.dimension)} IS NOT NULL GROUP BY 1, 2`,
+  );
+  // period 0 is the one just before the window
+  const byPart = new Map<string, Map<number, Components>>();
+  const whole = new Map<number, Components>();
+  const add = (m: Map<number, Components>, k: number, x: Components) => {
+    const c = m.get(k) ?? { num: 0, den: 0, sq: 0 };
+    m.set(k, { num: c.num + x.num, den: c.den + x.den, sq: (c.sq ?? 0) + (x.sq ?? 0) });
+  };
+  for (const r of rows) {
+    const k = Math.floor((start - 1 - day(String(r.d))) / length);
+    if (k < 0 || k >= SPREAD_PERIODS) continue;
+    const x = { num: Number(r.num ?? 0), den: Number(r.den ?? 0), sq: Number(r.sq ?? 0) };
+    const part = byPart.get(String(r.v)) ?? new Map<number, Components>();
+    add(part, k, x);
+    byPart.set(String(r.v), part);
+    add(whole, k, x);
+  }
+  const periods = whole.size;
+  if (periods === 0) return NO_SPREAD;
+  // for a rate the sum of squares is left out, so counting noise is p(1 - p), as it is for the rows the planter swaps
+  const series = (m: Map<number, Components>): Components[] => [...m.values()].map((c) => (plan.kind === "ratio" ? { num: c.num, den: c.den } : c));
+  const level = shrinkSpreads(new Map([...byPart.entries()].map(([v, m]) => [v, series(m)])), plan.kind, periods);
+  const own = periods >= MIN_DISPERSION_PERIODS ? rawExcess(series(whole), plan.kind) : null;
+  const excess = (d: { rho: number; s2: number }) => (plan.kind === "ratio" ? d.rho : d.s2);
+  return { of: (value) => (level ? excess(level.of(value)) : 0), whole: Math.max(0, own?.excess ?? 0), periods };
+}
+
 const where = (plan: Plan) => `substr(${q(plan.time)}, 1, 10) BETWEEN '${plan.window.start}' AND '${plan.window.end}'`;
 
 /** The parts of a dimension in the window, biggest first, with their rows' per-row values (for a rate: numerator over denominator). */
@@ -140,31 +201,33 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
  * How many rows to swap so that the part's rate (or total) moves by about SIGMAS standard errors, as far as the data allows. For a rate, rows that
  * favour the part are replaced by copies of rows that count against it, so the volume does not change (a change in volume is a different fault).
  */
-function swapsFor(plan: Plan, rows: { r: number }[], remove: { r: number }[], pool: { r: number }[]): number {
+function swapsFor(plan: Plan, rows: { r: number }[], remove: { r: number }[], pool: { r: number }[], extra: number): number {
   const n = rows.length;
   if (plan.kind === "sum") {
     const total = rows.reduce((a, x) => a + x.r, 0);
-    const spread = Math.sqrt(rows.reduce((a, x) => a + x.r * x.r, 0)) * Math.sqrt(1 + 1 / baseline);
+    // counting noise of the total, plus its own period-to-period spread (`extra` is the squared relative spread)
+    const spread = Math.sqrt(rows.reduce((a, x) => a + x.r * x.r, 0) + extra * total * total) * Math.sqrt(1 + 1 / baseline);
     const share = total > 0 ? Math.min(MAX_SHARE, Math.max(MIN_SHARE, (plan.sigmas * spread) / total)) : MAX_SHARE;
     return Math.max(1, Math.round(share * n));
   }
   const m = mean(rows.map((x) => x.r));
   const sd = Math.sqrt(mean(rows.map((x) => (x.r - m) ** 2)));
-  const se = (sd / Math.sqrt(n)) * Math.sqrt(1 + 1 / baseline);
+  // counting noise of the rate, plus its own period-to-period spread (`extra` is a multiple of p(1 - p))
+  const se = Math.sqrt((sd * sd) / n + extra * m * (1 - m)) * Math.sqrt(1 + 1 / baseline);
   const gap = Math.abs(mean(pool.map((x) => x.r)) - mean(remove.map((x) => x.r))); // what one swapped row moves the total by
   const needed = gap > 0 ? Math.ceil((plan.sigmas * se * n) / gap) : remove.length;
   return Math.min(Math.round(MAX_SHARE * remove.length), Math.max(1, needed), remove.length);
 }
 
 /** Make a part worse (or, with `better`, better), keeping its volume. For a total, add rows (when high is bad) or take them away. */
-function shift(db: SqlDb, plan: Plan, part: { value: string; rows: { rid: number; r: number }[] }, rand: () => number, better = false): string {
+function shift(db: SqlDb, plan: Plan, part: { value: string; rows: { rid: number; r: number }[] }, rand: () => number, extra: number, better = false): string {
   const m = mean(part.rows.map((x) => x.r));
   const wantsHigh = plan.higherIsBetter !== better; // worse + higher-is-better -> take away the rows that are high
   if (plan.kind === "ratio") {
     const remove = part.rows.filter((x) => (wantsHigh ? x.r > m : x.r < m));
     const pool = part.rows.filter((x) => (wantsHigh ? x.r <= m : x.r >= m));
     if (remove.length === 0 || pool.length === 0) throw new Error(`every row of ${part.value} looks the same, so a shift cannot be planted there`);
-    const k = swapsFor(plan, part.rows, remove, pool);
+    const k = swapsFor(plan, part.rows, remove, pool, extra);
     const gone = pick(remove, k / remove.length, rand);
     const copies: number[] = [];
     for (let i = 0; i < gone.length; i++) copies.push(pool[Math.floor(rand() * pool.length)].rid);
@@ -173,7 +236,7 @@ function shift(db: SqlDb, plan: Plan, part: { value: string; rows: { rid: number
     return `${gone.length} of the ${part.rows.length} rows of ${part.value} that ${better ? "count against it" : "favour it"} were swapped for ones that ${better ? "favour" : "count against"} it`;
   }
   // a total: worse is lower when higher is better, higher otherwise
-  const k = swapsFor(plan, part.rows, part.rows, part.rows);
+  const k = swapsFor(plan, part.rows, part.rows, part.rows, extra);
   const chosen = pick(part.rows, k / part.rows.length, rand).map((x) => x.rid);
   if (wantsHigh) {
     for (const c of chunks(chosen)) db.run(`DELETE FROM ${q(plan.table)} WHERE rowid IN (${inList(c)})`);
@@ -200,8 +263,9 @@ function plant(kind: FaultKind, db: SqlDb, plan: Plan, rand: () => number): Plan
   if (ps.length < 1) return { skip: `no ${dim} has enough rows in that period (${MIN_PART_ROWS}) to carry a fault` };
   const a = ps[0];
   const b = ps[1];
+  const spread = detectorSpread(db, plan);
   if (kind === "segment_shift") {
-    const what = shift(db, plan, a, rand);
+    const what = shift(db, plan, a, rand, spread.of(a.value));
     return { what, expect: { findings_include: [{ dimension: plan.dimension, value: a.value }] } as Expectation };
   }
   if (kind === "data_gap") {
@@ -211,8 +275,8 @@ function plant(kind: FaultKind, db: SqlDb, plan: Plan, rand: () => number): Plan
   }
   if (!b) return { skip: `a second ${dim} with enough rows is needed` };
   if (kind === "offsetting_pair") {
-    const w = shift(db, plan, a, rand);
-    const g = shift(db, plan, b, rand, true);
+    const w = shift(db, plan, a, rand, spread.of(a.value));
+    const g = shift(db, plan, b, rand, spread.of(b.value), true);
     return {
       what: `${a.value} was made worse (${w}) while ${b.value} was made better (${g})`,
       expect: { findings_include: [{ dimension: plan.dimension, value: a.value }], masking_flags: ["offsetting"] } as Expectation,
@@ -240,7 +304,8 @@ function plant(kind: FaultKind, db: SqlDb, plan: Plan, rand: () => number): Plan
   const rTo = mean(to.rows.map((x) => x.r));
   const perUnit = others.reduce((a, p) => a + p.rows.length * (mean(p.rows.map((x) => x.r)) - rTo), 0) / total;
   const overall = mean(ps.flatMap((p) => p.rows.map((x) => x.r)));
-  const se = Math.sqrt((overall * (1 - overall)) / total) * Math.sqrt(1 + 1 / baseline);
+  // the whole's standard error as the headline judges it: counting noise plus the whole's own period-to-period spread
+  const se = Math.sqrt((overall * (1 - overall)) / total + spread.whole * overall * (1 - overall)) * Math.sqrt(1 + 1 / baseline);
   const need = (plan.sigmas * se) / Math.abs(perUnit || 1e-9);
   if (!(Math.abs(perUnit) > 0) || need > MAX_MOVE) return { skip: `the ${dim} rates are too close for moving rows between them to change the whole by more than chance would (it would take moving ${Math.round(Math.min(need, 9.99) * 100)}% of every other part)` };
   const move = Math.min(MAX_MOVE, Math.max(MIN_SHARE, need));

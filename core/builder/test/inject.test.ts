@@ -17,16 +17,18 @@ import { levelOf, readState, updateState } from "../src/state.js";
 const RATES: Record<string, number> = { north: 0.95, south: 0.8, east: 0.6, west: 0.4 };
 
 /** Twelve weeks of events at four sites with different, steady rates and nothing planted: an ordinary history. */
-async function ordinary(): Promise<string> {
+async function ordinary(wobble = 0): Promise<string> {
   const dir = mkdtempSync(join(tmpdir(), "builder-inject-"));
   const rand = seeded(7);
   const rows = ["event_id,site,happened_at,ok"];
   let id = 0;
   for (let week = 0; week < 12; week++) {
     for (const site of Object.keys(RATES)) {
+      // with a wobble, each site's rate moves every week by its own random amount (uniform, with this standard deviation)
+      const rate = RATES[site] + (wobble > 0 ? (rand() - 0.5) * Math.sqrt(12) * wobble : 0);
       for (let i = 0; i < 140; i++) {
         const day = new Date(Date.UTC(2026, 0, 5 + week * 7 + Math.floor(rand() * 7)));
-        rows.push(`E${++id},${site},${day.toISOString().slice(0, 10)} ${String(8 + Math.floor(rand() * 10)).padStart(2, "0")}:00:00,${rand() < RATES[site] ? 1 : 0}`);
+        rows.push(`E${++id},${site},${day.toISOString().slice(0, 10)} ${String(8 + Math.floor(rand() * 10)).padStart(2, "0")}:00:00,${rand() < rate ? 1 : 0}`);
       }
     }
   }
@@ -145,4 +147,19 @@ test("a smaller planted size plants a smaller change, and the default is the six
   const swapped = (what: string) => Number(/^(\d+) of the/.exec(what)![1]);
   assert.ok(swapped(small.outcomes[0].what) < swapped(big.outcomes[0].what), `${small.outcomes[0].what} vs ${big.outcomes[0].what}`);
   await assert.rejects(injectFaults({ workspace: ws, kpi: "ok_rate", sigmas: 0 }), /positive number of standard errors/);
+});
+
+test("in data whose parts move from week to week, a planted change of the same size in standard errors is a bigger change in rows", async () => {
+  const swapped = (what: string) => Number(/^(\d+) of the/.exec(what)![1]);
+  const size = async (wobble: number) => {
+    const ws = await ordinary(wobble);
+    await checked(ws);
+    const r = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 21, kinds: ["segment_shift"] });
+    return swapped(r.outcomes[0].what);
+  };
+  const steady = await size(0);
+  const moving = await size(0.08);
+  // six standard errors of counting noise alone is the same number of rows in both; the part's own spread (8 points a week against about 4 of
+  // counting noise) makes the standard error the analysis judges by at least twice as large
+  assert.ok(moving >= steady * 1.5, `${moving} rows swapped in moving data against ${steady} in steady data`);
 });

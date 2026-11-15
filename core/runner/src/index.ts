@@ -23,3 +23,5 @@ export * from "./toolindex.js";
 export { resolveWindow, hasRange, type WindowArgs } from "./window.js";
 export { parseScope, ScopedToolCaller } from "./scope.js";
 export * from "./confidence.js";
+export { rawExcess, shrinkSpreads, SPREAD_PERIODS, MIN_SPREAD_PERIODS, type LevelSpread } from "./levelspread.js";
+export { MIN_DISPERSION_PERIODS } from "./dispersion.js";
