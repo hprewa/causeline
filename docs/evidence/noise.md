@@ -539,3 +539,28 @@ change in rows). Integration: 8 of 8. Purity and ladder names pass.
 - **The main eval and the noise suite were not re-run for this step;** the analysis code did not change (the runner gained
   only two exports).
 - **Calibration on short history (D7) is not started.**
+
+## Phase 2, step 4: calibration on a short history (D7)
+
+**The change.** The false-alarm check needs eight ordinary periods. When the history cannot give eight (too few periods
+with a baseline before them, or too few once real events and periods the analysis declined are counted out), it now says so
+before replaying anything, with how many more periods of data are needed (`short_by`). When a replay has run and too few
+are left to count, the result also carries the number still needed. Every rate the person is told now comes with how high
+the true rate could be (the upper end of the 95% interval), whether the check passed, failed or was too short; before, only
+a pass said it.
+
+**Checks:** all unit tests pass (554, 10 skipped). The D7 test is no longer skipped; there are three new tests and two
+changed ones. Purity and ladder names pass.
+
+**Tests changed, and why.** The Phase 0 D7 test labelled a period before any replay, which the code rightly refuses, so its
+scenario was replaced by the two real ways a history is too short. One older test expected a ten-week history to be
+replayed and a failed verdict kept; nothing is replayed now, so it asserts that, and a new test keeps the old expectation
+for the case where a replay does run. One wording test follows the sentence that now carries the upper end.
+
+### Not shown
+
+- **The integration tests, the main eval and the noise suite were not re-run for this step** (the session ran out of
+  allowance). The change is in the builder and the server's wording, not in the analysis.
+- **Day-level replay for short histories is not built.** Whether a KPI checked on days may be called calibrated for weekly
+  questions changes what the rung means, which is the owner's decision.
+- **No live assistant** was run to see that it says the new sentences well.

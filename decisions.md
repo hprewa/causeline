@@ -499,3 +499,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **When a size cannot be planted the planter says so and plants nothing.** Why: a smaller fault under the name of a larger one would make the count of faults found mean nothing. It already did this; the mix shift at 6 units on the delivery data is now such a case.
 - **The older detection numbers are kept beside the new ones and labelled "old sizing".** Why: the unit changed, so the two are not the same measure; showing only the new would look like the analysis got better at finding faults.
 - **The smallest size reliably found is not stated yet.** Why: twelve faults a cell cannot support the word reliably.
+
+### Build guide Phase 2, step 4: short history
+- **A history that cannot give eight ordinary periods is refused before the replay, and no verdict is kept.** Why: a replay that cannot count costs time and, on cloud data, money; a "not passed" kept for a check that never ran would be a false record.
+- **The D7 test's scenario was rewritten.** Why: as written in Phase 0 it labelled a period before any replay, which is refused for good reason; the test now covers the two real cases.
+- **Day-level replay is not built.** Why: it would let a KPI become calibrated from days when the questions are about weeks, a change to the rung's meaning that the guide reserves for the owner.

@@ -12,14 +12,14 @@ const loud = { status: "complete", headline: { z: 5, significant: true }, findin
 const quiet = { status: "complete", headline: { z: 0, significant: false }, findings: [], masking_flags: [] } as unknown as Result;
 const weeks = Array.from({ length: 16 }, (_, i) => ({ bucket: `2026-W${String(i + 1).padStart(2, "0")}`, bucket_start: new Date(Date.UTC(2026, 0, 5 + i * 7)).toISOString().slice(0, 10), bucket_end: new Date(Date.UTC(2026, 0, 11 + i * 7)).toISOString().slice(0, 10), num: 1, den: 1 }));
 
-async function replayed(says: Record<string, Result>) {
+async function replayed(says: Record<string, Result>, history = weeks) {
   const ws = mkdtempSync(join(tmpdir(), "calibrate-tools-"));
   writeState(ws, newState("x"));
   updateState(ws, (st) => {
     const check = (kind: "total" | "slice" | "grain", start: string, end: string) => ({ id: `${kind}-1`, kind, scope: {}, window: { start, end }, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" as const });
     st.kpis.ok = { level: "reconciled", checks: [check("total", "2026-01-05", "2026-01-11"), check("slice", "2026-01-05", "2026-01-11"), check("grain", "2026-01-12", "2026-01-12")], auto: { at: "now", pass: true, results: [] } };
   });
-  const deps = { baseline: 4, key: () => "k", periods: async () => weeks, runOne: async (b: { bucket: string }) => ({ result: says[b.bucket] ?? quiet }) };
+  const deps = { baseline: 4, key: () => "k", periods: async () => history, runOne: async (b: { bucket: string }) => ({ result: says[b.bucket] ?? quiet }) };
   const report = await calibrate({ workspace: ws, kpi: "ok", makeTools: async () => ({}) as never, deps });
   return { ws, cfg: { packDir: ws } as ServerConfig, report };
 }
@@ -27,9 +27,8 @@ async function replayed(says: Record<string, Result>) {
 test("a pass is said with the tool's own numbers and the honest upper end", async () => {
   const { report } = await replayed({});
   const d = describeCalibration(report) as { say: string; next: string };
-  assert.match(d.say, /Of the 12 ordinary periods I could judge, 0 raised something \(none\)\. You allow about 1 in 20\./);
+  assert.match(d.say, /Of the 12 ordinary periods I could judge, 0 raised something \(none\)\. With 12 periods the true rate could be as high as about 1 in 4\. You allow about 1 in 20\./);
   assert.match(d.say, /calibrated/);
-  assert.match(d.say, /could still be as high as about 1 in 4/);
 });
 
 test("a fail lists the weeks to ask about one at a time, and a label moves the result", async () => {
@@ -79,4 +78,20 @@ test("planted faults are told in plain words: what was found, that the data was 
   assert.match(noisy.say, /was NOT quiet \(1 finding\(s\)\), so these results do not count/);
   assert.match(noisy.say, /That does not count as proof/);
   assert.match((describeFaults({ kpi: "ok", stage: "not_ready", reasons: ["Run the false-alarm check first."], progress: { done: 0, total: 0 }, outcomes: [] }) as { say: string }).say, /Run the false-alarm check first/);
+});
+
+test("a history too short to check is said in plain words with how many more periods are needed, and the rate always comes with its upper end", async () => {
+  // eleven weeks: seven could be judged, eight are needed
+  const short = await replayed({}, weeks.slice(0, 11));
+  const d = describeCalibration(short.report) as { say: string; next: string; short_by?: number };
+  assert.equal(d.short_by, 1);
+  assert.match(d.say, /1 more period of data is needed/);
+  assert.match(d.say, /Nothing was replayed/);
+  assert.match(d.next, /more history/);
+  assert.doesNotMatch(d.next, /reconciled first/, "it is not sent back to reconciling");
+
+  // a fail also carries how high the true rate could be
+  const failed = await replayed({ "2026-W07": loud, "2026-W09": loud });
+  const f = describeCalibration(failed.report) as { say: string };
+  assert.match(f.say, /2 raised something \(about 1 in 6\)\. With 12 periods the true rate could be as high as about 1 in 2\./);
 });

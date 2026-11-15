@@ -236,6 +236,8 @@ export interface CalibrationReport {
   not_judged: { period: string; words: string; reason: string }[];
   level?: Level;
   gap?: string;
+  /** How many more ordinary periods are needed before the rate can count (absent when there are enough). */
+  short_by?: number;
 }
 
 /** What a KPI means for the checks that depend on it: its definition, the fact it counts over, the time levels, the baseline and the alarm rule. */
@@ -345,6 +347,26 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
       : `the newest ${candidates.length} complete periods (${span})${left > 0 ? `; periods holding a recorded incident left out` : ""}`;
   const todo = candidates.filter((b) => file!.outcomes[b.bucket] === undefined);
 
+  // too short a history is said before anything is replayed: the most that could ever be judged is every candidate that is not already known to be
+  // a real event or one the analysis declined, and when that is under the minimum no replay can make the rate count
+  const reachable = candidates.filter((b) => file!.labels[b.bucket]?.real !== true && file!.outcomes[b.bucket]?.status !== "not_judged").length;
+  if (todo.length > 0 && reachable < MIN_JUDGED) {
+    const short = MIN_JUDGED - reachable;
+    const lost = candidates.length - reachable;
+    return {
+      kpi: opts.kpi,
+      stage: "not_ready",
+      reasons: [
+        `${opts.kpi} has ${candidates.length} past period${candidates.length === 1 ? "" : "s"} with enough history before ${candidates.length === 1 ? "it" : "them"} to be judged${lost > 0 ? `, ${lost} of which cannot count (a real event, or one the analysis could not compare fairly)` : ""}. ${MIN_JUDGED} ordinary ones are needed, so ${short} more period${short === 1 ? "" : "s"} of data ${short === 1 ? "is" : "are"} needed before the false-alarm check can say anything. Nothing was replayed.`,
+      ],
+      short_by: short,
+      progress: { done: candidates.length - todo.length, total: candidates.length },
+      selection: file.selection,
+      flagged: [],
+      not_judged: [],
+    };
+  }
+
   // what it reads, said before anything is read on a cloud database
   if (todo.length > 0 && state.dialect === "bigquery" && !opts.goAhead) {
     const measured = file.first_bytes !== undefined;
@@ -393,7 +415,7 @@ export async function calibrate(opts: CalibrateOptions): Promise<CalibrationRepo
   });
   syncExperts(opts.workspace, opts.kpi, level, `calibration ${ev.pass ? "passed" : "did not pass"}`, "calibrate");
   void pending;
-  return { kpi: opts.kpi, stage: "done", reasons: [], progress, selection: file.selection, evaluation: ev, flagged, not_judged: notJudged, level, gap: levelGap(readState(opts.workspace)!.kpis[opts.kpi]) };
+  return { kpi: opts.kpi, stage: "done", reasons: [], progress, selection: file.selection, evaluation: ev, flagged, not_judged: notJudged, level, gap: levelGap(readState(opts.workspace)!.kpis[opts.kpi]), ...(ev.enough ? {} : { short_by: MIN_JUDGED - ev.judged }) };
 }
 
 /** The person says whether something real happened in a period that raised something. A real one stops counting against the KPI. */

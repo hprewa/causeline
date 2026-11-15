@@ -357,6 +357,7 @@ export function accessHelpTool(cfg: ServerConfig, args?: { project?: string; dat
 /** A calibration report in the words the person is told: every figure comes from the replay, and the next thing to do is said. */
 export function describeCalibration(r: CalibrationReport) {
   const ev = r.evaluation;
+  if (r.stage === "not_ready" && r.short_by !== undefined) return { ...r, say: r.reasons.join(" "), next: "Say this plainly, with the number of periods still needed. Nothing was read and nothing else can be done until there is more history; do not suggest a way round it." };
   if (r.stage === "not_ready") return { ...r, say: r.reasons.join(" "), next: "Get the KPI reconciled first (the numbers from the user's own reports), then calibrate." };
   if (r.stage === "needs_go_ahead") {
     const e = r.estimate!;
@@ -372,14 +373,16 @@ export function describeCalibration(r: CalibrationReport) {
     return { ...r, say: `${looked} So far ${ev!.alarms} of the ${ev!.judged} I could judge raised something.`, next: "Say the progress in a few words and call calibrate again to continue; it picks up where it stopped." };
   }
   const chosen = r.selection ? ` I replayed ${r.selection}.` : "";
-  const base = `${chosen.trim()}${chosen ? " " : ""}Of the ${ev!.judged} ordinary periods I could judge, ${ev!.alarms} raised something (${sayRate(ev!.rate)}). You allow ${sayRate(ev!.allowed)}.`;
+  // the rate is never said without how little a small sample shows: none of seven is not "none", the true rate could still be about one in three
+  const bound = ev!.judged > 0 ? ` With ${ev!.judged} period${ev!.judged === 1 ? "" : "s"} the true rate could be as high as ${sayRate(ev!.upper)}.` : "";
+  const base = `${chosen.trim()}${chosen ? " " : ""}Of the ${ev!.judged} ordinary periods I could judge, ${ev!.alarms} raised something (${sayRate(ev!.rate)}).${bound} You allow ${sayRate(ev!.allowed)}.`;
   const skipped = ev!.not_judged > 0 ? ` ${ev!.not_judged} period${ev!.not_judged === 1 ? " was" : "s were"} not judged (the analysis said it could not compare ${ev!.not_judged === 1 ? "it" : "them"} fairly) and ${ev!.not_judged === 1 ? "is" : "are"} not counted.` : "";
   const real = ev!.real_events > 0 ? ` ${ev!.real_events} ${ev!.real_events === 1 ? "was" : "were"} left out because you said something real happened then.` : "";
   if (!ev!.enough) {
-    return { ...r, say: `${base}${skipped}${real} That is too few quiet periods to say anything: at least 8 are needed, so the KPI stays ${r.level}.`, next: "Say that more history is needed. Nothing else can be done now." };
+    return { ...r, say: `${base}${skipped}${real} That is too few quiet periods to say anything: at least 8 are needed${r.short_by !== undefined ? `, so ${r.short_by} more ordinary period${r.short_by === 1 ? " is" : "s are"} needed` : ""}, and the KPI stays ${r.level}.`, next: "Say that more history is needed, and how many more periods. Nothing else can be done now." };
   }
   if (ev!.pass) {
-    return { ...r, say: `${base}${skipped}${real} It stays quiet enough, so the KPI is now ${r.level}. With only ${ev!.judged} periods the true rate could still be as high as ${sayRate(ev!.upper)}.`, next: "Say the result, then carry on (past incidents, then verify_expert)." };
+    return { ...r, say: `${base}${skipped}${real} It stays quiet enough, so the KPI is now ${r.level}.`, next: "Say the result, then carry on (past incidents, then verify_expert)." };
   }
   return {
     ...r,

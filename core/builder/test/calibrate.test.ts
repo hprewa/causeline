@@ -97,17 +97,31 @@ test("a week the analysis declines to judge is reported and counted neither way"
   assert.equal(r.evaluation!.pass, true);
 });
 
-test("with too few judged weeks it cannot be calibrated, however quiet", async () => {
+test("with too few weeks to judge it cannot be calibrated, however quiet, and that is said without replaying them", async () => {
   const ws = workspace();
-  const r = await calibrate(opts(ws, deps(10, {})));
+  const d = deps(10, {});
+  const r = await calibrate(opts(ws, d));
+  assert.equal(r.stage, "not_ready");
+  assert.equal(r.short_by, 2, "six weeks could be judged and eight are needed");
+  assert.equal(d.ran.length, 0);
+  assert.equal(levelOf(readState(ws)!.kpis.ok), "reconciled");
+  assert.equal(readState(ws)!.kpis.ok.calibration, undefined, "no verdict is kept for a check that did not run");
+  assert.equal(readState(ws)!.status_log.length, 0, "no change of rung, so nothing to log");
+});
+
+test("with enough weeks to try but too few left to count, the replay's verdict is kept as not passed", async () => {
+  // twelve weeks give eight candidates; the analysis declines two of them, so six are judged
+  const ws = workspace();
+  const r = await calibrate(opts(ws, deps(12, { "2026-W06": refused, "2026-W10": refused })));
+  assert.equal(r.stage, "done");
   assert.equal(r.evaluation!.judged, 6);
   assert.equal(r.evaluation!.enough, false);
   assert.equal(r.evaluation!.pass, false);
-  assert.equal(levelOf(readState(ws)!.kpis.ok), "reconciled");
+  assert.equal(r.short_by, 2);
   const kept = readState(ws)!.kpis.ok.calibration!;
   assert.equal(kept.pass, false);
   assert.equal(kept.quiet_periods, 6);
-  assert.equal(readState(ws)!.status_log.length, 0, "no change of rung, so nothing to log");
+  assert.equal(levelOf(readState(ws)!.kpis.ok), "reconciled");
 });
 
 test("it needs a reconciled KPI", async () => {
@@ -240,16 +254,49 @@ test("a flagged period keeps what raised it, in numbers, and a quiet one keeps n
   assert.equal(file.outcomes["2026-W09"].detail, undefined, "a quiet period keeps no detail");
 });
 
-// Known gap D7 (build guide, Phase 0; closed in Phase 2 step 4). Twelve weeks of data leave eight weeks that can be judged; once one of
-// them is labelled a real event seven are left and eight are needed, so calibration can never finish. Today that is only said after the
-// whole replay has run, and not how many more periods would do.
-test("gap D7: a history too short to calibrate is said before the replay, with how many more periods are needed", { skip: "known gap D7: short history is reported only after the replay, without the number still needed (build guide Phase 2)" }, async () => {
+// D7 (build guide; closed in Phase 2 step 4). A history too short to calibrate used to be said only after the whole replay had run, and not
+// how many more periods would do. (The Phase 0 version of this test labelled a period before any replay, which the code rightly refuses; the
+// scenarios below are the two ways a history is really too short.)
+test("D7: a history too short to calibrate is said before the replay, with how many more periods are needed", async () => {
+  // eleven weeks leave seven that have a baseline before them: one short, and nothing is replayed
   const ws = workspace();
+  const d = deps(11, {});
+  const first = await calibrate(opts(ws, d));
+  assert.equal(d.ran.length, 0, "nothing is replayed when the result could not count");
+  assert.equal(first.stage, "not_ready");
+  assert.equal(first.short_by, 1, "one more ordinary period is needed");
+  assert.match(first.reasons.join(" "), /1 more period of data is needed/);
+  assert.match(first.reasons.join(" "), /Nothing was replayed/);
+  assert.equal(levelOf(readState(ws)!.kpis.ok), "reconciled");
+
+  // five weeks: one candidate, seven short
+  const few = await calibrate(opts(workspace(), deps(5, {})));
+  assert.equal(few.short_by, 7);
+
+  // twelve weeks are just enough, so the replay runs
+  const ws12 = workspace();
+  const d12 = deps(12, { "2026-W07": loud });
+  const ran = await calibrate(opts(ws12, d12));
+  assert.equal(d12.ran.length, 8);
+  assert.equal(ran.stage, "done");
+  assert.equal(ran.short_by, undefined);
+  // once one of the eight is called a real event seven are left: said with the number still needed, and with nothing more replayed
+  labelPeriod(ws12, "ok", "2026-W07", true, "a known outage");
+  const after = await calibrate(opts(ws12, d12));
+  assert.equal(d12.ran.length, 8, "nothing is replayed again");
+  assert.equal(after.evaluation!.judged, 7);
+  assert.equal(after.short_by, 1);
+});
+
+test("D7: when the history changes its meaning, periods already known to be real events are counted out before the replay", async () => {
+  const ws = workspace();
+  const d = deps(12, { "2026-W07": loud });
+  await calibrate(opts(ws, d));
   labelPeriod(ws, "ok", "2026-W07", true, "a known outage");
-  const d = deps(12, {});
-  const ran: string[] = [];
-  const first = await calibrate(opts(ws, { ...d, runOne: async (b) => (ran.push(b.bucket), d.runOne(b)) }));
-  assert.equal(ran.length, 0, "nothing is replayed when the result could not count");
-  assert.equal((first as unknown as { short_by?: number }).short_by, 1, "one more ordinary period is needed");
-  assert.match(first.reasons.join(" "), /1 more/);
+  // the KPI's definition changes: the outcomes no longer apply, but what the person said was real stays on record
+  const changed = deps(12, {}, "k2");
+  const r = await calibrate(opts(ws, changed));
+  assert.equal(changed.ran.length, 0, "seven is the most that could be judged, so nothing is replayed");
+  assert.equal(r.short_by, 1);
+  assert.match(r.reasons.join(" "), /1 of which cannot count/);
 });

@@ -51,7 +51,7 @@ Evidence: `docs/evidence/noise.md`.
 | 2.4, 2.5 | A material effect; false discovery rate across the run | not built, by decision: the diagnosis says neither is the cause of what remains (the headline test's own rate, and small units) |
 | | Outages on noisy data counted by the planted stretch (`findings_within`, a change to what ten cases assert, agreed with the owner) | done: 9 of 10 found; faults on top of noise 29 of 30. Regression after 2.1 and 2.2 green (eval 25 of 25, routing 38 of 38, intents 16 of 16, integration 8 of 8, delivery pack 8 of 8 with its 2 gaps) |
 | 3 | The fault planter in the detector's units | done for the sizing: delivery data at 6 units 3 of 3 plantable faults found (was 2 of 4); contact-centre with a 2-point wobble 12 of 12 at 6 units (was 10). Not done: a detection curve, the smallest size stated on `verified` and in the label, planted faults on BigQuery |
-| 4 | Calibration on short history (D7) | not started |
+| 4 | Calibration on short history (D7) | done: too short a history is said before the replay with the number of periods still needed, and every rate comes with its upper end. Not done: day-level replay (changes what the rung means; owner's decision). Integration, main eval and noise suite not re-run for this step |
 
 ## Parked
 
