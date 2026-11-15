@@ -130,6 +130,74 @@ week already reconciled should not count as a second period (D8).
 `packs/_lib/synthetic-prepare.mjs` loads the generated files with Python's own SQLite when the DuckDB program is missing, or
 when `CAUSELINE_LOADER=python` is set. The contact-centre eval gives the same 25 of 25 through it. The nightly workflow uses it.
 
+## Phase 2, step 1: what raises the false alarms (diagnosis, nothing changed)
+
+All 13 quiet weeks of the noise suite that raise something were run again and taken apart (15 November, committed code).
+The first columns are what the analysis reported. The last four were worked out separately, straight from each case's data:
+the reported part's move in week 6 against the average of weeks 2 to 5, that move in units of counting noise alone, the part's
+own week-to-week spread over weeks 1 to 5, and the move in units of that spread. Data: `docs/evidence/data/noise-diagnosis.json`.
+
+| Case | Headline z | Headline called significant | Part reported | Its move (points) | z on counting noise | Its own spread (points) | z on its own spread | The whole's own spread (points) |
+|---|---|---|---|---|---|---|---|---|
+| `team_s301` | 3.71 | yes | centre=cc_2 | +2.3 | 4.18 | 0.3 | 7.09 | 0.19 |
+| `team_s302` | 2.23 | yes | centre=cc_1 | +2.0 | 3.59 | 0.6 | 2.85 | 0.40 |
+| `team_s312` | -0.6 | no | site=s_2 | -3.5 | -4.26 | 0.4 | -7.01 | 0.60 |
+| `team_s318` | -0.65 | no | team=team_08 | -6.9 | -5.29 | 1.7 | -3.62 | 0.86 |
+| `team_s320` | 3.24 | yes | centre=cc_2 | +2.9 | 5.19 | 0.9 | 2.76 | 0.31 |
+| `queue_s305` | -0.8 | no | queue=sales | -5.7 | -7.4 | 1.9 | -2.67 | 0.72 |
+| `queue_s314` | 0.24 | no | queue=sales | -4.7 | -5.83 | 1.5 | -2.85 | 0.93 |
+| `queue_s318` | 0.79 | no | queue=billing | -3.1 | -4.04 | 1.9 | -1.47 | 0.36 |
+| `team_guide_s21` | -1.61 | no | team=team_03 | -5.5 | -4.15 | 2.8 | -1.77 | 0.34 |
+| `team_guide_s22` | -0.95 | no | team=team_09 | -7.1 | -5.59 | 3.5 | -1.81 | 0.75 |
+| `team_guide_s24` | -0.42 | no | team=team_09 | -7.0 | -4.98 | 1.1 | -5.91 | 0.49 |
+| `team_guide_s25` | -2.34 | yes | team=team_03 | -6.3 | -4.85 | 2.0 | -2.85 | 0.14 |
+| `team_guide_s26` | -0.29 | no | agent=agent_005 | -16.2 | -6.16 | 3.8 | -3.85 | 0.80 |
+
+### Which test raised each one
+
+| What raised it | Cases | Reported |
+|---|---|---|
+| The headline was called significant (bar 2), and the drill then named a part | 4 (`s301`, `s302`, `s320`, `guide_s25`) | headline z 2.2 to 3.7 |
+| The whole was flat; one team or agent was flagged as moving on its own (the `dispersion` flag) and reported as a finding | 5 (`s318`, `guide_s21`, `guide_s22`, `guide_s24`, `guide_s26`) | part z 4.0 to 5.4, against a bar near 4 |
+| The whole was flat; parts were flagged as moving against each other (the `offsetting` flag) and one reported | 4 (`s312`, `queue_s305`, `queue_s314`, `queue_s318`) | parts moving 1.8 to 2.7 points in total around a net of under 1 |
+
+No false alarm came from a time bucket.
+
+### The guide's four suspects
+
+- **Parts judged on counting noise only: confirmed, in a slightly different form.** A part's z does get the extra spread
+  (`core/runner/src/drill.ts`, `decomposeChildren`), but it is the spread estimated for the whole KPI, applied to every part.
+  Twelve teams wobbling on their own make the whole wobble far less than any one of them (here the whole's own spread is 0.1
+  to 0.9 points, a team's 1 to 3.5), so the correction barely moves a team's z. Judged by its own five weeks, 8 of the 13
+  reported parts are under 3.
+- **Thin history: confirmed.** Week 6 has five earlier weeks, exactly the fewest the spread estimate accepts
+  (`MIN_DISPERSION_PERIODS`), and the comparison uses four of them. The whole's wobble in this data should be about 0.6 to
+  0.7 points; from five weeks it is estimated at 0.14 to 0.4 in the four headline cases, at or below counting noise, so a
+  move of 1 to 1.4 points reads as z 2.2 to 3.7. The same thinness hurts a part's own estimate: three parts (`s301`, `s312`,
+  `guide_s24`) happen to have had five steady weeks and read z 6 to 7 on their own spread. So a part's own spread alone is
+  not enough at this length; it has to be steadied with what the other parts at the same level show, as the guide proposes.
+- **Many comparisons, one bar: not the cause here.** The bars already tighten with the number of parts at a level. The z
+  values are too large, not the bars too low. The parked run-wide family (6c) measured the same: no effect.
+- **The `dispersion` flag: 5 of the 13, and each time the flagged part is also the finding.** Turning the flag into a note
+  quiets nothing unless the finding goes with it; the finding goes once the part is judged on a fair spread.
+
+### Why 5 of 6, 5 of 20 and 6 of 100
+
+Partly explained. The suite judges week 6, the thinnest history the analysis accepts, where both causes above are at their
+worst; the rate table judges the last 25 of 30 weeks, most with twelve earlier weeks for the estimate. That accounts for the
+table being lowest. It does not account for 5 of 6 against 5 of 20 at the same week: the six seeds may simply be unlucky.
+
+### Not shown in this diagnosis
+
+- **Later weeks of the same datasets were not judged.** A run of weeks 7, 8 and 10 on the 26 team datasets, to show the rate
+  falling as history grows, was stopped by the machine for low memory and not restarted. (Week 9 cannot be used: it is a
+  special week the analysis declines to compare.) So "thin history" rests on the estimates above, not on that direct test.
+- **"Own spread" here is a plain standard deviation of five weekly rates,** computed outside the analysis as a yardstick.
+  It is not the estimator Phase 2 will use and was not tried as a fix.
+- **Only the false alarms were taken apart,** not the quiet weeks that stayed quiet, so nothing here says how many true
+  findings a fair spread would cost. The noise-plus-fault cases are the check for that.
+- **The delivery week (W30) and the missed outages were not taken apart.**
+
 ## Regression at the close
 
 | Check | Result |

@@ -458,3 +458,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **Three measurements of the same wobble are published side by side (5 of 6, 8 of 40, 6 of 100), unexplained.** Why: picking one would choose the headline; the difference is itself the first thing Phase 2 has to explain.
 - **Correction (15 November): the counts for quiet weeks by team are 5 of 20, not 4 of 20, and there are 26 gaps, not 25.** Why: a full re-run on the committed code found one more failing case; the first run was probably made with the parked branch's compiled code still in place. The published numbers were changed to the re-run's, and the page says so.
 - **From now on, build before any run whose numbers are published, and after every branch switch.** Why: the compiled code is not in git, so a branch switch leaves the old build behind silently.
+
+### Build guide Phase 2, step 1: the diagnosis
+- **The yardstick for the diagnosis was worked out outside the analysis, from each case's data.** Why: asking the analysis to explain its own false alarms would reuse the estimate under suspicion.
+- **A week 9 result of "nothing raised in 26" was thrown away.** Why: every one of those runs had stopped because week 9 is a special week with nothing comparable; the zero was the absence of an answer, not quiet weeks.
+- **The first fix will be the spread a part is judged by, steadied with its sibling parts, not a part's own spread alone and not a wider family of comparisons.** Why: 8 of 13 false alarms fall under 3 on the part's own five weeks, but 3 read 6 to 7 because five steady weeks understate the spread; the family bar was measured (6c) and did nothing.

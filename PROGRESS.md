@@ -38,6 +38,17 @@ Evidence: `docs/evidence/noise.md`. Nothing is fixed in this phase; each defect 
 Open from this phase: why the same wobble gives 5 of 6, 5 of 20 and 6 of 100 depending on seeds and week (first task of Phase 2);
 D5 and D9 have no test yet (Phases 1 and 5).
 
+## Build guide Phase 2: quiet weeks stay quiet, and planted faults match the detector
+
+Evidence: `docs/evidence/noise.md`.
+
+| Step | What | State |
+|---|---|---|
+| 1 | Diagnose every false alarm in the noise suite before changing anything | done: 4 from the headline, 5 from a part flagged under a flat whole, 4 from parts moving against each other; parts are judged by the whole's spread, and five weeks is too thin to estimate any spread. A direct test on later weeks was stopped for low memory and not run |
+| 2 | Fixes, one per commit (own spread steadied by sibling parts; false discovery rate; material effect; noisy is a note; longer history) | not started, plan awaiting the owner |
+| 3 | The fault planter in the detector's units | not started |
+| 4 | Calibration on short history (D7) | not started |
+
 ## Parked
 
 - **Steps 6c to 6f of the earlier false-alarm fix** (one family for the whole run, a longer history for each part, the complaints re-run).
