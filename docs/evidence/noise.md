@@ -302,3 +302,53 @@ eval went from 528 queries to 922 (the largest from 35 to 59), and from 342 seco
 - **The two missed groups (outages, small units) did not move,** and the delivery pack's quiet week and planted faults were
   not re-measured.
 - **Real complaints data was not run.**
+
+## Phase 2, step 2.2: the headline's bar when the spread was learned from few periods
+
+**The change.** The headline is called significant when its z reaches a bar, 2 by default. That bar is a normal quantile and
+treats the data's own spread as known. When the spread was estimated from a handful of earlier periods it is not known, and
+the right reference is Student's t. The bar now keeps the significance level that 2 stands for and takes the t quantile at
+that level for the history available (`thinHistoryBar`, `core/runner/src/masking.ts`): 2.87 with five earlier periods, 2.43
+with eight, 2.26 with twelve, and 2 when nothing was estimated. A bar that a pack or a run sets by name is used as given.
+The default significance level is unchanged.
+
+**The alternative, measured and not adopted.** The opt-in bar from the earlier step 6b (a hundredth as the headline's level,
+then the t quantile: 4.6 with five periods, 3.1 with twelve) was tried as the default first, as agreed with the owner, on top
+of step 2.1. It again lost one of the 25 planted cases (`share_shift_to_one_agent`: no finding), so it stays opt-in.
+
+**Before and after** (before is step 2.1; 15 November; the noise suite was run in five parts, all 126 cases):
+
+| Group | Step 2.1 | Step 2.2 |
+|---|---|---|
+| Quiet weeks, service level, seeds 301 to 320, by team: raise something | 2 of 20 | 1 of 20 |
+| Quiet weeks, service level, by queue | 0 of 20 | 0 of 20 |
+| Quiet weeks, service level, the guide's seeds 21 to 26 | 2 of 6 | 2 of 6 |
+| Quiet weeks, handle time | 0 of 40 | 0 of 40 |
+| A team understaffed, on top of the wobble: found | 10 of 10 | 10 of 10 |
+| A team's calls 1.5 times as long: found | 10 of 10 | 10 of 10 |
+| A two-hour outage, headline normal: found | 3 of 10 | 3 of 10 |
+| One agent's bad week: found | 4 of 10 | 4 of 10 |
+| Main eval | 25 of 25 | 25 of 25 |
+
+On the 40 new seeds the false-alarm rate is now 1 of 40 (2.5%; 95% interval 0.4% to 12.9%), from 8 of 40 at the start of
+the phase. Over all 46 quiet service-level weeks it is 3 of 46 (6.5%; 2.2% to 17.5%), from 13 of 46. One more gap marker
+came off (`quiet_team_service_level_s301`); 16 remain. Unit tests: all pass (193 in the runner, one new for the bar).
+
+**What is still raised:** `team_s320` (the headline reads z 3.2, over the new bar of 2.87; the whole's spread from five
+weeks is still estimated below counting noise) and the two single agents of step 2.1.
+
+**One unit test was changed.** `range.test.ts` showed that, with no weekly cycle declared, an ordinary weekend day looks
+like a collapse, by asserting that the run called it significant. It reads z -2.23, and the bar for its twelve earlier
+windows is now 2.26, so it is no longer called significant. The test now asserts what it was there to show: the naive
+comparison reads a 30-point drop and the like-for-like comparison reads none.
+
+### Not shown
+
+- **The rate table by noise level has still not been re-run** since step 2.1 (stopped for low memory, not restarted), so
+  detection of planted faults at 4 and 6 standard errors over 30 weeks is not known for either step. A higher headline bar
+  can only lower it; the eval and noise cases above lost nothing, but they are large faults.
+- **Integration tests, routing, intents and the delivery pack were not re-run.**
+- **The bar jumps at five periods:** with four earlier periods nothing is estimated and the bar stays 2, which is the least
+  cautious setting at the point where least is known. Not changed here.
+- **One false alarm from the headline remains,** and one sample of 40 cannot tell 2.5% from the 5% target either way.
+- **Real complaints data was not run.**

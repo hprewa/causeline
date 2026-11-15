@@ -470,3 +470,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **History is read with the query the level already uses, two periods a call, not with a new kind of generated query.** Why: a new query kind changes every pack's generated files and the builder; the method is proven first. It costs queries (528 to 922 on the main eval), which is recorded as open and must be dealt with before the BigQuery run.
 - **The whole-period history is used even when the run has narrowed to a slot of the week.** Why: a slot's own history would need its own queries; the weekly spread is at least the part's own, and a floor for the slot's.
 - **The parent's z at each level still uses the whole's spread.** Why: one change per commit; the headline is the next step.
+
+### Build guide Phase 2, step 2.2: the headline's bar on thin history
+- **The default bar keeps its significance level and becomes a t quantile for the history the spread was learned from.** Why: a spread from five periods is not known, and the fixed bar treated it as known; four of the thirteen false alarms came from that. The level itself is not changed, so this is not a change of default significance level.
+- **The stricter budget-derived bar (step 6b) stays opt-in.** Why: tried as the default on top of step 2.1, it lost one of the 25 planted cases again; the owner's condition was to stop if it still cost one.
+- **A bar set by name in a pack or a run is used as given, with no correction.** Why: the earlier decision that an explicit setting always wins.
+- **A unit test that asserted a naive comparison is called significant now asserts the contrast it was written to show.** Why: the run reads z -2.23 against a bar of 2.26; the test's point is that the naive comparison shows a large drop and the like-for-like one does not, which still holds. No eval case was changed.
+- **The noise suite is run in parts of 30 cases in the foreground.** Why: long background runs were stopped by the machine for low memory three times.

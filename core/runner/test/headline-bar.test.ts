@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { loadPlaybook } from "../src/load.js";
-import { headlineBar } from "../src/masking.js";
+import { headlineBar, thinHistoryBar } from "../src/masking.js";
 import { runPlaybook } from "../src/runner.js";
 import { normInv, tCdf, tInv } from "../src/stats.js";
 import { buildFacts, FakeToolCaller, meta, ontology } from "./fake.js";
@@ -46,4 +46,14 @@ test("the headline bar follows the alarm budget only when a pack or run sets one
   assert.equal(generous.headline!.significant, true, "a bigger budget lowers the bar (2.7)");
   const named = await run({ alarm_budget: 0.05, parent_z: 2 });
   assert.equal(named.headline!.significant, true, "a pack or run that names parent_z gets exactly what it named");
+});
+
+test("the fixed bar keeps its level but rises when the spread was learned from few periods", () => {
+  assert.equal(thinHistoryBar(2, 0), 2, "nothing estimated: the bar as given");
+  assert.equal(thinHistoryBar(2, 4), 2);
+  near(thinHistoryBar(2, 5), 2.869, 2e-3);
+  near(thinHistoryBar(2, 12), 2.255, 2e-3);
+  assert.ok(thinHistoryBar(2, 200) < 2.02 && thinHistoryBar(2, 200) > 2, "with a long history it is the fixed bar again");
+  // the same level: the chance of a t with history - 1 degrees of freedom beyond the bar equals the normal chance beyond 2
+  near(1 - tCdf(thinHistoryBar(2, 8), 7), 1 - tCdf(2, 1e6), 1e-6);
 });

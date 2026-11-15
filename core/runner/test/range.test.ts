@@ -65,9 +65,12 @@ test("with a weekly cycle, one day is compared with the same weekday in earlier 
   assert.deepEqual(quietDay.findings, [], "a usual bad day is not a finding");
   assert.ok(quietDay.seasonality?.notes.some((n) => /a week apart/.test(n)));
 
-  // without the cycle the same day looks like a collapse against the ordinary days before it
+  // without the cycle the same day reads as a 30-point drop against the ordinary days before it, where the declared cycle reads no change. (Until
+  // the headline's bar allowed for a spread learned from few periods this was also called significant; the days' own spread, which holds every
+  // earlier weekend, now leaves it just under the bar: z -2.23 against 2.26.)
   const naive = await run({ start_date: date(5, 6), end_date: date(5, 6) }, [weekend]);
-  assert.ok(naive.findings.length > 0 || naive.masking_flags.length > 0 || naive.headline!.significant);
+  assert.ok(naive.headline!.change < -0.25 && Math.abs(naive.headline!.z ?? 0) > 2, "the naive comparison shows a large drop");
+  assert.ok(Math.abs(quietDay.headline!.change) < 0.05, "the like-for-like comparison shows none");
 
   // a genuinely bad day is found, and only that node
   const real: FaultSpec = { where: (f) => f.week === 5 && f.day === 3 && f.a2 === "P2", okOutOf10: 2 };

@@ -1,6 +1,6 @@
 import type { Thresholds } from "@causeline/schema";
 import type { ChildContribution, Decomposition } from "./decompose.js";
-import { tInv, zCritical } from "./stats.js";
+import { tCdf, tInv, zCritical } from "./stats.js";
 import type { Direction } from "./types.js";
 
 export type ResolvedThresholds = Required<Thresholds>;
@@ -35,6 +35,18 @@ export const FINDINGS_SHARE = 0.6;
 export function headlineBar(budget: number, history: number): number {
   const level = budget * HEADLINE_SHARE;
   return tInv(1 - level / 2, history >= 5 ? history - 1 : Infinity);
+}
+
+/**
+ * The headline's bar when the data's own movement was learned from only a few earlier periods. The fixed bar is a normal quantile: it treats the
+ * spread as known. A spread estimated from `history` periods is not, and by chance it comes out too small about as often as too large; the
+ * statistic then follows Student's t with history - 1 degrees of freedom, not the normal. This keeps the significance level the fixed bar stands
+ * for and takes the t quantile at that level: 2 becomes 2.87 with five earlier periods, 2.26 with twelve, and stays 2 when nothing was estimated.
+ */
+export function thinHistoryBar(bar: number, history: number): number {
+  if (history < 5) return bar;
+  const level = tCdf(bar, 1e6); // the normal probability the fixed bar stands for
+  return tInv(level, history - 1);
 }
 
 /** Defaults, then each override layer in order (ontology, then run inputs). */

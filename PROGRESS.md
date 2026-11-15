@@ -10,7 +10,7 @@ independent run of November 2026 on commit `16b198c`; "Measured here" is this re
 
 | Number | Baseline | Measured here | Target |
 |---|---|---|---|
-| False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | was 5 of 6 on the same seeds and 8 of 40 on new seeds; after Phase 2 step 2.1: 2 of 6 and 2 of 40 (`docs/evidence/noise.md`) | at most 5% |
+| False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | was 5 of 6 on the same seeds and 8 of 40 on new seeds; after Phase 2 step 2.2: 2 of 6 and 1 of 40 (`docs/evidence/noise.md`) | at most 5% |
 | False-alarm rate, real complaints data | 39% and 20% | 39% and 20% (`docs/evidence/calibration.md`) | at most 10% |
 | Unseen planted faults found | 11 of 12 | not re-measured | at least 11 of 12, on a larger set |
 | Faults found by `inject_faults` on a noisy pack | 1 of 3 | 1 of 4 at 4 units, 2 of 4 at 6 units | all at 6 units |
@@ -46,7 +46,7 @@ Evidence: `docs/evidence/noise.md`.
 |---|---|---|
 | 1 | Diagnose every false alarm in the noise suite before changing anything | done: 4 from the headline, 5 from a part flagged under a flat whole, 4 from parts moving against each other; parts are judged by the whole's spread, and five weeks is too thin to estimate any spread. A direct test on later weeks was stopped for low memory and not run |
 | 2.1 | Each part judged by its own spread, steadied by its siblings | done: quiet weeks raising something 8 of 40 to 2 of 40 on new seeds, 5 of 6 to 2 of 6 on the guide's; all 100 ordinary noise cases and 25 of 25 still pass; 9 gaps closed. Costs queries (528 to 922 on the main eval). The rate table was not re-run (stopped for low memory) |
-| 2.2 | The headline on thin history (a t quantile instead of a fixed bar) | next |
+| 2.2 | The headline's bar when the spread was learned from few periods (a t quantile at the same significance level) | done: quiet weeks raising something 2 of 40 to 1 of 40 on new seeds; 25 of 25 and all ordinary noise cases still pass. The stricter opt-in bar was tried as the default and again lost one planted case, so it stays opt-in. Rate table still not re-run |
 | 2.3 | "Noisy" becomes a note, not a finding | not started |
 | 2.4 | A material effect as well as a significant one | not started |
 | 2.5 | False discovery rate across the run, only if the rates still miss | not started |

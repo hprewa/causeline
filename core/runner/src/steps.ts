@@ -1,6 +1,6 @@
 import { contributionsStep, contributorsStep, dropUsualFindings } from "./contributions.js";
 import { adjustedZ, estimateDispersion, inflateZ, shortfallZ } from "./dispersion.js";
-import { headlineBar } from "./masking.js";
+import { headlineBar, thinHistoryBar } from "./masking.js";
 import type { PlaybookStep } from "@causeline/schema";
 import type { RunContext } from "./context.js";
 import { checkPersistence, hierarchyDrill, rankDimensions, timeDrill } from "./drill.js";
@@ -44,6 +44,10 @@ const coverageAndCounts: StepFn = async (ctx, step) => {
   // quantile); without one the bar is the fixed threshold. It is opt-in: measured as the default, it cost sensitivity on short histories (one planted
   // case in the 25 and two runner tests) for a small gain on totals, so it does not change what packs get unless they ask.
   if (ctx.pinned.has("alarm_budget") && !ctx.pinned.has("parent_z")) ctx.th = { ...ctx.th, parent_z: headlineBar(ctx.th.alarm_budget, ctx.headlineDispersion.history) };
+  // otherwise the fixed bar keeps its significance level but allows for the spread having been learned from few periods (a Student t quantile at the
+  // same level): a spread estimated from five weeks comes out too small often enough that a fixed bar of 2 called ordinary weeks significant. A bar a
+  // pack or run set by name is used as given.
+  else if (!ctx.pinned.has("parent_z")) ctx.th = { ...ctx.th, parent_z: thinHistoryBar(ctx.th.parent_z, ctx.headlineDispersion.history) };
   // a period in the newest stretch of the data that holds far less than usual is not an event but data still arriving when it was copied
   const at = series.findIndex((b) => b.bucket === info.label);
   const volumes = series.map((b) => (ctx.kind === "sum" ? b.num : b.den));
