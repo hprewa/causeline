@@ -83,6 +83,8 @@ export interface RunContext {
   dispersion: Dispersion;
   /** The same, from earlier periods that share the period's calendar flags: what the headline's own test allows for. */
   headlineDispersion: Dispersion;
+  /** The spread of each level looked at so far (levelspread.ts), by query, so a level asked about twice is estimated once. */
+  spreads?: Map<string, import("./levelspread.js").LevelSpread | null>;
   /** Splits of the whole window the drill looked at (a hierarchy's first level, a diluted sweep, a flat dimension). */
   looks: LevelLook[];
   contributions: Contribution[];

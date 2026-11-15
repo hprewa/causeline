@@ -463,3 +463,10 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **The yardstick for the diagnosis was worked out outside the analysis, from each case's data.** Why: asking the analysis to explain its own false alarms would reuse the estimate under suspicion.
 - **A week 9 result of "nothing raised in 26" was thrown away.** Why: every one of those runs had stopped because week 9 is a special week with nothing comparable; the zero was the absence of an answer, not quiet weeks.
 - **The first fix will be the spread a part is judged by, steadied with its sibling parts, not a part's own spread alone and not a wider family of comparisons.** Why: 8 of 13 false alarms fall under 3 on the part's own five weeks, but 3 read 6 to 7 because five steady weeks understate the spread; the family bar was measured (6c) and did nothing.
+
+### Build guide Phase 2, step 2.1: a part's own spread
+- **A part is judged by its own period-to-period spread pulled toward its level's, not by the whole's.** Why: the diagnosis; the whole of twelve wobbling teams wobbles far less than any team.
+- **The level's typical spread counts for 12 periods of a part's own history, and up to 12 earlier periods are read.** Why: 12 is what the whole's estimate already reads; both were fixed before the first run and not adjusted to the results. The guide's "up to 26" is left for a separate commit, because it doubles the queries.
+- **History is read with the query the level already uses, two periods a call, not with a new kind of generated query.** Why: a new query kind changes every pack's generated files and the builder; the method is proven first. It costs queries (528 to 922 on the main eval), which is recorded as open and must be dealt with before the BigQuery run.
+- **The whole-period history is used even when the run has narrowed to a slot of the week.** Why: a slot's own history would need its own queries; the weekly spread is at least the part's own, and a floor for the slot's.
+- **The parent's z at each level still uses the whole's spread.** Why: one change per commit; the headline is the next step.

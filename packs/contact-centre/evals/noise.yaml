@@ -19,7 +19,6 @@
   setup: "--seed 302 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -90,7 +89,6 @@
   setup: "--seed 312 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -133,7 +131,6 @@
   setup: "--seed 318 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -324,7 +321,6 @@
   setup: "--seed 305 --fault noisy_rate:0.02:queue"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -388,7 +384,6 @@
   setup: "--seed 314 --fault noisy_rate:0.02:queue"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -417,7 +412,6 @@
   setup: "--seed 318 --fault noisy_rate:0.02:queue"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -581,7 +575,6 @@
   setup: "--seed 21 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -589,7 +582,6 @@
   setup: "--seed 22 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 
@@ -612,7 +604,6 @@
   setup: "--seed 25 --fault noisy_rate:0.02:team"
   question: "Did anything unusual happen to service level in week 6?"
   inputs: { metric: service_level, period: 2026-W06 }
-  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
   expect:
     no_findings: true
 

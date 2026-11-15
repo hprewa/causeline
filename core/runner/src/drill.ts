@@ -1,12 +1,13 @@
 import type { PathNode } from "@causeline/schema";
 import { round6, type FindingDraft, type HierarchyCandidate, type RunContext } from "./context.js";
 import { adjustedZ, bucketDispersion } from "./dispersion.js";
+import { levelSpread } from "./levelspread.js";
 import { decomposeAgainstBaseline, decomposeBuckets, decomposeRatio, decomposeSum, type BucketItem, type Decomposition } from "./decompose.js";
 import { decideLevel, dominantRun, type LevelDecision } from "./masking.js";
 import type { Window } from "./period.js";
 import { toBuckets, toChildRows } from "./rows.js";
 import { expectedFor, matchesFilter, slotFilterFor } from "./seasonal.js";
-import type { Bucket, Row } from "./types.js";
+import type { Bucket } from "./types.js";
 import { rate, zScore, zSum } from "./stats.js";
 
 const adverse = (ctx: RunContext) => (ctx.direction === "higher_is_better" ? -1 : 1);
@@ -39,16 +40,22 @@ function noteUnjudged(ctx: RunContext, level: string, items: BucketItem[]): void
   if (!ctx.seasonNotes.includes(note)) ctx.seasonNotes.push(note);
 }
 
-/** Split a child breakdown the way this metric's kind requires. */
-function decomposeChildren(ctx: RunContext, rows: Row[]): Decomposition | null {
-  const children = toChildRows(rows);
+/**
+ * Split a child breakdown the way this metric's kind requires. Each child's z allows for its own period-to-period movement (its own spread
+ * steadied by its siblings', see levelspread.ts); with too little history for that, for the whole's, as before.
+ */
+async function decomposeChildren(ctx: RunContext, tool: string, params: Record<string, string>, stepId: string): Promise<Decomposition | null> {
+  const children = toChildRows(await ctx.tools.call(tool, params, stepId));
   const d = ctx.kind === "sum" ? decomposeSum(children, ctx.sumScale) : decomposeRatio(children, { thinBelow: ctx.minVolume });
-  if (d && ctx.dispersion.history > 0) {
-    // z-scores that allow for the data's own period-to-period movement, not counting noise alone
-    const k = ctx.kind === "sum" ? ctx.sumScale : 1 / Math.max(1, ctx.period?.baselineLabels.length ?? 1);
+  if (!d) return d;
+  const k = ctx.kind === "sum" ? ctx.sumScale : 1 / Math.max(1, ctx.period?.baselineLabels.length ?? 1);
+  const spread = await levelSpread(ctx, tool, params, stepId);
+  if (spread) {
+    for (const c of d.children) c.z = adjustedZ(ctx.kind, c.cur, c.base, k, spread.of(c.node));
+  } else if (ctx.dispersion.history > 0) {
     for (const c of d.children) c.z = adjustedZ(ctx.kind, c.cur, c.base, k, ctx.dispersion);
-    d.parent.z = adjustedZ(ctx.kind, d.parent.cur, d.parent.base, k, ctx.dispersion);
   }
+  if (ctx.dispersion.history > 0) d.parent.z = adjustedZ(ctx.kind, d.parent.cur, d.parent.base, k, ctx.dispersion);
   return d;
 }
 
@@ -259,7 +266,7 @@ async function chain(
     const level = levels[i];
     const tool = ctx.index.slice(ctx.metric, level, i === 0 ? [] : [levels[i - 1]]);
     const callParams = i === 0 ? params : { ...params, [levels[i - 1]]: parent! };
-    const d = decomposeChildren(ctx, await ctx.tools.call(tool, callParams, stepId));
+    const d = await decomposeChildren(ctx, tool, callParams, stepId);
     const dec = decide(ctx, d);
     if (d && parent === undefined) ctx.looks.push({ concept: level, decomposition: d });
     ctx.path.push({
@@ -312,7 +319,7 @@ export async function hierarchyDrill(ctx: RunContext, stepId: string): Promise<v
     if (first.stop?.diluted) {
       for (let j = first.stop.index + 1; j < levels.length; j++) {
         const level = levels[j];
-        const d = decomposeChildren(ctx, await ctx.tools.call(ctx.index.slice(ctx.metric, level), params, stepId));
+        const d = await decomposeChildren(ctx, ctx.index.slice(ctx.metric, level), params, stepId);
         const dec = decide(ctx, d);
         if (d) ctx.looks.push({ concept: level, decomposition: d });
         ctx.path.push({
@@ -361,7 +368,7 @@ export async function rankDimensions(ctx: RunContext, stepId: string, mode: "win
     for (const dim of ctx.ontology.dimensions) {
       const tool = ctx.index.slice(ctx.metric, dim, cand ? [cand.level] : []);
       const callParams = cand ? { ...params, [cand.level]: cand.node } : params;
-      const d = decomposeChildren(ctx, await ctx.tools.call(tool, callParams, stepId));
+      const d = await decomposeChildren(ctx, tool, callParams, stepId);
       const dec = decide(ctx, d);
       if (d && !cand) ctx.looks.push({ concept: dim, decomposition: d });
       ctx.path.push({

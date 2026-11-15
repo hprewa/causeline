@@ -246,3 +246,59 @@ the rebuild and are not affected.
   another, not that handle time is safe when it wobbles.
 - **D5 and D9 have no test yet.**
 - **No live assistant and no BigQuery** were used in this phase.
+
+## Phase 2, step 2.1: each part judged by its own spread, steadied by its siblings
+
+**The change.** A part's z used to allow for the extra week-to-week spread of the whole KPI. It now allows for the part's own
+(`core/runner/src/levelspread.ts`). For each level the drill looks at, the same query is asked for up to 12 earlier periods
+with the same calendar flags (two periods a call). Each part's excess over counting noise is worked out the way the whole's
+is. The level's typical excess is the average over its parts. A part is then judged by its own excess pulled toward the
+level's, with the level counting for 12 periods of the part's own history. Counting noise is the floor. With fewer than 3
+earlier periods nothing changes. No threshold or bar was changed, and the numbers 12 and 12 were set before any run and not
+adjusted after.
+
+**Before and after, noise suite** (126 cases, wobble of 2 points by team or by queue, week 6, 15 November):
+
+| Group | Before | After |
+|---|---|---|
+| Quiet weeks, service level, seeds 301 to 320, by team: raise something | 5 of 20 | 2 of 20 |
+| Quiet weeks, service level, seeds 301 to 320, by queue | 3 of 20 | 0 of 20 |
+| Quiet weeks, service level, the guide's seeds 21 to 26 | 5 of 6 | 2 of 6 |
+| Quiet weeks, handle time | 0 of 40 | 0 of 40 |
+| A team understaffed, on top of the wobble: found | 10 of 10 | 10 of 10 |
+| A team's calls 1.5 times as long: found | 10 of 10 | 10 of 10 |
+| A two-hour outage, headline normal: found | 3 of 10 | 3 of 10 |
+| One agent's bad week (no wobble): found | 4 of 10 | 4 of 10 |
+| Ordinary cases passing | 100 of 100 | 100 of 100 |
+
+On the 40 new seeds the false-alarm rate is 2 of 40 (5%; 95% interval 1.4% to 16.5%); over all 46 quiet service-level weeks,
+4 of 46 (8.7%; 3.4% to 20.3%). Nine gap markers came off in this commit; 17 remain.
+
+**Main eval:** 25 of 25 before and after. **Runner unit tests:** 192 pass, six of them new (the estimator recovers a known
+wobble, gives about zero on counting noise alone, pulls a part with five steady weeks toward its siblings, lets a part with a
+long history keep its own, never goes below counting noise, and handles totals).
+
+**What is still raised, and by what:**
+
+| Case | Raised by | Next |
+|---|---|---|
+| `team_s301`, `team_s320` | the headline is called significant (z 3.7 and 3.2 against a bar of 2, with the whole's spread estimated from five weeks), then a centre is named | step 2.2, the headline on thin history |
+| `team_guide_s24`, `team_guide_s26` | a single agent under a flat whole (z -5.6 and -4.4). An agent's weeks carry its team's wobble plus its own small numbers; a team's ordinary bad week makes one of its agents look far out | not yet decided: a material-effect rule or judging an agent against its team |
+
+**What it costs.** Each level asks about earlier periods, so a question takes more queries: the 25 questions of the main
+eval went from 528 queries to 922 (the largest from 35 to 59), and from 342 seconds to 440 on a local database.
+
+### Not shown
+
+- **The rate table by noise level was not re-run with this change.** The run was stopped by the machine for low memory after
+  two seeds of the first level and was not started again. So there is no after for the 1%, 5%, 6%, 12% table, and none for
+  detection of planted faults at 4 and 6 standard errors beyond the eval cases above.
+- **The integration tests, routing, intents and the delivery pack were not re-run for this commit.**
+- **Query cost on BigQuery is not measured.** More queries mean more bytes billed; a single query for a level's history is
+  the likely fix and is not built.
+- **Only week 6 is measured,** the thinnest history. Whether the shrink gives too much or too little weight to a part's own
+  history when there are 12 or more periods is not tested on data, only in a unit test.
+- **Totals (a volume KPI) are covered by one unit test and the main eval,** not by a noise suite of their own.
+- **The two missed groups (outages, small units) did not move,** and the delivery pack's quiet week and planted faults were
+  not re-measured.
+- **Real complaints data was not run.**
