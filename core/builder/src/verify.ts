@@ -52,7 +52,7 @@ export async function reconcileMetric(opts: { workspace: string; kpi: string; pe
   if (!match) {
     hints.push(`the data gives ${got} for ${resolved} and you expected ${expected}: a difference of ${Math.round(((got - expected) / (expected || 1)) * 1000) / 10}%`);
     hints.push(`check which date decides the period (this uses ${pack.data.facts[pack.data.metrics[opts.kpi].fact].time}) and whether your report uses calendar weeks starting on the same day`);
-    hints.push("check what is counted: a filter your report applies (cancelled orders, test accounts), and whether a join drops or repeats rows");
+    hints.push("check what is counted: a filter your report applies (cancelled items, test accounts), and whether a join drops or repeats rows");
   }
   const result: Reconciliation = { kpi: opts.kpi, period: resolved, expected, got, tolerance, match, hints };
   if (match) {

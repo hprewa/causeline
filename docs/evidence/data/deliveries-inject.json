@@ -1,0 +1,84 @@
+{
+  "when": "2026-11-13T12:36:09.799Z",
+  "kpi": "on_time_rate",
+  "data_seed": 42,
+  "plant_seed": 5,
+  "replay": {
+    "judged": 8,
+    "alarms": 1,
+    "flagged": [
+      "2026-W30"
+    ]
+  },
+  "runs": [
+    {
+      "sigmas": 4,
+      "control_quiet": true,
+      "planted": 4,
+      "found": 1,
+      "outcomes": [
+        {
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "53 of the 2044 rows of wh_north that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.1 standard errors (not significant)"
+        },
+        {
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "wh_north was made worse (53 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (57 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)",
+          "detail": "it did not name wh_north and raised no masking flag; the headline moved by 1.2 standard errors (not significant)"
+        },
+        {
+          "kind": "mix_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "54% of the rows of every other warehouse were replaced by rows like those of wh_east (3289 rows): no part got worse, only the mix changed",
+          "detail": "findings: none; the headline moved by -0.6 standard errors (not significant)"
+        },
+        {
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of wh_north were removed, as if its data had not arrived (2044 rows)"
+        }
+      ]
+    },
+    {
+      "sigmas": 6,
+      "control_quiet": true,
+      "planted": 4,
+      "found": 2,
+      "outcomes": [
+        {
+          "kind": "segment_shift",
+          "applicable": true,
+          "pass": false,
+          "what": "79 of the 2044 rows of wh_north that favour it were swapped for ones that count against it",
+          "detail": "findings: none; the headline moved by -0.7 standard errors (not significant)"
+        },
+        {
+          "kind": "offsetting_pair",
+          "applicable": true,
+          "pass": false,
+          "what": "wh_north was made worse (79 of the 2044 rows of wh_north that favour it were swapped for ones that count against it) while wh_west was made better (85 of the 2015 rows of wh_west that count against it were swapped for ones that favour it)",
+          "detail": "it did not name wh_north and raised no masking flag; the headline moved by 1.3 standard errors (not significant)"
+        },
+        {
+          "kind": "mix_shift",
+          "applicable": true,
+          "pass": true,
+          "what": "82% of the rows of every other warehouse were replaced by rows like those of wh_east (4932 rows): no part got worse, only the mix changed"
+        },
+        {
+          "kind": "data_gap",
+          "applicable": true,
+          "pass": true,
+          "what": "all the rows of wh_north were removed, as if its data had not arrived (2044 rows)"
+        }
+      ]
+    }
+  ]
+}

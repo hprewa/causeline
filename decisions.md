@@ -442,3 +442,17 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### False-alarm fix, step 6b: the budget-derived headline bar is opt-in
 - **A pack or run that sets `alarm_budget` gets a headline bar from it (a t quantile for the history available); everyone else keeps the fixed threshold.** Why: as the default it cut false alarms on long, steady data (2.7% to 0.3%) and on a rate with many parts (16% to 9%), but barely on a total with many parts (55% to 52%), and it made a short history demand z of 4 or more, losing one planted case of the 25 and two unit tests; the guard agreed with the user says stop and ask, and the user chose opt-in.
 - **The false alarms on totals come from findings about parts, not the headline.** Why: the headline bar moved the total's rate by 3 points; the next work (a family for the whole run, a longer history for each part) targets findings.
+
+### Build guide Phase 0: every failure a test
+- **`docs/BUILD_GUIDE.md` is the plan from here, and steps 6c to 6f of the earlier false-alarm fix are parked on a branch.** Why: the guide covers the same problem in a better order (each part judged by its own spread first), and the two parked changes measured no effect on the null they were built for.
+- **Gap markers were set from what fails today, case by case, not on a whole group.** Why: the harness fails a run when a marked gap passes, so marking a passing case would break the suite, and an unmarked failing case would hide a defect. 25 of the 126 noise cases carry one.
+- **The cases that pass today stay as ordinary cases.** Why: the four agent weeks that are found and the 20 team faults found under the wobble are what a fix for false alarms could lose.
+- **The small-unit cases live in the noise suite, not in the shipped eval.** Why: `npm run eval` must stay at 25 of 25 and fast; ten more generated datasets would double its time.
+- **Routing cases can carry a gap marker; the score counts ordinary cases and a gap that passes fails the run.** Why: the same rule as runner cases, so a router fix has to take the marker off in the same commit.
+- **The D7 and D8 unit tests are skipped with their reason in the name, not left failing.** Why: `npm test` has to pass on every commit; a skipped test is still listed on every run, and the build guide's "written to fail today" is met by the test body, which fails when the skip is removed.
+- **The delivery week that raises a finding with nothing planted (W30) is marked as a gap; the case and the data were left alone.** Why: changing the seed or the week until the fixture is quiet would be tuning the test to the analysis.
+- **The delivery pack sets no seasonality and no hierarchy.** Why: twelve weeks cannot show a yearly pattern, and the planted cause is a combination of two flat dimensions, which is the point of the fixture.
+- **A sentence in the builder said "cancelled orders"; it now says "cancelled items".** Why: the delivery pack makes "orders" a pack word, and the purity check keeps pack words out of the core.
+- **Synthetic packs load with Python's own SQLite when the DuckDB program is missing.** Why: one install fewer, and the nightly run on a clean Linux machine needs no extension download.
+- **The slow suites run nightly, not on every push.** Why: the noise suite generates 126 datasets.
+- **Three measurements of the same wobble are published side by side (5 of 6, 7 of 40, 6 of 100), unexplained.** Why: picking one would choose the headline; the difference is itself the first thing Phase 2 has to explain.

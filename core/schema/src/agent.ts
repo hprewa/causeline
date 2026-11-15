@@ -83,6 +83,8 @@ export const RoutingCase = z.object({
     /** For an explorer route that names a KPI: the first read it suggests (rank, breakdown). */
     op: z.string().optional(),
   }),
+  /** Why this question is expected to be routed wrongly today. A gap is not counted in the score; one that passes fails the run until the marker is removed. */
+  gap: z.string().min(1).optional(),
 });
 export type RoutingCase = z.infer<typeof RoutingCase>;
 export const RoutingCases = z.array(RoutingCase);

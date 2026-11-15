@@ -1,0 +1,25 @@
+# Deliveries pack: a test fixture (build guide, Phase 0). A small, noisy dataset whose planted cause is a combination of two
+# dimensions (one carrier at one warehouse). Vocabulary only; data.yaml says where the numbers come from.
+
+time:
+  levels: [week, day]
+  # each order is one of thousands a day, with no weekday or hour pattern planted
+  seasonality: none
+
+hierarchies: {}
+
+dimensions: [warehouse, carrier, region]
+
+metrics:
+  on_time_rate:
+    type: ratio
+    description: Share of orders delivered on time.
+    synonyms: [on-time rate, on time delivery, delivered on time]
+    direction: higher_is_better
+    min_volume: 100
+  orders_shipped:
+    type: sum
+    description: Orders shipped.
+    synonyms: [orders, order volume, shipments]
+    direction: higher_is_better
+    min_volume: 100

@@ -1,0 +1,921 @@
+# The noise suite (build guide, Phase 0). Every week's service level moves by a random amount (sd 2 points) for each team or each queue
+# on its own, the way real data does. Part 1: nothing is planted, so any finding is a false alarm. Part 2: a real fault is planted on top
+# of the same wobble and must still be found, so a fix for part 1 cannot simply go deaf.
+# Not part of `npm run eval`: run it with `npm run eval:noise` (slow). A case marked `gap` fails today; the marker comes off when it passes.
+# The handle-time cases carry the same wobble in the data, which moves service level and not handle time: they check that noise in one
+# KPI raises nothing in another.
+
+# Part 1: quiet weeks, 20 seeds for each grouping and KPI
+
+- id: quiet_team_service_level_s301
+  setup: "--seed 301 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s302
+  setup: "--seed 302 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s303
+  setup: "--seed 303 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s304
+  setup: "--seed 304 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s305
+  setup: "--seed 305 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s306
+  setup: "--seed 306 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s307
+  setup: "--seed 307 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s308
+  setup: "--seed 308 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s309
+  setup: "--seed 309 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s310
+  setup: "--seed 310 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s311
+  setup: "--seed 311 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s312
+  setup: "--seed 312 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s313
+  setup: "--seed 313 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s314
+  setup: "--seed 314 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s315
+  setup: "--seed 315 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s316
+  setup: "--seed 316 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s317
+  setup: "--seed 317 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s318
+  setup: "--seed 318 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s319
+  setup: "--seed 319 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_s320
+  setup: "--seed 320 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s301
+  setup: "--seed 301 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s302
+  setup: "--seed 302 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s303
+  setup: "--seed 303 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s304
+  setup: "--seed 304 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s305
+  setup: "--seed 305 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s306
+  setup: "--seed 306 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s307
+  setup: "--seed 307 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s308
+  setup: "--seed 308 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s309
+  setup: "--seed 309 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s310
+  setup: "--seed 310 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s311
+  setup: "--seed 311 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s312
+  setup: "--seed 312 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s313
+  setup: "--seed 313 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s314
+  setup: "--seed 314 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s315
+  setup: "--seed 315 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s316
+  setup: "--seed 316 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s317
+  setup: "--seed 317 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s318
+  setup: "--seed 318 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s319
+  setup: "--seed 319 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_aht_s320
+  setup: "--seed 320 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s301
+  setup: "--seed 301 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s302
+  setup: "--seed 302 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s303
+  setup: "--seed 303 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s304
+  setup: "--seed 304 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s305
+  setup: "--seed 305 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s306
+  setup: "--seed 306 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s307
+  setup: "--seed 307 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s308
+  setup: "--seed 308 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s309
+  setup: "--seed 309 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s310
+  setup: "--seed 310 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s311
+  setup: "--seed 311 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s312
+  setup: "--seed 312 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s313
+  setup: "--seed 313 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s314
+  setup: "--seed 314 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s315
+  setup: "--seed 315 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s316
+  setup: "--seed 316 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s317
+  setup: "--seed 317 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s318
+  setup: "--seed 318 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s319
+  setup: "--seed 319 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_service_level_s320
+  setup: "--seed 320 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s301
+  setup: "--seed 301 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s302
+  setup: "--seed 302 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s303
+  setup: "--seed 303 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s304
+  setup: "--seed 304 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s305
+  setup: "--seed 305 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s306
+  setup: "--seed 306 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s307
+  setup: "--seed 307 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s308
+  setup: "--seed 308 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s309
+  setup: "--seed 309 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s310
+  setup: "--seed 310 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s311
+  setup: "--seed 311 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s312
+  setup: "--seed 312 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s313
+  setup: "--seed 313 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s314
+  setup: "--seed 314 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s315
+  setup: "--seed 315 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s316
+  setup: "--seed 316 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s317
+  setup: "--seed 317 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s318
+  setup: "--seed 318 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s319
+  setup: "--seed 319 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_queue_aht_s320
+  setup: "--seed 320 --fault noisy_rate:0.02:queue"
+  question: "Did anything unusual happen to handle time in week 6?"
+  inputs: { metric: aht, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+# the six seeds of the independent November 2026 run that reported 5 of 6 (build guide, D1)
+
+- id: quiet_team_service_level_guide_s21
+  setup: "--seed 21 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_guide_s22
+  setup: "--seed 22 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_guide_s23
+  setup: "--seed 23 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_guide_s24
+  setup: "--seed 24 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_guide_s25
+  setup: "--seed 25 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+- id: quiet_team_service_level_guide_s26
+  setup: "--seed 26 --fault noisy_rate:0.02:team"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1: a quiet week whose rates wobble by team or queue still raises a finding (build guide Phase 2)"
+  expect:
+    no_findings: true
+
+# Part 2: the same wobble with a real fault planted; the fault must still be found
+
+- id: understaffed_with_noisy_team_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_team_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_team_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_team_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_team_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:team --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_queue_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:queue --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_queue_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:queue --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_queue_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:queue --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_queue_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:queue --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: understaffed_with_noisy_queue_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:queue --fault understaffed:team_05:wk7"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_05 }]
+
+- id: block_outage_with_noisy_team_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_team_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_team_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_team_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_team_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:team --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_queue_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_queue_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_queue_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_queue_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: block_outage_with_noisy_queue_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:queue --fault block_outage:wk6:wed:12-14:0.35"
+  question: "Week 6 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D1/D2: with wobbling rates the planted fault is not reported (build guide Phase 2)"
+  expect:
+    findings_include: [{ dimension: interval_30m, value: "2026-02-11 12:00..2026-02-11 13:00" }]
+
+- id: long_calls_with_noisy_team_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_team_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_team_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_team_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_team_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:team --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_queue_s401
+  setup: "--seed 401 --fault noisy_rate:0.02:queue --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_queue_s402
+  setup: "--seed 402 --fault noisy_rate:0.02:queue --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_queue_s403
+  setup: "--seed 403 --fault noisy_rate:0.02:queue --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_queue_s404
+  setup: "--seed 404 --fault noisy_rate:0.02:queue --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+- id: long_calls_with_noisy_queue_s405
+  setup: "--seed 405 --fault noisy_rate:0.02:queue --fault long_calls:team_09:wk7:1.5"
+  question: "Why did handle time rise in week 7?"
+  inputs: { metric: aht, period: 2026-W07 }
+  expect:
+    findings_include: [{ dimension: team, value: team_09 }]
+
+# Part 3 (D4): one agent answers 15 points fewer calls in time for one week; a unit this small is not found today
+
+- id: small_unit_agent_s201
+  setup: "--seed 201 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s202
+  setup: "--seed 202 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s203
+  setup: "--seed 203 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s204
+  setup: "--seed 204 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s205
+  setup: "--seed 205 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s206
+  setup: "--seed 206 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s207
+  setup: "--seed 207 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s208
+  setup: "--seed 208 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s209
+  setup: "--seed 209 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "D4: one agent's bad week is below what a single week can show, and the result does not say so (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]
+
+- id: small_unit_agent_s210
+  setup: "--seed 210 --fault bad_week:agent_023:wk6:0.15"
+  question: "Did anything unusual happen to service level in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    findings_include: [{ dimension: agent, value: agent_023 }]

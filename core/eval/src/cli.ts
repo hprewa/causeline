@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { defaultWorkRoot, runEvals } from "./run.js";
 import { renderIntents, runIntentEval } from "./intents.js";
-import { renderRouting, runRoutingEval } from "./routing.js";
+import { renderRouting, routingOk, runRoutingEval } from "./routing.js";
 import { renderTable, runnerOk } from "./table.js";
 import { branchCoverage, expertsWithUntestedBranches, renderCoverage } from "./branches.js";
 
@@ -53,7 +53,7 @@ export async function runEvalCli(argv: string[]): Promise<number> {
   if (switches.has("routing")) {
     const outcomes = await runRoutingEval({ packDir: resolve(pack), workRoot: resolve(flags.get("work-dir") ?? join(defaultWorkRoot(), basename(resolve(pack)))), toolbox: flags.get("toolbox"), log: (l) => console.error(l) });
     console.log(renderRouting(outcomes));
-    return outcomes.filter((o) => o.pass).length / Math.max(1, outcomes.length) >= 0.9 ? 0 : 1;
+    return routingOk(outcomes) ? 0 : 1;
   }
   if (switches.has("intents")) {
     const withAgent = flags.get("agent");

@@ -41,3 +41,10 @@
 - { question: "How is service level trending by team?", expect: { kpi: service_level, task: trend } }
 - { question: "What was the service level in the most recent week?", expect: { kpi: service_level, task: value } }
 
+
+# D6 (build guide, Phase 0): questions the keyword router gets wrong today. Each is a known gap until Phase 5; the marker comes off when it passes.
+- { question: "are calls taking longer than usual?", gap: "D6: matched on the word calls, not on what is asked (how long)", expect: { kpi: aht } }
+- { question: "why are we slower at picking up the phone in week 7?", gap: "D6: a paraphrase with none of the KPI's words", expect: { kpi: service_level, task: deep_rca, period: 2026-W07 } }
+- { question: "why did hanlde tiem go up in week 8?", gap: "D6: two typos in the KPI's name", expect: { kpi: aht, task: deep_rca, period: 2026-W08 } }
+- { question: "Why did service level drop on 2026-02-19?", gap: "D6: a date in the question is dropped", expect: { kpi: service_level, task: deep_rca, period: "2026-02-19" } }
+- { question: "Why did service level drop last Tuesday?", gap: "D6: a relative day is dropped", expect: { kpi: service_level, task: deep_rca, period: "2026-03-10" } }

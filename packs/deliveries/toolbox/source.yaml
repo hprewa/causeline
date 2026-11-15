@@ -1,0 +1,5 @@
+# MCP Toolbox source for the deliveries pack. Tools are generated into tools.generated.yaml by `causeline generate`.
+kind: source
+name: deliveries-db
+type: sqlite
+database: "data/causeline.db"

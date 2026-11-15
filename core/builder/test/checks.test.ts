@@ -409,3 +409,17 @@ test("the newest periods are set aside when they hold far less than usual, as wh
   assert.equal(settledEnd([100, 100, 100]), 2, "too few periods to judge");
   assert.equal(settledEnd([100, 100, 100, 100, 100, 90, 60, 30]), 5, "a falling tail");
 });
+
+// Known gap D8 (build guide, Phase 0; closed in Phase 4). Today a total for a week, a slice of the same week and one day INSIDE that week
+// count as numbers from two periods, so a KPI is reconciled on what is really one week of evidence.
+test("gap D8: a day inside the same week is not a second period", { skip: "known gap D8: overlapping windows count as two periods today (build guide Phase 4)" }, () => {
+  const week = { start: "2026-01-05", end: "2026-01-11" };
+  const dayInside = { start: "2026-01-07", end: "2026-01-07" };
+  const check = (kind: "total" | "slice" | "grain", window: { start: string; end: string }) => ({ id: `${kind}-${window.start}`, kind, scope: {}, window, label: kind, got: 1, expected: 1, source: "a report", tolerance: 0.01, state: "confirmed" as const });
+  const rec: KpiRecord = { level: "draft", checks: [check("total", week), check("slice", week), check("grain", dayInside)], auto: { at: "now", pass: true, results: [] } };
+  assert.equal(levelOf(rec), "draft", "three numbers that all sit in one week are one period");
+  assert.match(levelGap(rec), /different period/);
+  // a day in another week is a second period
+  const other: KpiRecord = { ...rec, checks: [check("total", week), check("slice", week), check("grain", { start: "2026-01-14", end: "2026-01-14" })] };
+  assert.equal(levelOf(other), "reconciled");
+});

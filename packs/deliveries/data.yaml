@@ -1,0 +1,17 @@
+# Deliveries pack: where the numbers come from. The only file that knows about tables and SQL.
+source: deliveries-db
+# Sample data that stops at a fixed date: "last week" means the last week it holds.
+as_of: data_end
+
+facts:
+  orders:
+    sql: |
+      SELECT order_id, shipped_at, warehouse, carrier, region, delivered_on_time, delivery_hours, order_value
+      FROM orders
+    time: shipped_at
+    concepts: [warehouse, carrier, region]
+    one_row_per: { table: orders, column: order_id }
+
+metrics:
+  on_time_rate: { fact: orders, numerator: delivered_on_time }
+  orders_shipped: { fact: orders, value: "1" }

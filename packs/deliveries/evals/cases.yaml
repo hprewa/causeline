@@ -1,0 +1,32 @@
+# Eval cases for the deliveries pack (build guide, Phase 0). The data is noisy on purpose: each warehouse's on-time rate moves every
+# week by a random amount. One fault is planted: in 2026-W31 one carrier at one warehouse (carrier_b at wh_east) loses 30 points.
+# Weeks are 2026-Wnn labels (SQLite %W); the data runs 2026-W22 to 2026-W33, and with a baseline of four weeks W26 to W33 can be judged.
+
+# D3: the cause is a combination. Each half is found today, as two separate findings; the cell is not named as one finding.
+- id: planted_week_names_the_combination
+  setup: "--seed 42"
+  question: "Why did the on-time rate drop in the week of 3 August?"
+  inputs: { metric: on_time_rate, period: 2026-W31 }
+  gap: "D3: a cause that is one carrier at one warehouse is reported as two separate findings, not as one cell (build guide Phase 3)"
+  expect:
+    findings_include: [{ dimension: carrier, value: carrier_b, scope: { warehouse: wh_east } }]
+
+# the two halves are at least both there today
+- id: planted_week_names_both_halves
+  setup: "--seed 42"
+  question: "Why did the on-time rate drop in the week of 3 August?"
+  inputs: { metric: on_time_rate, period: 2026-W31 }
+  expect:
+    findings_include: [{ dimension: warehouse, value: wh_east }, { dimension: carrier, value: carrier_b }]
+
+# the seven other weeks that can be judged: nothing was planted in them, so nothing should be reported
+- { id: quiet_week_w26, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 29 June?", inputs: { metric: on_time_rate, period: 2026-W26 }, expect: { no_findings: true } }
+- { id: quiet_week_w27, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 6 July?", inputs: { metric: on_time_rate, period: 2026-W27 }, expect: { no_findings: true } }
+- { id: quiet_week_w28, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 13 July?", inputs: { metric: on_time_rate, period: 2026-W28 }, expect: { no_findings: true } }
+- { id: quiet_week_w29, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 20 July?", inputs: { metric: on_time_rate, period: 2026-W29 }, expect: { no_findings: true } }
+- { id: quiet_week_w30, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 27 July?", inputs: { metric: on_time_rate, period: 2026-W30 }, gap: "D1: a quiet week on wobbling data raises a finding (build guide Phase 2)", expect: { no_findings: true } }
+- { id: quiet_week_w32, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 10 August?", inputs: { metric: on_time_rate, period: 2026-W32 }, expect: { no_findings: true } }
+- { id: quiet_week_w33, setup: "--seed 42", question: "Did anything unusual happen to the on-time rate in the week of 17 August?", inputs: { metric: on_time_rate, period: 2026-W33 }, expect: { no_findings: true } }
+
+# order volume is flat by construction (8,000 a week): quiet in the planted week too
+- { id: volume_is_quiet_in_the_planted_week, setup: "--seed 42", question: "Did order volume change in the week of 3 August?", inputs: { metric: orders_shipped, period: 2026-W31 }, expect: { no_findings: true } }

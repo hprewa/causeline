@@ -9,6 +9,8 @@
 //              volatility (sd 35%) and its own weekly wobble in the rate (sd 6 points), so one run compares hundreds of parts, as real data with
 //              companies or states does. Nothing is planted in any of
 //              them, so every flag is a false alarm.
+//              noisy-rate: each team's (or with --noise-by queue, each queue's) weekly rate moves by a random amount of its own, a normal with
+//              sd --noise-sd (default 0.02, in points of the rate; 0 is the steady data). scripts/noise-rates.mjs sweeps the levels.
 //   --variant  a label for the analysis being measured, so a before and an after sit in one table
 //   --pin-parent-z <z>  name the headline's bar in the ontology, which keeps exactly that bar (2 reproduces the analysis as it was before the bar
 //              followed the alarm budget), for a before measured with the same code as the after
@@ -34,8 +36,10 @@ const variant = flag("variant", "current");
 const noFaults = process.argv.includes("--no-faults");
 const kpis = flag("kpis", "service_level").split(",");
 const pinParentZ = flag("pin-parent-z") === undefined ? undefined : Number(flag("pin-parent-z"));
+const noiseSd = flag("noise-sd", "0.02");
+const noiseBy = flag("noise-by", "team");
+const NULLS = { poisson: [], "noisy-queue": ["--fault", "noisy_volume:0.08:queue"], "noisy-team": ["--fault", "noisy_volume:0.08:team"], "many-parts": [], "noisy-rate": Number(noiseSd) > 0 ? ["--fault", `noisy_rate:${noiseSd}:${noiseBy}`] : [] };
 const out = resolve(flag("out", `runs/calibration/rates-${variant}-${nullKind}.json`));
-const NULLS = { poisson: [], "noisy-queue": ["--fault", "noisy_volume:0.08:queue"], "noisy-team": ["--fault", "noisy_volume:0.08:team"], "many-parts": [] };
 if (!NULLS[nullKind]) throw new Error(`--null is one of ${Object.keys(NULLS).join(", ")}`);
 const py = process.env.CAUSELINE_PYTHON || (process.platform === "win32" ? "python" : "python3");
 
@@ -109,7 +113,7 @@ function addAccounts(file, seed) {
 
 const KINDS = ["segment_shift", "offsetting_pair", "mix_shift", "data_gap"];
 const withFaults = !noFaults && nullKind !== "many-parts";
-const result = { when: new Date().toISOString(), variant, null: nullKind, kpis, seeds: [], weeks, sizes: withFaults ? sizes : [] };
+const result = { when: new Date().toISOString(), variant, null: nullKind, ...(nullKind === "noisy-rate" ? { noise_sd: Number(noiseSd), noise_by: noiseBy } : {}), kpis, seeds: [], weeks, sizes: withFaults ? sizes : [] };
 
 for (let s = 1; s <= seeds; s++) {
   const work = mkdtempSync(join(tmpdir(), `rates-${s}-`));

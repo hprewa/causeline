@@ -3,6 +3,50 @@
 Where the project stands and what comes next. Decisions and their reasons are in `decisions.md`; the proof for each step
 is in `docs/evidence/`.
 
+## Scoreboard
+
+The plan is now `docs/BUILD_GUIDE.md` (phases in this order: 0, 2, 1, 5, 3, 9, 4, 6, 8, 10, 7). These are its numbers. "Baseline" is the
+independent run of November 2026 on commit `16b198c`; "Measured here" is this repository's own run, with where it is written up.
+
+| Number | Baseline | Measured here | Target |
+|---|---|---|---|
+| False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | 5 of 6 on the same seeds; 7 of 40 on new seeds; 6 of 100 over later weeks (`docs/evidence/noise.md`) | at most 5% |
+| False-alarm rate, real complaints data | 39% and 20% | 39% and 20% (`docs/evidence/calibration.md`) | at most 10% |
+| Unseen planted faults found | 11 of 12 | not re-measured | at least 11 of 12, on a larger set |
+| Faults found by `inject_faults` on a noisy pack | 1 of 3 | 1 of 4 at 4 units, 2 of 4 at 6 units | all at 6 units |
+| Unsupported numbers in live answers | 2 of 5 runs had one | not re-measured | 0 in 100 |
+| Combination cause named as one finding | no | no (tracked as a gap) | yes |
+| Benchmark margin over a plain agent with SQL | not measured | not measured | published, with intervals |
+| Time to a first answer from nothing | long, several installs | not measured | under 2 minutes |
+| External users with their own pack | 0 | 0 | 10 |
+
+## Build guide Phase 0: every failure a test
+
+Evidence: `docs/evidence/noise.md`. Nothing is fixed in this phase; each defect is a case that fails today and is tracked by name.
+
+| Step | What | State |
+|---|---|---|
+| 1 | The guide in the repo; a Python loader for synthetic packs when DuckDB is missing | done (`a095447`) |
+| 2 | Noise suite: 86 quiet weeks with wobbling rates (D1), 30 with a real fault on top, 10 small-unit cases (D4) | done: 25 of 126 fail today and are marked as gaps |
+| 3 | Rate table by noise level, with intervals and detection by fault size | done: 1%, 5%, 6%, 12% at wobble 0, 1, 2, 3 points (4 seeds each) |
+| 4 | Delivery pack as a fixture (D3 combination, quiet weeks) and `inject_faults` on it (D2) | done: 8 of 8 ordinary cases, 2 gaps; inject 1 of 4 and 2 of 4 |
+| 5 | Router questions (D6) as gaps; routing cases can carry a gap marker | done: 38 of 38, 5 gaps open |
+| 6 | Unit tests for D7 and D8, skipped with their reason | done |
+| 7 | Nightly workflow for the slow suites and the rate table | written, not yet run on GitHub |
+| 8 | Close: full regression | done except one check: the noise suite was not re-run end to end after the gap markers went in (stopped by the machine for low memory, not restarted); everything else green |
+
+Open from this phase: why the same wobble gives 5 of 6, 4 of 20 and 6 of 100 depending on seeds and week (first task of Phase 2);
+D5 and D9 have no test yet (Phases 1 and 5).
+
+## Parked
+
+- **Steps 6c to 6f of the earlier false-alarm fix** (one family for the whole run, a longer history for each part, the complaints re-run).
+  The code is on the branch `wip/false-alarm-6c-6d`, not merged. Measured on the 600-account null: the run-wide family left the rate
+  unchanged (24 of 150 and 82 of 150, the baseline exactly), the longer history moved it by one week (23 and 82). The false alarms are
+  single parts about 4.9 standard errors out when judged by the whole's spread, which clears any family bar, and thin parts are called
+  "new" and skip the check against their own history. A fix for the thin parts was written and not measured. This supports the guide's
+  Phase 2 order: judge each part by its own spread first. Superseded by Phase 2 of the guide.
+
 ## How progress is tracked
 
 - Work is planned as sprints of numbered steps. Each step ends in one commit that updates this file, `decisions.md` and the
@@ -155,10 +199,10 @@ Real complaints data raised something in 39% and 20% of ordinary weeks. Plan: an
 |---|---|---|
 | 6a | Flagged-week detail kept; synthetic nulls (volatile parts, 600 accounts); the baseline | done (the 600-account null reproduces the failure: 16% and 55%) |
 | 6b | Alarm budget and a t-corrected headline bar | done, opt-in (as the default it cost one of the 25 planted cases and 2 tests for little gain on totals) |
-| 6c | One family for the whole run | not started |
-| 6d | A node judged on its own, longer history | not started |
-| 6e | The real sample once more (about $4) | not started |
-| 6f | Close: regression, docs | not started |
+| 6c | One family for the whole run | parked on a branch (no effect on the null; see "Parked" at the top) |
+| 6d | A node judged on its own, longer history | parked on a branch (no effect on the null) |
+| 6e | The real sample once more (about $4) | not run; moves to Phase 2 of the build guide |
+| 6f | Close: regression, docs | replaced by the build guide |
 
 ## Projects and the companion page
 
@@ -227,6 +271,9 @@ re-covered by new packs before they count again:
 | 8 | Proof and docs: live agent on BigQuery, setup guide | done | fbb6510 | Step 8 |
 
 ## Next
+
+**The plan from here is `docs/BUILD_GUIDE.md`; the scoreboard and Phase 0 are at the top of this file. Next is the guide's Phase 2
+(noise and the fault planter), which waits for the owner's go-ahead.** The table below is the earlier plan, kept as history.
 
 The sprint list that followed sprint 4 (Explorer, easy setup, a non-coder test) is replaced by a phased plan built around one aim:
 from raw tables to a verified "why did this change?" expert in an afternoon, and it stays correct. **Proposed, awaiting approval**;

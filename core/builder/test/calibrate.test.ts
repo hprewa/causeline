@@ -239,3 +239,17 @@ test("a flagged period keeps what raised it, in numbers, and a quiet one keeps n
   assert.equal(flagged.detail.flags[0].type, "dispersion");
   assert.equal(file.outcomes["2026-W09"].detail, undefined, "a quiet period keeps no detail");
 });
+
+// Known gap D7 (build guide, Phase 0; closed in Phase 2 step 4). Twelve weeks of data leave eight weeks that can be judged; once one of
+// them is labelled a real event seven are left and eight are needed, so calibration can never finish. Today that is only said after the
+// whole replay has run, and not how many more periods would do.
+test("gap D7: a history too short to calibrate is said before the replay, with how many more periods are needed", { skip: "known gap D7: short history is reported only after the replay, without the number still needed (build guide Phase 2)" }, async () => {
+  const ws = workspace();
+  labelPeriod(ws, "ok", "2026-W07", true, "a known outage");
+  const d = deps(12, {});
+  const ran: string[] = [];
+  const first = await calibrate(opts(ws, { ...d, runOne: async (b) => (ran.push(b.bucket), d.runOne(b)) }));
+  assert.equal(ran.length, 0, "nothing is replayed when the result could not count");
+  assert.equal((first as unknown as { short_by?: number }).short_by, 1, "one more ordinary period is needed");
+  assert.match(first.reasons.join(" "), /1 more/);
+});

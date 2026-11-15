@@ -1,0 +1,43 @@
+# The slow suites (build guide, Phase 0): the noise suite and the false-alarm rate table. Nightly and on demand, never on every push.
+name: nightly
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+jobs:
+  noise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm run build
+      - name: fetch Toolbox (the version the code pins)
+        run: |
+          VERSION=$(node -e "import('./core/runner/dist/src/toolbox-install.js').then(m => console.log(m.TOOLBOX_VERSION))")
+          curl -fsSL -o toolbox "https://storage.googleapis.com/mcp-toolbox-for-databases/v$VERSION/linux/amd64/toolbox"
+          chmod +x toolbox
+      # no DuckDB on the runner: the synthetic packs load with the plain Python loader
+      - name: noise suite (known gaps are reported, a closed gap or a new failure fails the job)
+        run: npm run eval:noise
+        env:
+          CAUSELINE_LOADER: python
+      - name: deliveries pack
+        run: npm run eval:deliveries
+        env:
+          CAUSELINE_LOADER: python
+      - name: false-alarm rate by noise level
+        run: node scripts/noise-rates.mjs --levels 0,0.01,0.02,0.03 --seeds 6 --out runs/noise-rates.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: noise-rates
+          path: |
+            runs/noise-rates.json
+            runs/evals/

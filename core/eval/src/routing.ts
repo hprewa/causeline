@@ -21,6 +21,8 @@ export interface RoutingOutcome {
   pass: boolean;
   misses: string[];
   route: Route;
+  /** The case's `gap` marker: why it is expected to miss today. */
+  gap?: string;
 }
 
 /** What was expected against what the router said. An expectation left out is not checked, except `needs`: no `needs` means it must not ask. */
@@ -69,7 +71,7 @@ export async function runRoutingEval(opts: RoutingEvalOptions): Promise<RoutingO
     const periods = await completePeriods(tools, new ToolIndex(pack.meta), Object.keys(pack.data.metrics)[0], pack.ontology.time.levels[0]);
     for (const c of cases) {
       const route = await routeWithData({ packDir: workDir, question: c.question, tools, periods });
-      out.push({ question: c.question, route, ...scoreRouting(route, c.expect) });
+      out.push({ question: c.question, route, ...scoreRouting(route, c.expect), ...(c.gap ? { gap: c.gap } : {}) });
     }
     return out;
   } finally {
@@ -78,7 +80,17 @@ export async function runRoutingEval(opts: RoutingEvalOptions): Promise<RoutingO
 }
 
 export function renderRouting(outcomes: RoutingOutcome[]): string {
-  const passed = outcomes.filter((o) => o.pass).length;
-  const lines = outcomes.map((o) => `${o.pass ? "pass" : "MISS"}  ${o.question}${o.pass ? "" : "\n        " + o.misses.join("; ") + `\n        routed to: ${o.route.announce}`}`);
-  return [...lines, "", `routing score: ${passed}/${outcomes.length} (${Math.round((passed / Math.max(1, outcomes.length)) * 100)}%)`].join("\n");
+  const normal = outcomes.filter((o) => !o.gap);
+  const gaps = outcomes.filter((o) => o.gap);
+  const passed = normal.filter((o) => o.pass).length;
+  const mark = (o: RoutingOutcome) => (o.gap ? (o.pass ? "GAP CLOSED" : "gap ") : o.pass ? "pass" : "MISS");
+  const lines = outcomes.map((o) => `${mark(o)}  ${o.question}${o.pass ? "" : "\n        " + o.misses.join("; ") + `\n        routed to: ${o.route.announce}`}`);
+  const gapLine = gaps.length > 0 ? ` (and ${gaps.length} known gap${gaps.length === 1 ? "" : "s"}, ${gaps.filter((g) => !g.pass).length} still open)` : "";
+  return [...lines, "", `routing score: ${passed}/${normal.length} (${Math.round((passed / Math.max(1, normal.length)) * 100)}%)${gapLine}`, ...gaps.filter((g) => g.pass).map((g) => `  gap "${g.question}" passes now: remove the gap marker`)].join("\n");
+}
+
+/** At least nine in ten of the ordinary questions go to the right place, and no known gap has quietly closed. */
+export function routingOk(outcomes: RoutingOutcome[]): boolean {
+  const normal = outcomes.filter((o) => !o.gap);
+  return normal.filter((o) => o.pass).length / Math.max(1, normal.length) >= 0.9 && !outcomes.some((o) => o.gap && o.pass);
 }

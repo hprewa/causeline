@@ -21,7 +21,9 @@
     "bundle:exe": "npm run build && node scripts/bundle-exe.mjs",
     "bundle:desktop": "npm run bundle:plugin && node scripts/bundle-desktop.mjs",
     "eval:all": "npm run eval",
-    "init": "node bin/causeline.mjs init"
+    "init": "node bin/causeline.mjs init",
+    "eval:noise": "node core/cli/dist/src/main.js eval --pack packs/contact-centre --cases noise --no-branch-gate",
+    "eval:deliveries": "node core/cli/dist/src/main.js eval --pack packs/deliveries --no-branch-gate"
   },
   "bin": {
     "causeline": "./bin/causeline.mjs"
