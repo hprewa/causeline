@@ -382,3 +382,64 @@ is `docs/evidence/data/noise-rates.json`.
 - **Four seeds a level,** as before; the nightly run uses six and has not run.
 - **Wobble by team only.**
 - **Integration tests, routing, intents and the delivery pack are still not re-run** for steps 2.1 and 2.2.
+
+## Phase 2, step 2.3: tried and not adopted, and what the remaining alarms are
+
+### What raises the rate table's remaining weeks
+
+Every one of the 14 flagged weeks in the table above was raised by the headline being called significant (z 2.1 to 3.9),
+all but one with no flag from a part; the findings listed with them come from the step that names contributors to a change
+already called real. A headline bar of 2 allows about 4.6% of ordinary weeks by design (a little less after step 2.2).
+14 of 400 is 3.5%, and 6 of 100 at the 2-point level is inside what that rate gives by chance. So the table now sits at the
+headline test's own rate. One week (seed 1003, week 11) is raised at every noise level including none, so it belongs to
+that seed's base data and not to the wobble.
+
+Going lower means a stricter default level for the headline. That is the owner's decision, and the stricter bar measured in
+step 2.2 lost a planted case.
+
+### A swept part must stand apart from its own parent: tried, not adopted
+
+The two quiet weeks still raised by a single agent (`team_guide_s24`, `team_guide_s26`) looked like a team's ordinary bad
+week carrying one of its agents far out. The change tried: a part found by sweeping a deep level under a flat whole is a
+finding only if it also moved differently from the rest of its own parent (z of 3 or more on counting noise).
+
+| Case | The agent's move | The rest of its team | z of the difference | Planted? |
+|---|---|---|---|---|
+| `team_guide_s24`, agent_041 | -18.7 points | -4.3 | -3.47 | no |
+| `team_guide_s26`, agent_005 | -16.2 points | -3.3 | -3.45 | no |
+| `small_unit_agent_s201`, agent_023 | -15.1 points | -1.1 | -3.41 | yes |
+| `small_unit_agent_s205`, agent_023 | -17.7 points | +0.2 | -4.46 | yes |
+
+The rule kept all four planted agents that are found today and removed neither false alarm. The two false alarms stand as
+far from their teams as a planted one does. With 60 agents and 46 quiet weeks, about 0.8 agents that far out are expected
+from counting noise alone; two were seen. They are the ordinary tail of many small units, not something a rule about
+parents can separate from a real 15-point drop in one agent. A bar high enough to drop them would drop a planted case too,
+and choosing that bar from these four rows would be tuning on the cases reported. The code was removed (two extra queries
+for no measured gain). This is the guide's D4: a unit this small is below what one week can show, and the answer should say
+so; that belongs to Phase 3.
+
+### Where the false alarms stand
+
+| Measure | Start of Phase 2 | Now |
+|---|---|---|
+| Quiet weeks, 2-point wobble, week 6, 40 new seeds | 8 of 40 | 1 of 40 (2.5%; 0.4% to 12.9%) |
+| The guide's six seeds | 5 of 6 | 2 of 6 (both single agents) |
+| Rate table, 2-point wobble, 100 later weeks | 6 of 100 | 6 of 100 (all from the headline) |
+| Rate table, all four levels | 24 of 400 | 14 of 400 (3.5%; 2.1% to 5.8%) |
+| Clean data (rate table, no wobble) | 1 of 100 | 1 of 100 |
+
+### The outages that are "missed" are mostly found in part
+
+Of the seven two-hour outages marked as missed on noisy data, six name the right day and a stretch inside the outage
+(12:00 to 12:30, 12:30 to 13:30, 12:00 to 13:30 and so on); the case expects the exact stretch the clean-data case finds
+and so fails. One (`block_outage_with_noisy_queue_s401`) raises nothing. The cases were not loosened. Whether a finding that
+overlaps the planted stretch should count is a question about the case's wording for the owner, not something to change
+quietly.
+
+### Not shown
+
+- **The stand-apart rule was measured on 12 cases only** (the two false alarms and the ten agent cases), not on the whole
+  suite; it was dropped on that evidence.
+- **The expected 0.8 is a back-of-envelope figure** from a normal tail, not a simulation.
+- **Steps not started:** a material-effect rule, the false discovery rate across a run, the fault planter in the detector's
+  units, calibration on short history, and anything on real complaints data.

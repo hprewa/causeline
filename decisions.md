@@ -481,3 +481,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Build guide Phase 2: the rate table after steps 2.1 and 2.2
 - **The rate table is published with the level that did not improve stated first among its findings.** Why: 6 of 100 at the 2-point wobble is the number the guide's target names; the eval cases improving does not replace it.
 - **The after table is a separate data file; the Phase 0 file is kept as the before.** Why: a before overwritten by an after cannot be checked.
+
+### Build guide Phase 2, step 2.3: not adopted
+- **"A dispersion flag alone is a note, not a finding" was not built.** Why: the four single-agent weeks found today are exactly such findings; the owner agreed to try a narrower rule instead.
+- **The narrower rule (stand apart from your own parent) was tried and removed.** Why: on the cases it was meant for it changed nothing; the false alarms and a planted agent sit at the same distance from their teams (z 3.45, 3.47 against 3.41), so no bar separates them without being picked from those very cases.
+- **The remaining false alarms on the rate table are the headline test's own rate, and the default level stays where it is.** Why: lowering it is the owner's decision and the stricter bar cost a planted case.
+- **The outage cases that find part of the planted stretch stay marked as gaps.** Why: no eval case is edited to make it pass; whether an overlapping stretch counts is put to the owner.
