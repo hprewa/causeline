@@ -10,7 +10,7 @@ independent run of November 2026 on commit `16b198c`; "Measured here" is this re
 
 | Number | Baseline | Measured here | Target |
 |---|---|---|---|
-| False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | 5 of 6 on the same seeds; 7 of 40 on new seeds; 6 of 100 over later weeks (`docs/evidence/noise.md`) | at most 5% |
+| False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | 5 of 6 on the same seeds; 8 of 40 on new seeds; 6 of 100 over later weeks (`docs/evidence/noise.md`) | at most 5% |
 | False-alarm rate, real complaints data | 39% and 20% | 39% and 20% (`docs/evidence/calibration.md`) | at most 10% |
 | Unseen planted faults found | 11 of 12 | not re-measured | at least 11 of 12, on a larger set |
 | Faults found by `inject_faults` on a noisy pack | 1 of 3 | 1 of 4 at 4 units, 2 of 4 at 6 units | all at 6 units |
@@ -27,15 +27,15 @@ Evidence: `docs/evidence/noise.md`. Nothing is fixed in this phase; each defect 
 | Step | What | State |
 |---|---|---|
 | 1 | The guide in the repo; a Python loader for synthetic packs when DuckDB is missing | done (`a095447`) |
-| 2 | Noise suite: 86 quiet weeks with wobbling rates (D1), 30 with a real fault on top, 10 small-unit cases (D4) | done: 25 of 126 fail today and are marked as gaps |
+| 2 | Noise suite: 86 quiet weeks with wobbling rates (D1), 30 with a real fault on top, 10 small-unit cases (D4) | done: 26 of 126 fail today and are marked as gaps |
 | 3 | Rate table by noise level, with intervals and detection by fault size | done: 1%, 5%, 6%, 12% at wobble 0, 1, 2, 3 points (4 seeds each) |
 | 4 | Delivery pack as a fixture (D3 combination, quiet weeks) and `inject_faults` on it (D2) | done: 8 of 8 ordinary cases, 2 gaps; inject 1 of 4 and 2 of 4 |
 | 5 | Router questions (D6) as gaps; routing cases can carry a gap marker | done: 38 of 38, 5 gaps open |
 | 6 | Unit tests for D7 and D8, skipped with their reason | done |
 | 7 | Nightly workflow for the slow suites and the rate table | written, not yet run on GitHub |
-| 8 | Close: full regression | done except one check: the noise suite was not re-run end to end after the gap markers went in (stopped by the machine for low memory, not restarted); everything else green |
+| 8 | Close: full regression | done. The noise suite re-run with markers (15 November) found one more failing quiet week (seed 302), now marked; the first run had probably used the parked branch's build (correction in the evidence) |
 
-Open from this phase: why the same wobble gives 5 of 6, 4 of 20 and 6 of 100 depending on seeds and week (first task of Phase 2);
+Open from this phase: why the same wobble gives 5 of 6, 5 of 20 and 6 of 100 depending on seeds and week (first task of Phase 2);
 D5 and D9 have no test yet (Phases 1 and 5).
 
 ## Parked

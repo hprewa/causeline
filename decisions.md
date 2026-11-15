@@ -445,7 +445,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 
 ### Build guide Phase 0: every failure a test
 - **`docs/BUILD_GUIDE.md` is the plan from here, and steps 6c to 6f of the earlier false-alarm fix are parked on a branch.** Why: the guide covers the same problem in a better order (each part judged by its own spread first), and the two parked changes measured no effect on the null they were built for.
-- **Gap markers were set from what fails today, case by case, not on a whole group.** Why: the harness fails a run when a marked gap passes, so marking a passing case would break the suite, and an unmarked failing case would hide a defect. 25 of the 126 noise cases carry one.
+- **Gap markers were set from what fails today, case by case, not on a whole group.** Why: the harness fails a run when a marked gap passes, so marking a passing case would break the suite, and an unmarked failing case would hide a defect. 26 of the 126 noise cases carry one.
 - **The cases that pass today stay as ordinary cases.** Why: the four agent weeks that are found and the 20 team faults found under the wobble are what a fix for false alarms could lose.
 - **The small-unit cases live in the noise suite, not in the shipped eval.** Why: `npm run eval` must stay at 25 of 25 and fast; ten more generated datasets would double its time.
 - **Routing cases can carry a gap marker; the score counts ordinary cases and a gap that passes fails the run.** Why: the same rule as runner cases, so a router fix has to take the marker off in the same commit.
@@ -455,4 +455,6 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A sentence in the builder said "cancelled orders"; it now says "cancelled items".** Why: the delivery pack makes "orders" a pack word, and the purity check keeps pack words out of the core.
 - **Synthetic packs load with Python's own SQLite when the DuckDB program is missing.** Why: one install fewer, and the nightly run on a clean Linux machine needs no extension download.
 - **The slow suites run nightly, not on every push.** Why: the noise suite generates 126 datasets.
-- **Three measurements of the same wobble are published side by side (5 of 6, 7 of 40, 6 of 100), unexplained.** Why: picking one would choose the headline; the difference is itself the first thing Phase 2 has to explain.
+- **Three measurements of the same wobble are published side by side (5 of 6, 8 of 40, 6 of 100), unexplained.** Why: picking one would choose the headline; the difference is itself the first thing Phase 2 has to explain.
+- **Correction (15 November): the counts for quiet weeks by team are 5 of 20, not 4 of 20, and there are 26 gaps, not 25.** Why: a full re-run on the committed code found one more failing case; the first run was probably made with the parked branch's compiled code still in place. The published numbers were changed to the re-run's, and the page says so.
+- **From now on, build before any run whose numbers are published, and after every branch switch.** Why: the compiled code is not in git, so a branch switch leaves the old build behind silently.

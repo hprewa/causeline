@@ -54,11 +54,11 @@ The false-alarm rate rises with the wobble and detection falls with it. The stan
 | How it was measured | Result at wobble 0.02, service level |
 |---|---|
 | The guide's six seeds (21 to 26), week 6, by team | 5 of 6 raise something (only seed 23 is quiet). This reproduces the independent run exactly. |
-| Twenty new seeds (301 to 320), week 6, by team | 4 of 20 |
+| Twenty new seeds (301 to 320), week 6, by team | 5 of 20 |
 | Twenty new seeds, week 6, by queue | 3 of 20 |
 | The rate table above: 25 weeks from each of 4 seeds, by team | 6 of 100 |
 
-These do not agree, and Phase 0 does not explain why. 5 of 6 against 4 of 20 is unlikely to be chance alone (about 1 in 100 if
+These do not agree, and Phase 0 does not explain why. 5 of 6 against 5 of 20 is unlikely to be chance alone (about 1 in 50 if
 both were draws from one rate), so either seeds 21 to 26 are an unlucky run or something about them differs. The rate table
 judges the last 25 of 30 weeks, most with a longer history than week 6 has, which may be why it is lower again (not tested). The honest reading
 today: somewhere between 6% and 83% depending on the seeds and the week, and above the standard on every measure. Working out
@@ -141,17 +141,30 @@ when `CAUSELINE_LOADER=python` is set. The contact-centre eval gives the same 25
 | Intent eval | 16 of 16 |
 | Integration tests | 8 of 8 |
 | `npm run eval:deliveries` | 8 of 8, and 2 known gaps still open |
-| `npm run eval:noise` | **not completed with the markers in place**, see below |
+| `npm run eval:noise` | run end to end on 15 November: 100 of 101 ordinary cases, 25 gaps open, **one new failure** (see the correction below); with that case marked, 100 ordinary cases and 26 gaps |
+
+### Correction, 15 November: one case changed between two runs of the same seed
+
+The first version of this page said 4 of 20 quiet weeks by team (7 of 40 in all) and 25 gaps. The full re-run with the
+markers in place found `quiet_team_service_level_s302` raising a finding. It had passed in the first run, and it fails every
+time now (three runs). The generator is not the cause: the same seed writes identical files (checked three times).
+
+The likely cause is the build, not the analysis: the first run, from which the markers were set, was made 39 minutes after
+switching back from the parked branch (`wip/false-alarm-6c-6d`), and the compiled code was rebuilt only an hour and a half
+after that run. So the first run probably ran the parked branch's code. This is inferred from file times, not proven. If it
+is right, the parked changes turned exactly one of these 126 cases quiet and changed no other verdict, which agrees with
+their having almost no effect elsewhere.
+
+The numbers on this page are now from the re-run on the committed code: 5 of 20 by team, 3 of 20 by queue, 8 of 40 in all;
+every other count was the same in both runs. The rate table, the delivery results and the routing results were made after
+the rebuild and are not affected.
 
 ## Not shown
 
-- **The noise suite has not been run end to end since the gap markers were added.** Every case was run once without markers
-  (that run is where the 25 markers come from). The run with markers was stopped by the machine for low memory after 86 of
-  the 126 cases had been prepared, before it printed any verdict, and was not started again. So "101 ordinary cases pass and
-  25 gaps are open" is what the first run implies, not what a marked run reported. The nightly workflow is the first place
-  it will be seen.
+- **The first run's build is not known for certain** (see the correction above). The counts published now come from one full
+  run on the committed code, plus three repeats of the one case that changed.
 - **No defect is fixed.** Every number here is the before.
-- **The spread between 5 of 6, 4 of 20 and 6 of 100 is not explained.**
+- **The spread between 5 of 6, 5 of 20 and 6 of 100 is not explained.**
 - **The rate table is 4 seeds for each level,** not the 6 the nightly run uses, and 12 planted faults for each cell; the
   intervals are wide and the detection columns cannot separate 8 of 12 from 10 of 12.
 - **The gap markers were set from one run on one machine** (Windows, SQLite through Toolbox). A case near the edge may come
