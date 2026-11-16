@@ -48,9 +48,16 @@ interface FaultsFile {
   /** The same window, left alone: it must still raise nothing, or the faults prove nothing. */
   control?: { quiet: boolean; detail: string };
   outcomes: Record<string, FaultOutcome>;
+  /** The same faults planted smaller, by size: tried only after everything at the default size was found. */
+  smaller?: Record<string, Record<string, FaultOutcome>>;
 }
 
 export const FAULT_KINDS: FaultKind[] = ["segment_shift", "offsetting_pair", "mix_shift", "data_gap"];
+/**
+ * The smaller sizes tried, largest first, once every fault at the default size is found; it stops at the first size where one is missed. They
+ * do not decide the rung: they say how small a change the analysis still found in this data, which the answer then states.
+ */
+export const SMALLER_SIZES = [4, 3, 2];
 const CHUNK_MS = 40_000;
 /**
  * A planted change is sized to be about this many standard errors for the part it is planted in, so that it is real enough for an honest test (a
@@ -358,6 +365,18 @@ export interface InjectReport {
   level?: Level;
   /** Faults that could be planted, found out of planted. */
   summary?: { planted: number; found: number; not_applicable: number };
+  /** Each size tried, largest first: the size asked for, then the smaller ones while everything was found. */
+  sizes?: SizeTried[];
+  /** The smallest size at which every fault that could be planted was found, with every larger size tried also found. */
+  found_down_to?: number;
+  /** The next size down, where at least one was missed (absent when nothing smaller was tried or nothing was missed). */
+  missed_at?: number;
+}
+
+export interface SizeTried {
+  sigmas: number;
+  planted: number;
+  found: number;
 }
 
 
@@ -384,12 +403,29 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
   if (!file || file.key !== key || file.seed !== seed || (file.sigmas ?? DEFAULT_SIGMAS) !== sigmas || file.period !== win.period) {
     file = { version: 1, kpi: opts.kpi, key, seed, sigmas, period: win.period, start: win.start, end: win.end, outcomes: {} };
   }
-  const todo = kinds.filter((k) => file!.outcomes[k] === undefined);
   const plan = planFor(pack, opts.kpi, { start: win.start, end: win.end }, sigmas);
   const playbook = loadPlaybook("metric_change", opts.workspace, opts.corePlaybooksDir);
   const deadline = Date.now() + (opts.chunkMs ?? CHUNK_MS);
+  // the full check at the default size goes on to smaller sizes; a run at a size or with kinds of the caller's choosing is that run alone
+  const laddered = sigmas === DEFAULT_SIGMAS && opts.kinds === undefined;
+  const smallerKinds = kinds.filter((k) => k !== "data_gap"); // missing data is declined whatever the size
+  const allFound = (into: Record<string, FaultOutcome>, of: FaultKind[]) => {
+    const planted = of.map((k) => into[k]).filter((o) => o?.applicable);
+    return of.every((k) => into[k] !== undefined) && planted.length > 0 && planted.every((o) => o.pass);
+  };
+  /** The next fault to plant: the size asked for first, then each smaller size while everything at the size before it was found. */
+  const next = (): { size: number; into: Record<string, FaultOutcome>; kind: FaultKind } | undefined => {
+    for (const k of kinds) if (file!.outcomes[k] === undefined) return { size: sigmas, into: file!.outcomes, kind: k };
+    if (!laddered || file!.control?.quiet !== true || !allFound(file!.outcomes, kinds)) return undefined;
+    for (const s of SMALLER_SIZES) {
+      const into = ((file!.smaller ??= {})[String(s)] ??= {});
+      for (const k of smallerKinds) if (into[k] === undefined) return { size: s, into, kind: k };
+      if (!allFound(into, smallerKinds)) return undefined;
+    }
+    return undefined;
+  };
 
-  if (todo.length > 0 || file.control === undefined) {
+  if (next() !== undefined || file.control === undefined) {
     // a scratch copy of the whole project, with the KPI's fact written out as a table of its own: the faults change that table's rows, never the person's data
     const scratch = mkdtempSync(join(tmpdir(), "inject-"));
     try {
@@ -422,8 +458,10 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
         writeFile(opts.workspace, file);
       }
 
-      for (const kind of todo) {
+      for (let job = next(); job !== undefined; job = next()) {
         if (Date.now() >= deadline && Object.keys(file.outcomes).length > 0) break;
+        const { kind, into } = job;
+        const sized = { ...plan, sigmas: job.size };
         const dir = mkdtempSync(join(tmpdir(), "inject-fault-"));
         try {
           cpSync(scratch, dir, { recursive: true });
@@ -432,18 +470,18 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
           const rand = seeded(seed + FAULT_KINDS.indexOf(kind) * 1009);
           let planted: Planted | { skip: string };
           try {
-            planted = plant(kind, db, plan, rand);
+            planted = plant(kind, db, sized, rand);
           } catch (e) {
             planted = { skip: (e as Error).message };
           }
           if ("skip" in planted) {
             db.close();
-            file.outcomes[kind] = { id: kind, kind, applicable: false, what: planted.skip, pass: false, at: new Date().toISOString() };
+            into[kind] = { id: kind, kind, applicable: false, what: planted.skip, pass: false, at: new Date().toISOString() };
           } else {
             saveDb(db, dbPath);
             db.close();
             const { pass, detail } = await run(dir, planted);
-            file.outcomes[kind] = { id: kind, kind, applicable: true, what: planted.what, pass, ...(pass ? {} : { detail }), at: new Date().toISOString() };
+            into[kind] = { id: kind, kind, applicable: true, what: planted.what, pass, ...(pass ? {} : { detail }), at: new Date().toISOString() };
           }
           writeFile(opts.workspace, file);
         } finally {
@@ -457,12 +495,28 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
   writeFile(opts.workspace, file);
 
   const outcomes = kinds.map((k) => file!.outcomes[k]).filter((o): o is FaultOutcome => !!o);
-  const progress = { done: outcomes.length, total: kinds.length };
+  const smallerDone = Object.values(file.smaller ?? {}).reduce((a, o) => a + Object.keys(o).length, 0);
   const periodInfo = { label: win.period, words: `${win.start} to ${win.end}` };
-  if (outcomes.length < kinds.length) return { kpi: opts.kpi, stage: "running", reasons: [], progress, period: periodInfo, control: file.control, outcomes };
+  if (next() !== undefined) {
+    // the smaller sizes are counted only once they are known to be coming (everything at the size asked for was found)
+    const total = kinds.length + (outcomes.length === kinds.length ? smallerKinds.length * SMALLER_SIZES.length : 0);
+    return { kpi: opts.kpi, stage: "running", reasons: [], progress: { done: outcomes.length + smallerDone, total }, period: periodInfo, control: file.control, outcomes };
+  }
+  const progress = { done: outcomes.length + smallerDone, total: outcomes.length + smallerDone };
 
   const planted = outcomes.filter((o) => o.applicable);
   const found = planted.filter((o) => o.pass);
+  // how small a planted change was still found: each size tried, largest first, and where the finding stopped
+  const sizes: SizeTried[] = [{ sigmas, planted: planted.length, found: found.length }];
+  for (const s of SMALLER_SIZES) {
+    const into = file.smaller?.[String(s)];
+    if (!into) break;
+    const p = smallerKinds.map((k) => into[k]).filter((o) => o?.applicable);
+    sizes.push({ sigmas: s, planted: p.length, found: p.filter((o) => o.pass).length });
+  }
+  const whole = (t: SizeTried) => t.planted > 0 && t.found === t.planted;
+  const foundDownTo = file.control?.quiet === true && whole(sizes[0]) ? sizes.filter((t, i) => sizes.slice(0, i + 1).every(whole)).at(-1)!.sigmas : undefined;
+  const missedAt = foundDownTo === undefined ? undefined : sizes.find((t) => t.sigmas < foundDownTo && t.planted > 0 && !whole(t))?.sigmas;
   let level: Level = levelOf(state.kpis[opts.kpi]);
   updateState(opts.workspace, (s) => {
     const k = s.kpis[opts.kpi];
@@ -470,14 +524,16 @@ export async function injectFaults(opts: InjectOptions): Promise<InjectReport> {
     const v = k.verification ?? { at: "", pass: false, incidents_passed: [] };
     const incidents = s.incidents.filter((i) => i.kpi === opts.kpi);
     const incidentsFound = incidents.every((i) => v.incidents_passed.includes(i.id));
-    const clear = planted.length > 0 && found.length === planted.length && file!.control?.quiet === true;
-    k.verification = { ...v, at: new Date().toISOString(), faults_passed: found.map((o) => o.id), faults_total: planted.length, pass: clear && incidentsFound };
+    // faults made bigger than the default size are an easier test than the rung asks for, so they do not count toward it
+    const clear = planted.length > 0 && found.length === planted.length && file!.control?.quiet === true && sigmas <= DEFAULT_SIGMAS;
+    const { faults_found_down_to: _a, faults_missed_at: _b, ...kept } = v;
+    k.verification = { ...kept, at: new Date().toISOString(), faults_passed: found.map((o) => o.id), faults_total: planted.length, faults_sigmas: sigmas, ...(foundDownTo !== undefined ? { faults_found_down_to: foundDownTo } : {}), ...(missedAt !== undefined ? { faults_missed_at: missedAt } : {}), pass: clear && incidentsFound };
     k.level = levelOf(k);
     level = k.level;
     logChange(s, `kpi:${opts.kpi}`, before, level, clear ? `${found.length} of ${planted.length} faults planted in the data's own quiet period were found` : `${found.length} of ${planted.length} planted faults were found`, "inject_faults");
   });
   if (level !== levelOf(state.kpis[opts.kpi])) syncExperts(opts.workspace, opts.kpi, level, `planted faults ${found.length === planted.length ? "were all found" : "were not all found"}`, "inject_faults");
-  return { kpi: opts.kpi, stage: "done", reasons: [], progress, period: periodInfo, control: file.control, outcomes, level, summary: { planted: planted.length, found: found.length, not_applicable: outcomes.length - planted.length } };
+  return { kpi: opts.kpi, stage: "done", reasons: [], progress, period: periodInfo, control: file.control, outcomes, level, summary: { planted: planted.length, found: found.length, not_applicable: outcomes.length - planted.length }, sizes, ...(foundDownTo !== undefined ? { found_down_to: foundDownTo } : {}), ...(missedAt !== undefined ? { missed_at: missedAt } : {}) };
 }
 
 export function faultStatus(workspace: string, kpi: string): { run: boolean; outcomes: FaultOutcome[]; control?: FaultsFile["control"]; seed?: number } {

@@ -166,7 +166,7 @@ export async function verifyExpert(opts: { workspace: string; kpi: string; toolb
     updateState(opts.workspace, (s) => {
       const k = s.kpis[opts.kpi];
       const before = levelOf(k);
-      k.verification = { at: new Date().toISOString(), pass: independent, incidents_passed: found.map((c) => c.id), held_out_passed: heldFound, tuning_passed: tuningFound, hit_rate, ...(faultsKept.length > 0 || rec?.verification?.faults_total ? { faults_passed: faultsKept, faults_total: rec?.verification?.faults_total } : {}) };
+      k.verification = { at: new Date().toISOString(), pass: independent, incidents_passed: found.map((c) => c.id), held_out_passed: heldFound, tuning_passed: tuningFound, hit_rate, ...(faultsKept.length > 0 || rec?.verification?.faults_total ? { faults_passed: faultsKept, faults_total: rec?.verification?.faults_total, faults_sigmas: rec?.verification?.faults_sigmas, faults_found_down_to: rec?.verification?.faults_found_down_to, faults_missed_at: rec?.verification?.faults_missed_at } : {}) };
       k.level = levelOf(k);
       out.level = k.level;
       logChange(s, `kpi:${opts.kpi}`, before, out.level, independent ? `the incident${heldFound.length === 1 ? "" : "s"} kept aside (${heldFound.join(", ")}) ${heldFound.length === 1 ? "was" : "were"} found` : allFound ? "the recorded incidents were found, but none was kept aside" : `${cases.length - found.length} of ${cases.length} recorded incidents were not found`, "verify_expert");

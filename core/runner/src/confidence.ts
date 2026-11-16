@@ -16,6 +16,11 @@ export interface ConfidenceInput {
   /** The expert's numbers were only a plausible sample, not confirmed against the person's reports. */
   unconfirmed?: boolean;
   result: Pick<Result, "status" | "headline" | "findings" | "contributions" | "masking_flags" | "stopped_reason" | "explained">;
+  /**
+   * What the expert's check with planted changes showed, when it had one: the smallest size (in standard errors of the part a change was planted
+   * in) at which every planted change was found, and the next size down if one was missed there.
+   */
+  tested?: { found_down_to: number; missed_at?: number };
 }
 
 export interface ConfidenceReport {
@@ -35,6 +40,14 @@ const lower = (a: Confidence, b: Confidence): Confidence => (ORDER.indexOf(a) <=
 export const CEILING: Record<Rung, Confidence> = { draft: "low", reconciled: "moderate", calibrated: "moderate", verified: "high" };
 
 const words = (s: string) => s.replace(/_/g, " ");
+
+/** The sentence a verified expert's answer carries about the smallest change it was shown to find. */
+export function smallestFound(tested: ConfidenceInput["tested"]): string {
+  if (!tested) return "This expert was verified on known incidents, not on planted changes of a known size, so the smallest change it finds has not been measured.";
+  const n = tested.found_down_to;
+  const below = tested.missed_at !== undefined ? `at ${tested.missed_at} it missed at least one` : "nothing smaller was tried";
+  return `When changes of a known size were planted in this data, it found every one at ${n} standard errors of the affected part's ordinary movement and above; ${below}. A real change smaller than that may go unreported.`;
+}
 
 export function confidenceOf(input: ConfidenceInput): ConfidenceReport {
   const { rung, result } = input;
@@ -88,5 +101,7 @@ export function confidenceOf(input: ConfidenceInput): ConfidenceReport {
   if (held) {
     because.push(`It is held to ${label} because the expert is only ${rung}${input.unconfirmed ? " and its numbers were not confirmed against your reports" : ""}. To lift it: ${nextRungNeeds(rung)}.`);
   } else if (input.unconfirmed && rung === "draft") because.push("The numbers it is built on were not confirmed against your reports.");
+  // how small a change it has been shown to find: a limit of the expert, said with every answer it gives and most needed when it found nothing
+  if (rung === "verified") because.push(smallestFound(input.tested));
   return { label, evidence, ...(held ? { held_back_by: held } : {}), because };
 }

@@ -564,3 +564,72 @@ for the case where a replay does run. One wording test follows the sentence that
 - **Day-level replay for short histories is not built.** Whether a KPI checked on days may be called calibrated for weekly
   questions changes what the rung means, which is the owner's decision.
 - **No live assistant** was run to see that it says the new sentences well.
+
+## Phase 2, step 4, added 16 November: the integration tests
+
+The integration tests were run on the step 4 build the next day: 8 of 8. The main eval and the noise suite were still not
+re-run for that step.
+
+## Phase 2, step 3, the rest: a detection curve, and the smallest size found stated on `verified`
+
+### The curve
+
+`node scripts/noise-rates.mjs --levels 0,0.02 --seeds 8 --sizes 2,3,4,5,6,8 --out docs/evidence/data/detection-curve.json`
+(contact-centre data, service level, eight seeds of 30 weeks, sizes in the standard errors the analysis judges a part by).
+A real change is a shift in one part or one part worse while another gets better: two for each seed, sixteen a cell.
+
+| Size (standard errors) | Found, steady data | Found, each part's rate moving 2 points a week |
+|---|---|---|
+| 2 | 0 of 16 | 0 of 16 |
+| 3 | 5 of 16 | 5 of 16 |
+| 4 | 14 of 16 | 10 of 16 |
+| 5 | 14 of 16 | 14 of 16 |
+| 6 | 16 of 16 | 16 of 16 |
+| 8 | 16 of 16 | 16 of 16 |
+
+Every change of 6 units and above was found; with sixteen a cell the true share could still be as low as about 81%. At 4
+units most are found in steady data and about two in three in moving data; at 3 about one in three; at 2 none. The part
+whose data goes missing was declined at every size in all 16 datasets, as it should be. The week with nothing planted
+stayed quiet in every run. A move of volume between parts could not be planted in this data at any size (the parts' rates
+are too close for a move to change the whole).
+
+**Correction to the earlier tables.** The counts "of 12" in the tables above (after steps 2.1, 2.2 and 3) and the "of 24" in
+this run's own file include the missing-data fault, one in three of them, which is declined whatever its size. They
+overstate how often a small change is found: "8 of 12 at 4 units" was 4 of 8 real changes. The table here counts real
+changes only. The 6-unit results do not change (all found).
+
+**False alarms in the same run:** steady data 3 of 200 quiet weeks (1.5%; 0.5% to 4.3%); 2-point movement 14 of 200 (7.0%;
+4.2% to 11.4%). The first four seeds are the ones in the earlier table (6 of 100); the four new seeds gave 8 of 100. The
+guide's target for this level is at most 1 in 20. On 200 weeks it is 7 in 100, with an interval that includes 5 in 100:
+not shown to be met.
+
+### The smallest size found, kept on the KPI and said in the answer
+
+**The change.** The check with planted faults still plants at 6 units, and the rung still needs every plantable fault found
+there with the unchanged period quiet. When that holds, the same faults are now planted at 4, 3 and 2 units, stopping at
+the first size where one is missed. The smallest size at which every one was found is kept on the KPI
+(`faults_found_down_to`, with `faults_missed_at`), told to the person when the check ends, and carried in the confidence
+reasons of every answer from a verified expert: "it found every one at N standard errors of the affected part's ordinary
+movement and above ... A real change smaller than that may go unreported." A verified expert with no planted-fault check
+says the smallest change it finds has not been measured. The smaller sizes do not decide the rung, and the sentence does
+not lower the label.
+
+**One tightening.** Faults planted bigger than 6 units no longer count toward `verified`: an easier test than the guide
+asks for is not proof. The assistant's tool always plants at 6, so this touches only a script that names a size.
+
+**Checks:** all unit tests pass (three new, one extended); in the builder's test data every fault is found at 6 and 4 units
+and one of three is missed at 3. Integration: 8 of 8. The end-to-end ladder run (`scripts/ladder-proof.mjs`) passes and
+reaches `verified`. Purity and ladder names pass.
+
+### Not shown
+
+- **The curve is one data family, one KPI (a rate), sixteen changes a cell.** Totals, other packs and real data are not on
+  it. A move of volume between parts is not on it at all.
+- **"Found every one" on a person's own data rests on two or three faults a size,** planted in one period from one seed. It
+  is the smallest size found in that check, not a size found reliably; the sentence says what was done and no more.
+- **No live assistant** was run to see that it says the sentence, or says it well.
+- **Planted faults on cloud data are still refused.** They need a copy of the data the faults can be written into; a
+  scratch dataset costs money and needs the owner's go-ahead for the design and the spend, so it is not built. The tool
+  says this in plain words.
+- **The time the smaller sizes add** to the check (up to nine more runs) was not measured.
+- **The main eval and the noise suite were not re-run;** the analysis code is unchanged by this step.

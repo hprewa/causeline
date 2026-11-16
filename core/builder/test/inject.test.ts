@@ -163,3 +163,42 @@ test("in data whose parts move from week to week, a planted change of the same s
   // counting noise) makes the standard error the analysis judges by at least twice as large
   assert.ok(moving >= steady * 1.5, `${moving} rows swapped in moving data against ${steady} in steady data`);
 });
+
+test("once every fault at the default size is found, the same faults are planted smaller, and the smallest size still found is kept", async (t) => {
+  const ws = await ordinary();
+  await checked(ws);
+  let r = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 5 });
+  for (let i = 0; r.stage === "running" && i < 20; i++) r = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 5 });
+  assert.equal(r.stage, "done");
+  assert.equal(r.summary!.found, r.summary!.planted);
+  t.diagnostic(JSON.stringify(r.sizes));
+  assert.equal(r.sizes![0].sigmas, 6);
+  assert.ok(r.sizes!.length >= 2, "at least one smaller size was tried");
+  assert.deepEqual(r.sizes!.slice(1).map((s) => s.sigmas), [4, 3, 2].slice(0, r.sizes!.length - 1), "largest first, and it stops at the first size with a miss");
+  // every size above the last is found whole; the last is either the floor or the first with a miss
+  for (const s of r.sizes!.slice(0, -1)) assert.equal(s.found, s.planted, JSON.stringify(r.sizes));
+  const whole = r.sizes!.filter((s) => s.planted > 0 && s.found === s.planted);
+  assert.equal(r.found_down_to, whole.at(-1)!.sigmas);
+  const last = r.sizes!.at(-1)!;
+  assert.equal(r.missed_at, last.planted > 0 && last.found < last.planted ? last.sigmas : undefined);
+  const v = readState(ws)!.kpis.ok_rate.verification!;
+  assert.equal(v.faults_sigmas, 6);
+  assert.equal(v.faults_found_down_to, r.found_down_to);
+  assert.equal(v.faults_missed_at, r.missed_at);
+  // the smaller sizes do not decide the rung
+  assert.equal(v.pass, true);
+});
+
+test("a run at a size of the caller's choosing is that size alone, and faults made bigger than the default do not count toward the rung", async () => {
+  const ws = await ordinary();
+  await checked(ws);
+  const small = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 5, sigmas: 4 });
+  assert.equal(small.stage, "done");
+  assert.equal(small.sizes!.length, 1, "no smaller sizes follow");
+  const big = await injectFaults({ workspace: ws, kpi: "ok_rate", seed: 5, sigmas: 9 });
+  assert.equal(big.stage, "done");
+  assert.equal(big.summary!.found, big.summary!.planted, JSON.stringify(big.outcomes.map((o) => [o.kind, o.applicable, o.pass, o.detail])));
+  const v = readState(ws)!.kpis.ok_rate.verification!;
+  assert.equal(v.faults_sigmas, 9);
+  assert.equal(v.pass, false, "an easier test than the rung asks for is not proof");
+});

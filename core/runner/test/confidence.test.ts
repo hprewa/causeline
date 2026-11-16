@@ -78,3 +78,15 @@ test("a declined analysis and an exploratory answer are not rated", () => {
   assert.equal(exploratory.label, "none");
   assert.match(exploratory.because[0], /exploratory answer/);
 });
+
+test("a verified expert's answer says the smallest planted change it was shown to find, or that none was measured", () => {
+  const measured = confidenceOf({ rung: "verified", result: strong(), tested: { found_down_to: 4, missed_at: 3 } });
+  assert.match(measured.because.at(-1)!, /found every one at 4 standard errors of the affected part's ordinary movement and above; at 3 it missed at least one\. A real change smaller than that may go unreported\./);
+  assert.equal(measured.label, "high", "the sentence is a stated limit, not a mark against the answer");
+  const floor = confidenceOf({ rung: "verified", result: strong({ findings: [] }), tested: { found_down_to: 2 } });
+  assert.match(floor.because.at(-1)!, /at 2 standard errors .* and above; nothing smaller was tried/);
+  const incidents = confidenceOf({ rung: "verified", result: strong() });
+  assert.match(incidents.because.at(-1)!, /verified on known incidents, not on planted changes of a known size, so the smallest change it finds has not been measured/);
+  // below verified no size has been shown, and nothing is said about one
+  assert.doesNotMatch(confidenceOf({ rung: "calibrated", result: strong(), tested: { found_down_to: 4 } }).because.join(" "), /standard errors/);
+});

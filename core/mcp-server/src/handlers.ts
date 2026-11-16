@@ -429,16 +429,21 @@ const KIND_WORDS: Record<string, string> = { segment_shift: "a shift in one part
 export function describeFaults(r: InjectReport) {
   if (r.stage === "not_ready") return { ...r, say: r.reasons.join(" "), next: "Tell the user in plain words why this cannot be done yet, and what to do first." };
   if (r.stage === "running") {
-    return { ...r, say: `I have tried ${r.progress.done} of ${r.progress.total} kinds of fault so far.`, next: "Say the progress in a few words and call inject_faults again to continue; it picks up where it stopped." };
+    return { ...r, say: `I have tried ${r.progress.done} of up to ${r.progress.total} planted faults so far.`, next: "Say the progress in a few words and call inject_faults again to continue; it picks up where it stopped." };
   }
   const s = r.summary!;
   const lines = r.outcomes.map((o) => (o.applicable ? `${KIND_WORDS[o.kind]}: ${o.pass ? "found" : "NOT found"}` : `${KIND_WORDS[o.kind]}: could not be planted in this data (${o.what})`));
   const control = r.control?.quiet ? "The same period with nothing planted stayed quiet." : `The same period with nothing planted was NOT quiet (${r.control?.detail}), so these results do not count.`;
   const base = `In a copy of a quiet period (${r.period!.words}) I planted ${s.planted} kind${s.planted === 1 ? "" : "s"} of fault and the analysis found ${s.found} of them. ${control} Your own data was not touched.`;
   const all = s.planted > 0 && s.found === s.planted && r.control?.quiet === true;
+  const smaller = (r.sizes ?? []).slice(1);
+  const size =
+    all && r.found_down_to !== undefined && smaller.length > 0
+      ? ` I then planted the same faults smaller: ${smaller.map((t) => `at ${t.sigmas} standard errors, ${t.planted === 0 ? "none could be planted" : `${t.found} of ${t.planted} found`}`).join("; ")}. So every one was found down to ${r.found_down_to} standard errors of the affected part's ordinary movement${r.missed_at !== undefined ? `, and not below` : ", the smallest size tried"}; a real change smaller than that may go unreported, and answers will say so.`
+      : "";
   return {
     ...r,
-    say: `${base} ${lines.join("; ")}.${all ? ` That counts as independent proof, so the KPI is now ${r.level}.` : " That does not count as proof."}`,
+    say: `${base} ${lines.join("; ")}.${all ? ` That counts as independent proof, so the KPI is now ${r.level}.` : " That does not count as proof."}${size}`,
     next: all
       ? "Say the result, then say which rung the KPI is on and what (if anything) is still missing."
       : "Say plainly which kinds were not found (outcomes[].what and detail say what was planted and what the analysis said). Never change the KPI's definition or anything else to make a planted fault pass: that makes the check mean nothing.",

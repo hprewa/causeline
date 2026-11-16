@@ -99,6 +99,18 @@ export class IntentService {
     };
   }
 
+  /** What the check with planted changes showed for a KPI, when the project kept one. */
+  private tested(kpi: string | undefined): { found_down_to: number; missed_at?: number } | undefined {
+    if (!kpi) return undefined;
+    let v;
+    try {
+      v = readState(this.cfg.packDir)?.kpis[kpi]?.verification;
+    } catch {
+      return undefined; // a pack with no build record has no such check
+    }
+    return v?.faults_found_down_to !== undefined ? { found_down_to: v.faults_found_down_to, ...(v.faults_missed_at !== undefined ? { missed_at: v.faults_missed_at } : {}) } : undefined;
+  }
+
   async run() {
     const env = await this.environment();
     const check = await validateIntent(this.session.active, env);
@@ -115,7 +127,7 @@ export class IntentService {
       playback: check.playback,
       notes: [...check.notes, `This answer comes from an expert that ${statusSentence(plan.status, plan.unconfirmed_numbers)}; say so in plain words.`, "Say how sure the answer is, with the label and its reasons from confidence (they come from the run, not from your own judgement)."],
       expert: plan.expert,
-      confidence: confidenceOf({ rung: plan.status, unconfirmed: plan.unconfirmed_numbers, result }),
+      confidence: confidenceOf({ rung: plan.status, unconfirmed: plan.unconfirmed_numbers, result, tested: this.tested((plan.inputs as { metric?: string }).metric) }),
       file,
       result,
       next: "Explain the result in plain words using only what it contains. The user can now refine it with set_intent (the intent is kept), or use recall(n) / start_over.",

@@ -504,3 +504,9 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **A history that cannot give eight ordinary periods is refused before the replay, and no verdict is kept.** Why: a replay that cannot count costs time and, on cloud data, money; a "not passed" kept for a check that never ran would be a false record.
 - **The D7 test's scenario was rewritten.** Why: as written in Phase 0 it labelled a period before any replay, which is refused for good reason; the test now covers the two real cases.
 - **Day-level replay is not built.** Why: it would let a KPI become calibrated from days when the questions are about weeks, a change to the rung's meaning that the guide reserves for the owner.
+
+### Build guide Phase 2, step 3: the curve and the smallest size found
+- **The detection curve counts real changes only.** Why: the missing-data fault is declined whatever its size, so counting it made small sizes look better found than they are; the earlier "of 12" tables are corrected in the evidence, not rewritten.
+- **After a clean 6-unit check the same faults are planted at 4, 3 and 2 units, and the smallest size found is said in every verified answer.** Why: the guide's step 3.3. The smaller sizes do not decide the rung, and the sentence does not lower the label: it is a stated limit.
+- **Faults planted bigger than 6 units do not count toward `verified`.** Why: the guide says the rung requires the 6-unit faults; a bigger fault is an easier test. Only scripts can name a size.
+- **Planted faults on cloud data stay refused.** Why: a scratch dataset is a spend and a design the owner has not approved.

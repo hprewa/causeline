@@ -1,0 +1,1043 @@
+{
+  "when": "2026-11-16T10:13:04.782Z",
+  "kpi": "service_level",
+  "by": "team",
+  "weeks": 30,
+  "rows": [
+    {
+      "noise_sd": 0,
+      "by": "team",
+      "seeds": 8,
+      "judged": 200,
+      "alarms": 3,
+      "rate": 0.015,
+      "interval": [
+        0.005114145184492386,
+        0.04316648055627889
+      ],
+      "found": {
+        "2": {
+          "planted": 24,
+          "found": 8
+        },
+        "3": {
+          "planted": 24,
+          "found": 13
+        },
+        "4": {
+          "planted": 24,
+          "found": 22
+        },
+        "5": {
+          "planted": 24,
+          "found": 22
+        },
+        "6": {
+          "planted": 24,
+          "found": 24
+        },
+        "8": {
+          "planted": 24,
+          "found": 24
+        }
+      },
+      "flagged": [
+        {
+          "seed": 1003,
+          "period": "2026-W11",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in call reason fault"
+          ],
+          "detail": {
+            "headline": {
+              "z": 3.338,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "call_reason",
+                "value": "fault",
+                "impact": 0.008,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_3",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1006,
+          "period": "2026-W27",
+          "what": [
+            "a significant change in the headline (up)",
+            "2 findings, the first in site s_2"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.978,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "site",
+                "value": "s_2",
+                "impact": 0.008,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              },
+              {
+                "dimension": "call_reason",
+                "value": "other",
+                "impact": 0.007,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "call_reason",
+                "node": "other",
+                "verdict": "unusual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1007,
+          "period": "2026-W15",
+          "what": [
+            "1 finding, the first in interval 30m 2026-04-18 19:00"
+          ],
+          "detail": {
+            "headline": {
+              "z": -1.1,
+              "significant": false
+            },
+            "findings": [
+              {
+                "dimension": "interval_30m",
+                "value": "2026-04-18 19:00",
+                "impact": 0,
+                "effect": "rate",
+                "steps": [
+                  "when"
+                ]
+              }
+            ],
+            "flags": [
+              {
+                "type": "dispersion",
+                "level": "interval_30m",
+                "node": "2026-04-18 19:00",
+                "detail": "the period-level change is not significant (z=-1.2) but 2026-04-18 19:00 is significantly worse"
+              }
+            ],
+            "decisions": [
+              {
+                "level": "interval_30m",
+                "node": "2026-04-18 19:00",
+                "decision": "masked",
+                "parent_z": -1.159,
+                "culprit_z": null,
+                "children": 168
+              }
+            ],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "question",
+                "verdict": "usual"
+              },
+              {
+                "level": "team",
+                "node": "team_06",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "noise_sd": 0.02,
+      "by": "team",
+      "seeds": 8,
+      "judged": 200,
+      "alarms": 14,
+      "rate": 0.07,
+      "interval": [
+        0.04215178292291873,
+        0.11405578216683726
+      ],
+      "found": {
+        "2": {
+          "planted": 24,
+          "found": 8
+        },
+        "3": {
+          "planted": 24,
+          "found": 13
+        },
+        "4": {
+          "planted": 24,
+          "found": 18
+        },
+        "5": {
+          "planted": 24,
+          "found": 22
+        },
+        "6": {
+          "planted": 24,
+          "found": 24
+        },
+        "8": {
+          "planted": 24,
+          "found": 24
+        }
+      },
+      "flagged": [
+        {
+          "seed": 1002,
+          "period": "2026-W10",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in queue general"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.726,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "queue",
+                "value": "general",
+                "impact": 0.013,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "unusual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "call_reason",
+                "node": "question",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1003,
+          "period": "2026-W07",
+          "what": [
+            "a significant change in the headline (down)"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.693,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "unknown"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unknown"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unknown"
+              },
+              {
+                "level": "call_reason",
+                "node": "cancel",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "unknown"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1003,
+          "period": "2026-W11",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in call reason fault"
+          ],
+          "detail": {
+            "headline": {
+              "z": 3.069,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "call_reason",
+                "value": "fault",
+                "impact": 0.01,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "fault",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "tech",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1003,
+          "period": "2026-W24",
+          "what": [
+            "a significant change in the headline (down)",
+            "1 finding, the first in site s_1"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.401,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "site",
+                "value": "s_1",
+                "impact": -0.014,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_3",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1004,
+          "period": "2026-W13",
+          "what": [
+            "a significant change in the headline (down)"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.611,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "payment",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1004,
+          "period": "2026-W23",
+          "what": [
+            "1 finding, the first in site s_1"
+          ],
+          "detail": {
+            "headline": {
+              "z": -1.352,
+              "significant": false
+            },
+            "findings": [
+              {
+                "dimension": "site",
+                "value": "s_1",
+                "impact": -0.013,
+                "effect": "rate",
+                "steps": [
+                  "where",
+                  "cross_check",
+                  "recovery"
+                ]
+              }
+            ],
+            "flags": [
+              {
+                "type": "dispersion",
+                "level": "site",
+                "node": "s_1",
+                "detail": "parent change is not significant (z=-1.4) but s_1 is (z=-3.7)"
+              }
+            ],
+            "decisions": [
+              {
+                "level": "site",
+                "node": "s_1",
+                "decision": "masked",
+                "parent_z": -1.374,
+                "culprit_z": -3.688,
+                "children": 4
+              }
+            ],
+            "history": [
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "unusual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "other",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "cancel",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1005,
+          "period": "2026-W22",
+          "what": [
+            "a significant change in the headline (up)"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.457,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1006,
+          "period": "2026-W05",
+          "what": [
+            "1 finding, the first in agent agent_043"
+          ],
+          "detail": {
+            "headline": {
+              "z": 1.121,
+              "significant": false
+            },
+            "findings": [
+              {
+                "dimension": "agent",
+                "value": "agent_043",
+                "impact": -0.004,
+                "effect": "rate",
+                "steps": [
+                  "where",
+                  "cross_check"
+                ]
+              }
+            ],
+            "flags": [
+              {
+                "type": "dispersion",
+                "level": "agent",
+                "node": "agent_043",
+                "detail": "parent change is not significant (z=1.1) but agent_043 is (z=-4.5)"
+              }
+            ],
+            "decisions": [
+              {
+                "level": "agent",
+                "node": "agent_043",
+                "decision": "masked",
+                "parent_z": 1.081,
+                "culprit_z": -4.455,
+                "children": 60
+              }
+            ],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "unknown"
+              },
+              {
+                "level": "team",
+                "node": "team_08",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unknown"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1006,
+          "period": "2026-W19",
+          "what": [
+            "a significant change in the headline (up)",
+            "2 findings, the first in centre cc_2"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.842,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "centre",
+                "value": "cc_2",
+                "impact": 0.024,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              },
+              {
+                "dimension": "site",
+                "value": "s_4",
+                "impact": 0.016,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_3",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1006,
+          "period": "2026-W27",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in call reason other"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.618,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "call_reason",
+                "value": "other",
+                "impact": 0.008,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "other",
+                "verdict": "unusual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1007,
+          "period": "2026-W15",
+          "what": [
+            "1 finding, the first in interval 30m 2026-04-18 19:00"
+          ],
+          "detail": {
+            "headline": {
+              "z": -1.4,
+              "significant": false
+            },
+            "findings": [
+              {
+                "dimension": "interval_30m",
+                "value": "2026-04-18 19:00",
+                "impact": 0,
+                "effect": "rate",
+                "steps": [
+                  "when"
+                ]
+              }
+            ],
+            "flags": [
+              {
+                "type": "dispersion",
+                "level": "interval_30m",
+                "node": "2026-04-18 19:00",
+                "detail": "the period-level change is not significant (z=-1.9) but 2026-04-18 19:00 is significantly worse"
+              }
+            ],
+            "decisions": [
+              {
+                "level": "interval_30m",
+                "node": "2026-04-18 19:00",
+                "decision": "masked",
+                "parent_z": -1.934,
+                "culprit_z": null,
+                "children": 168
+              }
+            ],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "call_reason",
+                "node": "question",
+                "verdict": "usual"
+              },
+              {
+                "level": "team",
+                "node": "team_06",
+                "verdict": "usual"
+              },
+              {
+                "level": "team",
+                "node": "team_11",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1008,
+          "period": "2026-W05",
+          "what": [
+            "a significant change in the headline (up)"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.084,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "unknown"
+              },
+              {
+                "level": "queue",
+                "node": "general",
+                "verdict": "unknown"
+              },
+              {
+                "level": "call_reason",
+                "node": "question",
+                "verdict": "unknown"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "unknown"
+              },
+              {
+                "level": "team",
+                "node": "team_01",
+                "verdict": "unknown"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1008,
+          "period": "2026-W15",
+          "what": [
+            "a significant change in the headline (down)"
+          ],
+          "detail": {
+            "headline": {
+              "z": -2.553,
+              "significant": true
+            },
+            "findings": [],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "usual"
+              },
+              {
+                "level": "centre",
+                "node": "cc_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "unusual"
+              },
+              {
+                "level": "queue",
+                "node": "sales",
+                "verdict": "usual"
+              }
+            ]
+          }
+        },
+        {
+          "seed": 1008,
+          "period": "2026-W26",
+          "what": [
+            "a significant change in the headline (up)",
+            "1 finding, the first in team team_06"
+          ],
+          "detail": {
+            "headline": {
+              "z": 2.342,
+              "significant": true
+            },
+            "findings": [
+              {
+                "dimension": "team",
+                "value": "team_06",
+                "impact": 0.009,
+                "effect": "rate",
+                "steps": [
+                  "contributors",
+                  "contributions"
+                ]
+              }
+            ],
+            "flags": [],
+            "decisions": [],
+            "history": [
+              {
+                "level": "centre",
+                "node": "cc_1",
+                "verdict": "unusual"
+              },
+              {
+                "level": "team",
+                "node": "team_06",
+                "verdict": "unusual"
+              },
+              {
+                "level": "site",
+                "node": "s_2",
+                "verdict": "usual"
+              },
+              {
+                "level": "site",
+                "node": "s_4",
+                "verdict": "usual"
+              },
+              {
+                "level": "queue",
+                "node": "billing",
+                "verdict": "usual"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "markdown": "| noise (sd of each team's weekly move) | quiet weeks judged | raised something | false-alarm rate | 95% interval | planted faults found at 2 standard errors | planted faults found at 3 standard errors | planted faults found at 4 standard errors | planted faults found at 5 standard errors | planted faults found at 6 standard errors | planted faults found at 8 standard errors |\n|---|---|---|---|---|---|---|---|---|---|---|\n| 0 | 200 | 3 | 1.5% | 0.5% to 4.3% | 8 of 24 (33.3%; 18.0% to 53.3%) | 13 of 24 (54.2%; 35.1% to 72.1%) | 22 of 24 (91.7%; 74.2% to 97.7%) | 22 of 24 (91.7%; 74.2% to 97.7%) | 24 of 24 (100.0%; 86.2% to 100.0%) | 24 of 24 (100.0%; 86.2% to 100.0%) |\n| 0.02 | 200 | 14 | 7.0% | 4.2% to 11.4% | 8 of 24 (33.3%; 18.0% to 53.3%) | 13 of 24 (54.2%; 35.1% to 72.1%) | 18 of 24 (75.0%; 55.1% to 88.0%) | 22 of 24 (91.7%; 74.2% to 97.7%) | 24 of 24 (100.0%; 86.2% to 100.0%) | 24 of 24 (100.0%; 86.2% to 100.0%) |"
+}
