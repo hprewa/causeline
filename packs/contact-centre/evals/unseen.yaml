@@ -1,0 +1,102 @@
+# Twelve planted faults on steady data that the analysis was not set up on: seeds, teams, sites, queues, weeks and combinations that none of
+# the cases in cases.yaml use. They were written down before any of them was run, and what each asserts follows from what was planted, not from
+# what the analysis said. They are not the twelve of the November review (those were not recorded in this repo); they are the same kind of test.
+#   node core/cli/dist/src/main.js eval --pack packs/contact-centre --cases unseen --no-branch-gate
+
+# one team answers far fewer calls in time: three other teams, three other weeks
+- id: unseen_understaffed_team_08_wk5
+  setup: "--seed 501 --fault understaffed:team_08:wk5"
+  question: "Why did service level drop in week 5?"
+  inputs: { metric: service_level, period: 2026-W05 }
+  expect:
+    top_finding: { dimension: team, value: team_08 }
+
+- id: unseen_understaffed_team_11_wk8
+  setup: "--seed 502 --fault understaffed:team_11:wk8"
+  question: "Why did service level drop in week 8?"
+  inputs: { metric: service_level, period: 2026-W08 }
+  expect:
+    top_finding: { dimension: team, value: team_11 }
+
+- id: unseen_understaffed_team_02_wk6
+  setup: "--seed 503 --fault understaffed:team_02:wk6"
+  question: "Why did service level drop in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    top_finding: { dimension: team, value: team_02 }
+
+# one team worse while a sibling at the same site gets better: two other pairs
+- id: unseen_offset_teams_07_08_wk7
+  setup: "--seed 504 --fault offset:team=team_07:team=team_08:wk7"
+  question: "Service level looks flat in week 7. Is something hiding?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    masking_flags: [offsetting]
+    top_finding: { dimension: team, value: team_07 }
+
+- id: unseen_offset_teams_10_12_wk5
+  setup: "--seed 505 --fault offset:team=team_10:team=team_12:wk5"
+  question: "Service level looks flat in week 5. Is something hiding?"
+  inputs: { metric: service_level, period: 2026-W05 }
+  expect:
+    masking_flags: [offsetting]
+    top_finding: { dimension: team, value: team_10 }
+
+# most of another site's calls missing: the data is wrong, not the operation
+- id: unseen_missing_logs_site_1_wk7
+  setup: "--seed 506 --fault missing_logs:s_1:wk7"
+  question: "What happened to service level in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    stopped_reason: data_quality
+
+# a bad block on another day, at another hour, in another week (week 8 starts Monday 23 February)
+- id: unseen_block_outage_tuesday_morning_wk8
+  setup: "--seed 507 --fault block_outage:wk8:tue:10-12:0.35"
+  question: "Week 8 service level looks normal. Is anything wrong inside it?"
+  inputs: { metric: service_level, period: 2026-W08 }
+  expect:
+    findings_within: [{ dimension: interval_30m, value: "2026-02-24 10:00..2026-02-24 11:30" }]
+
+# pure mix through another queue
+- id: unseen_pure_mix_through_tech_wk6
+  setup: "--seed 508 --fault slow_queue:tech:0.6 --fault reroute:*:tech:wk6:0.4"
+  question: "Why did service level drop in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  expect:
+    masking_flags: [mix_vs_rate]
+    top_finding: { dimension: queue, value: tech, effect: mix }
+
+# the product metric, another team and week
+- id: unseen_long_calls_team_03_wk6
+  setup: "--seed 509 --fault long_calls:team_03:wk6:1.5"
+  question: "Why did workload rise in week 6?"
+  inputs: { metric: workload, period: 2026-W06 }
+  expect:
+    top_finding: { dimension: team, value: team_03, metric: aht }
+
+# the sum metric, another queue and week
+- id: unseen_call_surge_sales_wk8
+  setup: "--seed 510 --fault surge:sales:wk8:0.5"
+  question: "Why did we receive so many more calls in week 8?"
+  inputs: { metric: calls_offered, period: 2026-W08 }
+  expect:
+    top_finding: { dimension: queue, value: sales, metric: calls_offered }
+
+# combinations: a team's bad week while a queue surges, and two teams at different sites bad in the same week
+- id: unseen_understaffed_team_04_while_tech_surges_wk7
+  setup: "--seed 511 --fault understaffed:team_04:wk7 --fault surge:tech:wk7:0.3"
+  question: "Why did service level drop in week 7?"
+  inputs: { metric: service_level, period: 2026-W07 }
+  expect:
+    top_finding: { dimension: team, value: team_04 }
+
+- id: unseen_two_understaffed_teams_wk6
+  setup: "--seed 512 --fault understaffed:team_09:wk6 --fault understaffed:team_01:wk6"
+  question: "Why did service level drop in week 6?"
+  inputs: { metric: service_level, period: 2026-W06 }
+  gap: "two causes of equal size in one week: each explains about half, so neither dominates and no finding is reported (build guide Phase 3)"
+  expect:
+    findings_include:
+      - { dimension: team, value: team_09 }
+      - { dimension: team, value: team_01 }

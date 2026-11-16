@@ -510,3 +510,7 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 - **After a clean 6-unit check the same faults are planted at 4, 3 and 2 units, and the smallest size found is said in every verified answer.** Why: the guide's step 3.3. The smaller sizes do not decide the rung, and the sentence does not lower the label: it is a stated limit.
 - **Faults planted bigger than 6 units do not count toward `verified`.** Why: the guide says the rung requires the 6-unit faults; a bigger fault is an easier test. Only scripts can name a size.
 - **Planted faults on cloud data stay refused.** Why: a scratch dataset is a spend and a design the owner has not approved.
+
+### Build guide Phase 2: the unseen faults re-measured
+- **A new set of twelve was written, because the review's twelve are not in the repo.** Why: the figure could not otherwise be measured again. What each asserts was fixed before any run.
+- **The one miss (two equal causes in one week) is marked as a gap, not fixed here.** Why: reporting two causes when neither dominates is Phase 3's task; changing the rule now would be tuning to this case.

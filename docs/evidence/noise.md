@@ -633,3 +633,42 @@ reaches `verified`. Purity and ladder names pass.
   says this in plain words.
 - **The time the smaller sizes add** to the check (up to nine more runs) was not measured.
 - **The main eval and the noise suite were not re-run;** the analysis code is unchanged by this step.
+
+## Phase 2: the noise suite and twelve unseen planted faults, re-run on 16 November
+
+Both on the build of commit `5208a44` (after steps 2.1, 2.2, 3 and 4).
+
+**The noise suite** (`npm run eval:noise`, run in five parts): 116 of 116 cases that are expected to pass do pass, and the
+ten known gaps are all still open (two quiet weeks on the guide's seeds, one outage on moving data, seven of one agent's bad
+week). Nothing changed since the run after step 2.2 and the outage change.
+
+**Twelve unseen planted faults** (`packs/contact-centre/evals/unseen.yaml`;
+`node core/cli/dist/src/main.js eval --pack packs/contact-centre --cases unseen --no-branch-gate`). The twelve of the
+November review were not recorded in this repo, so they cannot be run again. These are twelve of the same kind on steady
+data: seeds 501 to 512, and teams, sites, queues, weeks and combinations that no shipped case uses. They were written, with
+what each asserts, before any of them was run, and none was changed afterwards.
+
+| Planted | Result |
+|---|---|
+| One team answers far fewer calls in time (teams 08, 11, 02; weeks 5, 8, 6) | found, 3 of 3 |
+| One team worse while a sibling gets better (07 and 08; 10 and 12) | found with the offsetting flag, 2 of 2 |
+| Most of a site's calls missing (site 1) | declined as a data problem |
+| A bad block on a Tuesday morning | found inside the planted stretch |
+| Calls moved to a slower queue (tech) | found as a mix effect |
+| One team's calls take longer (the product KPI) | found, with handle time as the driver |
+| One queue gets many more calls (the total KPI) | found |
+| A team's bad week while a queue surges | found |
+| Two teams at different sites bad in the same week | **missed: no finding** |
+
+**11 of 12**, the same count as the review's. The miss: the whole fell 5.5 points (12 standard errors), and at every level the
+largest part explains about half (centre 55%, site 50%, team 49%), so the drill calls it "systemic" and names no one. It is
+marked as a gap in the file and belongs to Phase 3 (two causes at once).
+
+### Not shown
+
+- **These are not the review's twelve,** and the person who wrote them knows the analysis. They were fixed before running,
+  but they are not blind in the way an outside set is.
+- **Steady data only.** Faults on moving data are the noise suite's part 2.
+- **One seed for each fault;** no rate with an interval can be read from twelve.
+- **What the answer shows for the missed case** (the contributors table may list both teams) was not looked at; the case
+  asserts findings, and there were none.

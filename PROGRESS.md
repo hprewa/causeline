@@ -12,7 +12,7 @@ independent run of November 2026 on commit `16b198c`; "Measured here" is this re
 |---|---|---|---|
 | False-alarm rate, noisy synthetic (rates wobble by 2 points) | about 83% (5 of 6) | was 5 of 6 on the same seeds and 8 of 40 on new seeds; after Phase 2 step 2.2: 2 of 6 and 1 of 40 (`docs/evidence/noise.md`) | at most 5% |
 | False-alarm rate, real complaints data | 39% and 20% | 39% and 20% (`docs/evidence/calibration.md`) | at most 10% |
-| Unseen planted faults found | 11 of 12 | not re-measured | at least 11 of 12, on a larger set |
+| Unseen planted faults found | 11 of 12 | 11 of 12 on a new set of twelve (16 November; the review's own twelve were not recorded); the miss is two equal causes in one week, a Phase 3 item | at least 11 of 12, on a larger set |
 | Faults found by `inject_faults` on a noisy pack | 1 of 3 | was 2 of 4 at 6 units; after Phase 2 step 3: 3 of 3 plantable at 6 units, 2 of 4 at 4 units | all at 6 units |
 | Unsupported numbers in live answers | 2 of 5 runs had one | not re-measured | 0 in 100 |
 | Combination cause named as one finding | no | no (tracked as a gap) | yes |
