@@ -172,6 +172,27 @@ export function generateTools(ont: Ontology, data: DataDefs, dialect: Dialect = 
       });
     }
 
+    // the history of a whole level in one query: every value of one concept (a value, `split`) in every time bucket of a range. The runner
+    // estimates each part's own period-to-period spread from it; without it the same history takes a slice query for every two periods.
+    {
+      const flt = filtersFor(allColumns);
+      const bucket = `CASE p.aggregation ${ont.time.levels.map((level) => `WHEN '${level}' THEN ${f.bucket(level)}`).join(" ")} END`;
+      const node = `CASE p.split ${allColumns.map((c) => `WHEN '${c}' THEN ${dialect.text(q(c))}`).join(" ")} END`;
+      tools.push({
+        name: `${metric}_history`,
+        description: `${metric} components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.`,
+        params: [...RANGE_PARAMS, { name: "aggregation", description: `The time level to bucket by: one of ${ont.time.levels.join(", ")}.` }, { name: "split", description: `The concept to split by: one of ${allColumns.join(", ")}.` }, ...slotParams, ...flt.params],
+        meta: { kind: "history", metric, by: allColumns, levels: ont.time.levels, filters: allColumns },
+        statement: [
+          cte([["start", "start_ts"], ["end", "end_ts"], ["aggregation", "aggregation"], ["split", "split"], ...f.slots.map((sl): [string, string] => [`s_${sl.name}`, `s_${sl.name}`]), ...flt.pairs]),
+          `SELECT ${node} AS node, ${bucket} AS bucket,`,
+          `  COALESCE(SUM(${num}), 0) AS num, COALESCE(SUM(${den}), 0) AS den, COALESCE(SUM(${sq}), 0) AS sq`,
+          `FROM ${from}, p WHERE ${ts} BETWEEN p.start_ts AND p.end_ts${slotFilter(f.slots)}${confine(allColumns)}`,
+          `GROUP BY 1, 2 ORDER BY 1, 2;`,
+        ].join("\n"),
+      });
+    }
+
     // places, products and people (every hierarchy level), then the flat dimensions
     for (const [, levels] of hierarchies) for (const level of levels) slice(level);
     for (const dim of ont.dimensions) slice(dim);

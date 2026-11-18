@@ -15,6 +15,11 @@ export const ToolMeta = z.discriminatedUnion("kind", [
    * (the level is a value passed as `aggregation`) and can optionally be confined to any of the concepts in `filters`.
    */
   z.object({ kind: z.literal("series"), metric: z.string(), levels: z.array(z.string()).min(1), filters: z.array(z.string()).default([]), ...base }),
+  /**
+   * A metric for every value of one concept in every time bucket of a range: the history of a whole level in one query. The concept is a value
+   * passed as `split` (one of `by`), the time level a value passed as `aggregation`; `filters` are the concepts it can be confined to.
+   */
+  z.object({ kind: z.literal("history"), metric: z.string(), by: z.array(z.string()).min(1), levels: z.array(z.string()).min(1), filters: z.array(z.string()).default([]), ...base }),
   /** Row count and time extent of the metric's fact. */
   z.object({ kind: z.literal("extent"), metric: z.string(), ...base }),
   /** Onboarding: a metric by position in a candidate cycle or calendar flag. */
@@ -69,6 +74,11 @@ export const findSlice = (meta: ToolsMeta, metric: string, by: string, filters: 
 export function findSeries(meta: ToolsMeta, metric: string, level: string, filters: string[] = []): string | undefined {
   const name = find(meta, "series", (m) => m.metric === metric && m.levels.includes(level) && covers(m.filters, filters));
   return name === undefined ? undefined : toolRef(name, { aggregation: level });
+}
+/** A reference to the tool giving `metric` for each value of `by` in each bucket at `level`, if the pack has one (packs generated before it do not). */
+export function findHistory(meta: ToolsMeta, metric: string, by: string, level: string, filters: string[] = []): string | undefined {
+  const name = find(meta, "history", (m) => m.metric === metric && m.by.includes(by) && m.levels.includes(level) && covers(m.filters, filters));
+  return name === undefined ? undefined : toolRef(name, { aggregation: level, split: by });
 }
 export const findExtent = (meta: ToolsMeta, metric: string) => find(meta, "extent", (m) => m.metric === metric);
 export const findProfile = (meta: ToolsMeta, metric: string, cycle: string) => find(meta, "seasonal_profile", (m) => m.metric === metric && m.cycle === cycle);

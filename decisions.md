@@ -514,3 +514,8 @@ Evidence for every step is in `docs/evidence/sprint-3.md`; the steps are in `PRO
 ### Build guide Phase 2: the unseen faults re-measured
 - **A new set of twelve was written, because the review's twelve are not in the repo.** Why: the figure could not otherwise be measured again. What each asserts was fixed before any run.
 - **The one miss (two equal causes in one week) is marked as a gap, not fixed here.** Why: reporting two causes when neither dominates is Phase 3's task; changing the rule now would be tuning to this case.
+
+### Build guide Phase 2: a level's history in one query
+- **A new generated query kind (`history`) reads a level's history in one call.** Why: the extra queries from step 2.1 were recorded as to be dealt with before the BigQuery run; the method has been proven since, so the new query kind the earlier entry put off is now worth its cost.
+- **Packs generated before it, and date ranges, keep the old way.** Why: nothing a pack already has stops working, and a date range's windows are not buckets of one level.
+- **It is shown to give the same answers, not assumed.** Why: the analysis must not change by the back door; every main eval case was run both ways and compared number by number.

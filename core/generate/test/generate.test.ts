@@ -41,8 +41,8 @@ const { tools, skipped, meta } = generateTools(ontologyOf(), dataOf());
 const byName = new Map(tools.map((t) => [t.name, t]));
 
 test("emits each tool family for a ratio metric", () => {
-  // one series tool (the time level is a value), one slice tool per concept (parents are optional filters)
-  const expected = ["m_extent", "m_series", "m_by_a1", "m_by_a2", "m_by_a3", "m_by_b1", "m_by_b2", "m_by_d1"];
+  // one series tool (the time level is a value), one history tool (the concept is a value too), one slice tool per concept (parents are optional filters)
+  const expected = ["m_extent", "m_series", "m_history", "m_by_a1", "m_by_a2", "m_by_a3", "m_by_b1", "m_by_b2", "m_by_d1"];
   for (const name of expected) assert.ok(byName.has(name), `missing tool ${name}`);
   assert.deepEqual([...byName.keys()].filter((n) => n.startsWith("m_") && !n.startsWith("m_seasonal_")).sort(), [...expected].sort());
   assert.ok(![...byName.keys()].some((n) => /_in_|_for_|m_by_(week|day|slot)$/.test(n)), "no per-parent or per-level variants");

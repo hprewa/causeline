@@ -154,7 +154,7 @@ export class FakeToolCaller implements ToolCaller {
     const base = (f: Fact) => inWindow(f, p.base_start, p.base_end) && (!allowed || allowed.includes(weekdayOf(f)));
 
     // which metric is this tool for, and how are its components built from a fact?
-    const [metric, def] = this.metrics.find(([name]) => tool === `${name}_series` || tool.startsWith(`${name}_by_`))!;
+    const [metric, def] = this.metrics.find(([name]) => tool === `${name}_series` || tool === `${name}_history` || tool.startsWith(`${name}_by_`))!;
     // optional filters: any concept given a value confines the rows to it
     const confined = this.facts.filter((f) => ["a1", "a2", "b1", "d1"].every((c) => !p[c] || f[c as keyof Fact] === p[c]));
     const val = (f: Fact, expr: string) => (expr === "1" ? 1 : Number((f as unknown as Record<string, unknown>)[expr]));
@@ -200,6 +200,17 @@ export class FakeToolCaller implements ToolCaller {
     };
 
     if (tool === `${metric}_series`) return series(confined, p.aggregation as "wk" | "dy");
+    if (tool === `${metric}_history`) {
+      // every value of one concept in every bucket of the range, like the generated tool
+      const col = p.aggregation as "wk" | "dy";
+      const inRange = confined.filter((f) => inWindow(f, p.start, p.end) && (!allowed || allowed.includes(weekdayOf(f))));
+      const groups = new Map<string, Fact[]>();
+      for (const f of inRange) {
+        const key = `${String(f[p.split as keyof Fact])} ${f[col]}`;
+        groups.set(key, [...(groups.get(key) ?? []), f]);
+      }
+      return [...groups.entries()].map(([key, rows]) => ({ node: key.split(" ")[0], bucket: key.split(" ")[1], ...sumOf(rows) }));
+    }
     return groupWindows(confined, tool.slice(`${metric}_by_`.length) as keyof Fact);
   }
 }

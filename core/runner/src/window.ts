@@ -47,7 +47,10 @@ export async function resolveWindow(a: WindowArgs): Promise<PeriodInfo | Failure
     const top = a.ontology.time.levels[0];
     const series = toBuckets(await a.tools.call(a.index.series(a.metric, top), a.extent, a.stepId));
     const info = resolvePeriod(series, String(a.inputs.period), baselineCount, calendar);
-    if (!("error" in info)) info.periodSeries = series;
+    if (!("error" in info)) {
+      info.periodSeries = series;
+      info.periodLevel = top;
+    }
     return info;
   }
 

@@ -1,4 +1,4 @@
-import { findCheck, findEvidence, findExtent, findProfile, findSeries, findSlice, type ToolsMeta } from "@causeline/schema";
+import { findCheck, findEvidence, findExtent, findHistory, findProfile, findSeries, findSlice, parseToolRef, type ToolsMeta } from "@causeline/schema";
 
 /**
  * Finds a tool by what it answers (a metric split by a concept, a metric by a time level) from the
@@ -21,6 +21,15 @@ export class ToolIndex {
   /** `metric` by bucket at a time level, optionally confined to one value of one concept. */
   series(metric: string, level: string, filters: string[] = []): string {
     return this.need(findSeries(this.meta, metric, level, filters), `${metric} by ${level}${filters.length ? ` for ${filters.join(", ")}` : ""}`);
+  }
+
+  /**
+   * The one-query history for the level a slice tool splits by (every value in every bucket at a time level), or nothing when the pack was
+   * generated before that tool existed or `tool` is not a slice.
+   */
+  historyFor(tool: string, level: string, filters: string[] = []): string | undefined {
+    const m = this.meta.tools[parseToolRef(tool).name];
+    return m?.kind === "slice" ? findHistory(this.meta, m.metric, m.by, level, filters) : undefined;
   }
 
   extent(metric: string): string {

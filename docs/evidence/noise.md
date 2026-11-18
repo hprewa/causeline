@@ -672,3 +672,45 @@ marked as a gap in the file and belongs to Phase 3 (two causes at once).
 - **One seed for each fault;** no rate with an interval can be read from twelve.
 - **What the answer shows for the missed case** (the contributors table may list both teams) was not looked at; the case
   asserts findings, and there were none.
+
+## Phase 2: a level's history read in one query
+
+**The problem.** Since step 2.1 each part of a level is judged by its own period-to-period spread, read from up to twelve
+earlier periods. That history was read with the level's own query, two periods a call: up to six more queries for every
+level the drill looked at. The main eval went from 528 queries to 922 (962 by the step before this one). On BigQuery every
+query is billed, so this had to be dealt with before the complaints re-run.
+
+**The change.** Every pack gains one generated query per KPI, `<kpi>_history`: the KPI's components for every value of one
+concept in every time bucket of a range (the concept and the time level are values passed to it, as the series query's
+time level already is; filters and calendar restrictions work as in the level's own query). The runner reads a level's
+history with it in one call when the pack has it and the periods are whole buckets of one time level. A pack generated
+before this, or a date range cut into windows, reads the history two periods a call as before. The estimator itself
+(`shrinkSpreads`) is not changed, and the rows are put back in the shape the old query gave (`pairsFromHistory`), zeros
+included, so both ways give the same numbers.
+
+**Same answers.** Each of the 23 main eval cases that runs the drill was run both ways on the same data: 23 of 23 gave an
+identical result, every number on the drill's path included. A unit test runs a rate and a total both ways on moving data
+and requires the same result with fewer queries. The noise suite on the new build: 116 of 116, the same ten gaps open.
+
+**Fewer queries** (main eval, whole run): 962 to 714. A case that drills three levels goes from 52 to 36; the case with
+the most levels from 97 to 47. Cases whose period is a date range are unchanged (they still read history two periods a call).
+
+**Checks:** all unit tests pass (two new); main eval 25 of 25, routing 38 of 38, intents 16 of 16, integration 8 of 8,
+deliveries 8 of 8 (2 gaps open), noise suite 116 of 116 (10 gaps open). Purity and ladder names pass. The three packs'
+generated files were regenerated.
+
+### Not shown
+
+- **The history query has not been run on BigQuery at all,** only generated for it (the complaints pack). It follows the
+  series query's form, which does run there; the complaints re-run will be its first test.
+- **Bytes billed on BigQuery were not measured.** One query over a range instead of several over its periods should read
+  no more, and fewer queries cost less, but the complaints run will be the first measurement.
+- **Time is not shown to fall.** The runner took 409 seconds against 327 two days earlier, but cases whose queries did not
+  change were also 20% to several times slower, so the machine, not the change, set the time. Not measured under like
+  conditions.
+- **The both-ways comparison on the noise and deliveries cases was stopped** by the system for low memory (the disk was
+  full) after three noise cases, all identical. It was not run again; the noise suite and the deliveries eval, which pass
+  as before, are the check on those cases.
+- **Date ranges still read history two periods a call.**
+- **Seasonal packs with a narrowed slot** use the history query with the same slot restriction on every period; this is
+  covered by the main eval's seasonal cases, not by a test of its own.

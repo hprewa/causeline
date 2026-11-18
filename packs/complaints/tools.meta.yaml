@@ -6,10 +6,10 @@ tools:
   timely_response_rate_series:
     kind: series
     metric: timely_response_rate
-    levels: &a1
+    levels: &a2
       - week
       - day
-    filters: &a2
+    filters: &a1
       - product
       - subproduct
       - issue
@@ -17,6 +17,12 @@ tools:
       - company_name
       - state
       - submitted_via
+  timely_response_rate_history:
+    kind: history
+    metric: timely_response_rate
+    by: *a1
+    levels: *a2
+    filters: *a1
   timely_response_rate_by_product:
     kind: slice
     metric: timely_response_rate
@@ -100,8 +106,14 @@ tools:
   monetary_relief_rate_series:
     kind: series
     metric: monetary_relief_rate
-    levels: *a1
-    filters: *a2
+    levels: *a2
+    filters: *a1
+  monetary_relief_rate_history:
+    kind: history
+    metric: monetary_relief_rate
+    by: *a1
+    levels: *a2
+    filters: *a1
   monetary_relief_rate_by_product:
     kind: slice
     metric: monetary_relief_rate
@@ -185,8 +197,14 @@ tools:
   complaint_volume_series:
     kind: series
     metric: complaint_volume
-    levels: *a1
-    filters: *a2
+    levels: *a2
+    filters: *a1
+  complaint_volume_history:
+    kind: history
+    metric: complaint_volume
+    by: *a1
+    levels: *a2
+    filters: *a1
   complaint_volume_by_product:
     kind: slice
     metric: complaint_volume

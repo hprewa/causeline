@@ -6,13 +6,19 @@ tools:
   on_time_rate_series:
     kind: series
     metric: on_time_rate
-    levels: &a1
+    levels: &a2
       - week
       - day
-    filters: &a2
+    filters: &a1
       - warehouse
       - carrier
       - region
+  on_time_rate_history:
+    kind: history
+    metric: on_time_rate
+    by: *a1
+    levels: *a2
+    filters: *a1
   on_time_rate_by_warehouse:
     kind: slice
     metric: on_time_rate
@@ -40,8 +46,14 @@ tools:
   orders_shipped_series:
     kind: series
     metric: orders_shipped
-    levels: *a1
-    filters: *a2
+    levels: *a2
+    filters: *a1
+  orders_shipped_history:
+    kind: history
+    metric: orders_shipped
+    by: *a1
+    levels: *a2
+    filters: *a1
   orders_shipped_by_warehouse:
     kind: slice
     metric: orders_shipped

@@ -67,6 +67,83 @@ statement: |
   GROUP BY 1 ORDER BY bucket_start;
 ---
 kind: tool
+name: service_level_history
+type: sqlite-sql
+source: contact-centre-db
+description: service_level components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.
+parameters:
+  - name: start
+    type: string
+    description: Start of the range, inclusive, as a timestamp string.
+  - name: end
+    type: string
+    description: End of the range, inclusive, as a timestamp string.
+  - name: aggregation
+    type: string
+    description: "The time level to bucket by: one of week, day, interval_30m."
+  - name: split
+    type: string
+    description: "The concept to split by: one of centre, site, team, agent, queue, call_reason."
+  - name: s_weekday
+    type: string
+    description: Comma-separated weekday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_hour_of_day
+    type: string
+    description: Comma-separated hour_of_day slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_holiday
+    type: string
+    description: Comma-separated is_holiday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_peak
+    type: string
+    description: Comma-separated is_peak slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: centre
+    type: string
+    description: Restrict the rows to this centre. Empty for no restriction.
+    required: false
+    default: ""
+  - name: site
+    type: string
+    description: Restrict the rows to this site. Empty for no restriction.
+    required: false
+    default: ""
+  - name: team
+    type: string
+    description: Restrict the rows to this team. Empty for no restriction.
+    required: false
+    default: ""
+  - name: agent
+    type: string
+    description: Restrict the rows to this agent. Empty for no restriction.
+    required: false
+    default: ""
+  - name: queue
+    type: string
+    description: Restrict the rows to this queue. Empty for no restriction.
+    required: false
+    default: ""
+  - name: call_reason
+    type: string
+    description: Restrict the rows to this call_reason. Empty for no restriction.
+    required: false
+    default: ""
+statement: |
+  WITH p AS (SELECT ? AS start_ts, ? AS end_ts, ? AS aggregation, ? AS split, ? AS s_weekday, ? AS s_hour_of_day, ? AS s_is_holiday, ? AS s_is_peak, ? AS f_centre, ? AS f_site, ? AS f_team, ? AS f_agent, ? AS f_queue, ? AS f_call_reason)
+  SELECT CASE p.split WHEN 'centre' THEN CAST("centre" AS TEXT) WHEN 'site' THEN CAST("site" AS TEXT) WHEN 'team' THEN CAST("team" AS TEXT) WHEN 'agent' THEN CAST("agent" AS TEXT) WHEN 'queue' THEN CAST("queue" AS TEXT) WHEN 'call_reason' THEN CAST("call_reason" AS TEXT) END AS node, CASE p.aggregation WHEN 'week' THEN strftime('%Y-W%W', "ts") WHEN 'day' THEN strftime('%Y-%m-%d', "ts") WHEN 'interval_30m' THEN strftime('%Y-%m-%d %H', ts) || ':' || CASE WHEN CAST(strftime('%M', ts) AS INTEGER) < 30 THEN '00' ELSE '30' END END AS bucket,
+    COALESCE(SUM((answered_within_20s)), 0) AS num, COALESCE(SUM((1)), 0) AS den, COALESCE(SUM((answered_within_20s) * (answered_within_20s)), 0) AS sq
+  FROM (SELECT c.call_id, c.ts, a.centre, a.site, a.team, c.agent, c.queue, c.call_reason,
+         c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
+  FROM calls c LEFT JOIN agents a USING (agent)) AS "calls", p WHERE "ts" BETWEEN p.start_ts AND p.end_ts AND (p.s_weekday = '' OR instr(',' || p.s_weekday || ',', ',' || CAST(strftime('%w', "ts") AS TEXT) || ',') > 0) AND (p.s_hour_of_day = '' OR instr(',' || p.s_hour_of_day || ',', ',' || CAST(strftime('%H', "ts") AS TEXT) || ',') > 0) AND (p.s_is_holiday = '' OR instr(',' || p.s_is_holiday || ',', ',' || CAST(is_holiday AS TEXT) || ',') > 0) AND (p.s_is_peak = '' OR instr(',' || p.s_is_peak || ',', ',' || CAST(is_peak AS TEXT) || ',') > 0) AND (p.f_centre = '' OR "centre" = p.f_centre) AND (p.f_site = '' OR "site" = p.f_site) AND (p.f_team = '' OR "team" = p.f_team) AND (p.f_agent = '' OR "agent" = p.f_agent) AND (p.f_queue = '' OR "queue" = p.f_queue) AND (p.f_call_reason = '' OR "call_reason" = p.f_call_reason)
+  GROUP BY 1, 2 ORDER BY 1, 2;
+---
+kind: tool
 name: service_level_by_centre
 type: sqlite-sql
 source: contact-centre-db
@@ -600,6 +677,83 @@ statement: |
   GROUP BY 1 ORDER BY bucket_start;
 ---
 kind: tool
+name: aht_history
+type: sqlite-sql
+source: contact-centre-db
+description: aht components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.
+parameters:
+  - name: start
+    type: string
+    description: Start of the range, inclusive, as a timestamp string.
+  - name: end
+    type: string
+    description: End of the range, inclusive, as a timestamp string.
+  - name: aggregation
+    type: string
+    description: "The time level to bucket by: one of week, day, interval_30m."
+  - name: split
+    type: string
+    description: "The concept to split by: one of centre, site, team, agent, queue, call_reason."
+  - name: s_weekday
+    type: string
+    description: Comma-separated weekday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_hour_of_day
+    type: string
+    description: Comma-separated hour_of_day slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_holiday
+    type: string
+    description: Comma-separated is_holiday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_peak
+    type: string
+    description: Comma-separated is_peak slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: centre
+    type: string
+    description: Restrict the rows to this centre. Empty for no restriction.
+    required: false
+    default: ""
+  - name: site
+    type: string
+    description: Restrict the rows to this site. Empty for no restriction.
+    required: false
+    default: ""
+  - name: team
+    type: string
+    description: Restrict the rows to this team. Empty for no restriction.
+    required: false
+    default: ""
+  - name: agent
+    type: string
+    description: Restrict the rows to this agent. Empty for no restriction.
+    required: false
+    default: ""
+  - name: queue
+    type: string
+    description: Restrict the rows to this queue. Empty for no restriction.
+    required: false
+    default: ""
+  - name: call_reason
+    type: string
+    description: Restrict the rows to this call_reason. Empty for no restriction.
+    required: false
+    default: ""
+statement: |
+  WITH p AS (SELECT ? AS start_ts, ? AS end_ts, ? AS aggregation, ? AS split, ? AS s_weekday, ? AS s_hour_of_day, ? AS s_is_holiday, ? AS s_is_peak, ? AS f_centre, ? AS f_site, ? AS f_team, ? AS f_agent, ? AS f_queue, ? AS f_call_reason)
+  SELECT CASE p.split WHEN 'centre' THEN CAST("centre" AS TEXT) WHEN 'site' THEN CAST("site" AS TEXT) WHEN 'team' THEN CAST("team" AS TEXT) WHEN 'agent' THEN CAST("agent" AS TEXT) WHEN 'queue' THEN CAST("queue" AS TEXT) WHEN 'call_reason' THEN CAST("call_reason" AS TEXT) END AS node, CASE p.aggregation WHEN 'week' THEN strftime('%Y-W%W', "ts") WHEN 'day' THEN strftime('%Y-%m-%d', "ts") WHEN 'interval_30m' THEN strftime('%Y-%m-%d %H', ts) || ':' || CASE WHEN CAST(strftime('%M', ts) AS INTEGER) < 30 THEN '00' ELSE '30' END END AS bucket,
+    COALESCE(SUM((handle_seconds)), 0) AS num, COALESCE(SUM((1)), 0) AS den, COALESCE(SUM((handle_seconds) * (handle_seconds)), 0) AS sq
+  FROM (SELECT c.call_id, c.ts, a.centre, a.site, a.team, c.agent, c.queue, c.call_reason,
+         c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
+  FROM calls c LEFT JOIN agents a USING (agent)) AS "calls", p WHERE "ts" BETWEEN p.start_ts AND p.end_ts AND (p.s_weekday = '' OR instr(',' || p.s_weekday || ',', ',' || CAST(strftime('%w', "ts") AS TEXT) || ',') > 0) AND (p.s_hour_of_day = '' OR instr(',' || p.s_hour_of_day || ',', ',' || CAST(strftime('%H', "ts") AS TEXT) || ',') > 0) AND (p.s_is_holiday = '' OR instr(',' || p.s_is_holiday || ',', ',' || CAST(is_holiday AS TEXT) || ',') > 0) AND (p.s_is_peak = '' OR instr(',' || p.s_is_peak || ',', ',' || CAST(is_peak AS TEXT) || ',') > 0) AND (p.f_centre = '' OR "centre" = p.f_centre) AND (p.f_site = '' OR "site" = p.f_site) AND (p.f_team = '' OR "team" = p.f_team) AND (p.f_agent = '' OR "agent" = p.f_agent) AND (p.f_queue = '' OR "queue" = p.f_queue) AND (p.f_call_reason = '' OR "call_reason" = p.f_call_reason)
+  GROUP BY 1, 2 ORDER BY 1, 2;
+---
+kind: tool
 name: aht_by_centre
 type: sqlite-sql
 source: contact-centre-db
@@ -1131,6 +1285,83 @@ statement: |
          c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
   FROM calls c LEFT JOIN agents a USING (agent)) AS "calls", p WHERE "ts" BETWEEN p.start_ts AND p.end_ts AND (p.f_centre = '' OR "centre" = p.f_centre) AND (p.f_site = '' OR "site" = p.f_site) AND (p.f_team = '' OR "team" = p.f_team) AND (p.f_agent = '' OR "agent" = p.f_agent) AND (p.f_queue = '' OR "queue" = p.f_queue) AND (p.f_call_reason = '' OR "call_reason" = p.f_call_reason)
   GROUP BY 1 ORDER BY bucket_start;
+---
+kind: tool
+name: calls_offered_history
+type: sqlite-sql
+source: contact-centre-db
+description: calls_offered components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.
+parameters:
+  - name: start
+    type: string
+    description: Start of the range, inclusive, as a timestamp string.
+  - name: end
+    type: string
+    description: End of the range, inclusive, as a timestamp string.
+  - name: aggregation
+    type: string
+    description: "The time level to bucket by: one of week, day, interval_30m."
+  - name: split
+    type: string
+    description: "The concept to split by: one of centre, site, team, agent, queue, call_reason."
+  - name: s_weekday
+    type: string
+    description: Comma-separated weekday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_hour_of_day
+    type: string
+    description: Comma-separated hour_of_day slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_holiday
+    type: string
+    description: Comma-separated is_holiday slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: s_is_peak
+    type: string
+    description: Comma-separated is_peak slots the baseline rows must share with the current window (for example a narrowed day or time slot). Empty for no restriction.
+    required: false
+    default: ""
+  - name: centre
+    type: string
+    description: Restrict the rows to this centre. Empty for no restriction.
+    required: false
+    default: ""
+  - name: site
+    type: string
+    description: Restrict the rows to this site. Empty for no restriction.
+    required: false
+    default: ""
+  - name: team
+    type: string
+    description: Restrict the rows to this team. Empty for no restriction.
+    required: false
+    default: ""
+  - name: agent
+    type: string
+    description: Restrict the rows to this agent. Empty for no restriction.
+    required: false
+    default: ""
+  - name: queue
+    type: string
+    description: Restrict the rows to this queue. Empty for no restriction.
+    required: false
+    default: ""
+  - name: call_reason
+    type: string
+    description: Restrict the rows to this call_reason. Empty for no restriction.
+    required: false
+    default: ""
+statement: |
+  WITH p AS (SELECT ? AS start_ts, ? AS end_ts, ? AS aggregation, ? AS split, ? AS s_weekday, ? AS s_hour_of_day, ? AS s_is_holiday, ? AS s_is_peak, ? AS f_centre, ? AS f_site, ? AS f_team, ? AS f_agent, ? AS f_queue, ? AS f_call_reason)
+  SELECT CASE p.split WHEN 'centre' THEN CAST("centre" AS TEXT) WHEN 'site' THEN CAST("site" AS TEXT) WHEN 'team' THEN CAST("team" AS TEXT) WHEN 'agent' THEN CAST("agent" AS TEXT) WHEN 'queue' THEN CAST("queue" AS TEXT) WHEN 'call_reason' THEN CAST("call_reason" AS TEXT) END AS node, CASE p.aggregation WHEN 'week' THEN strftime('%Y-W%W', "ts") WHEN 'day' THEN strftime('%Y-%m-%d', "ts") WHEN 'interval_30m' THEN strftime('%Y-%m-%d %H', ts) || ':' || CASE WHEN CAST(strftime('%M', ts) AS INTEGER) < 30 THEN '00' ELSE '30' END END AS bucket,
+    COALESCE(SUM((1)), 0) AS num, COALESCE(SUM(1), 0) AS den, COALESCE(SUM((1) * (1)), 0) AS sq
+  FROM (SELECT c.call_id, c.ts, a.centre, a.site, a.team, c.agent, c.queue, c.call_reason,
+         c.answered_within_20s, c.handle_seconds, c.is_holiday, c.is_peak
+  FROM calls c LEFT JOIN agents a USING (agent)) AS "calls", p WHERE "ts" BETWEEN p.start_ts AND p.end_ts AND (p.s_weekday = '' OR instr(',' || p.s_weekday || ',', ',' || CAST(strftime('%w', "ts") AS TEXT) || ',') > 0) AND (p.s_hour_of_day = '' OR instr(',' || p.s_hour_of_day || ',', ',' || CAST(strftime('%H', "ts") AS TEXT) || ',') > 0) AND (p.s_is_holiday = '' OR instr(',' || p.s_is_holiday || ',', ',' || CAST(is_holiday AS TEXT) || ',') > 0) AND (p.s_is_peak = '' OR instr(',' || p.s_is_peak || ',', ',' || CAST(is_peak AS TEXT) || ',') > 0) AND (p.f_centre = '' OR "centre" = p.f_centre) AND (p.f_site = '' OR "site" = p.f_site) AND (p.f_team = '' OR "team" = p.f_team) AND (p.f_agent = '' OR "agent" = p.f_agent) AND (p.f_queue = '' OR "queue" = p.f_queue) AND (p.f_call_reason = '' OR "call_reason" = p.f_call_reason)
+  GROUP BY 1, 2 ORDER BY 1, 2;
 ---
 kind: tool
 name: calls_offered_by_centre
@@ -2172,6 +2403,7 @@ name: causeline
 tools:
   - service_level_extent
   - service_level_series
+  - service_level_history
   - service_level_by_centre
   - service_level_by_site
   - service_level_by_team
@@ -2180,6 +2412,7 @@ tools:
   - service_level_by_call_reason
   - aht_extent
   - aht_series
+  - aht_history
   - aht_by_centre
   - aht_by_site
   - aht_by_team
@@ -2188,6 +2421,7 @@ tools:
   - aht_by_call_reason
   - calls_offered_extent
   - calls_offered_series
+  - calls_offered_history
   - calls_offered_by_centre
   - calls_offered_by_site
   - calls_offered_by_team

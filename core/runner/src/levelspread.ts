@@ -1,7 +1,7 @@
 import type { RunContext } from "./context.js";
 import { NO_DISPERSION, type Dispersion } from "./dispersion.js";
 import { toChildRows } from "./rows.js";
-import type { Bucket, Components } from "./types.js";
+import type { Bucket, ChildRow, Components } from "./types.js";
 
 /**
  * The spread each part of a level is judged by.
@@ -11,7 +11,8 @@ import type { Bucket, Components } from "./types.js";
  * spread therefore treats ordinary movement of a part as significant. Here every part gets its own.
  *
  * The estimator, for one level (the children one query returns):
- *   1. The same query is asked for earlier periods like this one (same calendar flags), up to SPREAD_PERIODS of them, two periods a call.
+ *   1. The level is read for earlier periods like this one (same calendar flags), up to SPREAD_PERIODS of them: in one query when the pack
+ *      has a history tool, else with the same query two periods a call. Both give the same numbers (see `pairsFromHistory`).
  *   2. For each child, the excess of its period-to-period variance over counting noise is worked out exactly as for the whole
  *      (`estimateDispersion`): for a rate as a multiple of p(1 - p), for a total as a multiple of its mean squared. It is left unfloored here,
  *      so that averaging does not bias it upward.
@@ -105,6 +106,26 @@ export function spreadPeriods(ctx: RunContext): Bucket[] {
 }
 
 /**
+ * From the rows of a history query (node, bucket, num, den, sq), what the slice query would have returned for two periods: every node with
+ * rows in either, and zeros for the period it is absent from. Kept in that shape so both ways of reading the history give identical numbers.
+ */
+export function pairsFromHistory(rows: Record<string, unknown>[], a: string, b: string): ChildRow[] {
+  const zero = (): Components => ({ num: 0, den: 0, sq: 0 });
+  const out = new Map<string, ChildRow>();
+  for (const r of rows) {
+    const bucket = String(r.bucket);
+    if (bucket !== a && bucket !== b) continue;
+    const node = String(r.node);
+    const row = out.get(node) ?? { node, cur: zero(), base: zero() };
+    const c = { num: Number(r.num ?? 0), den: Number(r.den ?? 0), sq: Number(r.sq ?? 0) };
+    if (bucket === a) row.cur = c;
+    if (bucket === b) row.base = c;
+    out.set(node, row);
+  }
+  return [...out.values()];
+}
+
+/**
  * The spread of the children a slice query returns, from the same query asked for earlier periods. `params` are the query's own (its filters and
  * calendar restrictions carry over; the windows and any narrowing to a slot of a cycle are replaced by whole earlier periods). Kept for the
  * run, so a level looked at twice is asked once.
@@ -125,10 +146,16 @@ export async function levelSpread(ctx: RunContext, tool: string, params: Record<
 
   const history = new Map<string, Components[]>();
   const add = (node: string, c: Components) => history.set(node, [...(history.get(node) ?? []), c]);
+  // one query for every period when the pack can answer it and the periods are whole buckets of one time level
+  const concepts = Object.keys(filters).filter((k) => !k.startsWith("s_") && filters[k] !== "");
+  const oneQuery = ctx.period?.periodLevel && process.env.CAUSELINE_HISTORY_BY_PAIRS !== "1" ? ctx.index.historyFor(tool, ctx.period.periodLevel, concepts) : undefined;
+  const all = oneQuery ? await ctx.tools.call(oneQuery, { ...filters, start: periods[periods.length - 1].bucket_start, end: periods[0].bucket_end }, stepId) : undefined;
   for (let i = 0; i < periods.length; i += 2) {
     const a = periods[i];
     const b = periods[i + 1] ?? a;
-    const rows = toChildRows(await ctx.tools.call(tool, { ...filters, cur_start: a.bucket_start, cur_end: a.bucket_end, base_start: b.bucket_start, base_end: b.bucket_end }, stepId));
+    const rows = all
+      ? pairsFromHistory(all, a.bucket, b.bucket)
+      : toChildRows(await ctx.tools.call(tool, { ...filters, cur_start: a.bucket_start, cur_end: a.bucket_end, base_start: b.bucket_start, base_end: b.bucket_end }, stepId));
     for (const r of rows) {
       add(r.node, r.cur);
       if (b !== a) add(r.node, r.base);

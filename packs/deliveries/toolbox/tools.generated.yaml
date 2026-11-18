@@ -50,6 +50,47 @@ statement: |
   GROUP BY 1 ORDER BY bucket_start;
 ---
 kind: tool
+name: on_time_rate_history
+type: sqlite-sql
+source: deliveries-db
+description: on_time_rate components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.
+parameters:
+  - name: start
+    type: string
+    description: Start of the range, inclusive, as a timestamp string.
+  - name: end
+    type: string
+    description: End of the range, inclusive, as a timestamp string.
+  - name: aggregation
+    type: string
+    description: "The time level to bucket by: one of week, day."
+  - name: split
+    type: string
+    description: "The concept to split by: one of warehouse, carrier, region."
+  - name: warehouse
+    type: string
+    description: Restrict the rows to this warehouse. Empty for no restriction.
+    required: false
+    default: ""
+  - name: carrier
+    type: string
+    description: Restrict the rows to this carrier. Empty for no restriction.
+    required: false
+    default: ""
+  - name: region
+    type: string
+    description: Restrict the rows to this region. Empty for no restriction.
+    required: false
+    default: ""
+statement: |
+  WITH p AS (SELECT ? AS start_ts, ? AS end_ts, ? AS aggregation, ? AS split, ? AS f_warehouse, ? AS f_carrier, ? AS f_region)
+  SELECT CASE p.split WHEN 'warehouse' THEN CAST("warehouse" AS TEXT) WHEN 'carrier' THEN CAST("carrier" AS TEXT) WHEN 'region' THEN CAST("region" AS TEXT) END AS node, CASE p.aggregation WHEN 'week' THEN strftime('%Y-W%W', "shipped_at") WHEN 'day' THEN strftime('%Y-%m-%d', "shipped_at") END AS bucket,
+    COALESCE(SUM((delivered_on_time)), 0) AS num, COALESCE(SUM((1)), 0) AS den, COALESCE(SUM((delivered_on_time) * (delivered_on_time)), 0) AS sq
+  FROM (SELECT order_id, shipped_at, warehouse, carrier, region, delivered_on_time, delivery_hours, order_value
+  FROM orders) AS "orders", p WHERE "shipped_at" BETWEEN p.start_ts AND p.end_ts AND (p.f_warehouse = '' OR "warehouse" = p.f_warehouse) AND (p.f_carrier = '' OR "carrier" = p.f_carrier) AND (p.f_region = '' OR "region" = p.f_region)
+  GROUP BY 1, 2 ORDER BY 1, 2;
+---
+kind: tool
 name: on_time_rate_by_warehouse
 type: sqlite-sql
 source: deliveries-db
@@ -222,6 +263,47 @@ statement: |
   FROM (SELECT order_id, shipped_at, warehouse, carrier, region, delivered_on_time, delivery_hours, order_value
   FROM orders) AS "orders", p WHERE "shipped_at" BETWEEN p.start_ts AND p.end_ts AND (p.f_warehouse = '' OR "warehouse" = p.f_warehouse) AND (p.f_carrier = '' OR "carrier" = p.f_carrier) AND (p.f_region = '' OR "region" = p.f_region)
   GROUP BY 1 ORDER BY bucket_start;
+---
+kind: tool
+name: orders_shipped_history
+type: sqlite-sql
+source: deliveries-db
+description: orders_shipped components for each value of one concept (named by split) in each time bucket between start and end, at the time level named by aggregation; optionally confined to one value of any other concept.
+parameters:
+  - name: start
+    type: string
+    description: Start of the range, inclusive, as a timestamp string.
+  - name: end
+    type: string
+    description: End of the range, inclusive, as a timestamp string.
+  - name: aggregation
+    type: string
+    description: "The time level to bucket by: one of week, day."
+  - name: split
+    type: string
+    description: "The concept to split by: one of warehouse, carrier, region."
+  - name: warehouse
+    type: string
+    description: Restrict the rows to this warehouse. Empty for no restriction.
+    required: false
+    default: ""
+  - name: carrier
+    type: string
+    description: Restrict the rows to this carrier. Empty for no restriction.
+    required: false
+    default: ""
+  - name: region
+    type: string
+    description: Restrict the rows to this region. Empty for no restriction.
+    required: false
+    default: ""
+statement: |
+  WITH p AS (SELECT ? AS start_ts, ? AS end_ts, ? AS aggregation, ? AS split, ? AS f_warehouse, ? AS f_carrier, ? AS f_region)
+  SELECT CASE p.split WHEN 'warehouse' THEN CAST("warehouse" AS TEXT) WHEN 'carrier' THEN CAST("carrier" AS TEXT) WHEN 'region' THEN CAST("region" AS TEXT) END AS node, CASE p.aggregation WHEN 'week' THEN strftime('%Y-W%W', "shipped_at") WHEN 'day' THEN strftime('%Y-%m-%d', "shipped_at") END AS bucket,
+    COALESCE(SUM((1)), 0) AS num, COALESCE(SUM(1), 0) AS den, COALESCE(SUM((1) * (1)), 0) AS sq
+  FROM (SELECT order_id, shipped_at, warehouse, carrier, region, delivered_on_time, delivery_hours, order_value
+  FROM orders) AS "orders", p WHERE "shipped_at" BETWEEN p.start_ts AND p.end_ts AND (p.f_warehouse = '' OR "warehouse" = p.f_warehouse) AND (p.f_carrier = '' OR "carrier" = p.f_carrier) AND (p.f_region = '' OR "region" = p.f_region)
+  GROUP BY 1, 2 ORDER BY 1, 2;
 ---
 kind: tool
 name: orders_shipped_by_warehouse
@@ -588,11 +670,13 @@ name: causeline
 tools:
   - on_time_rate_extent
   - on_time_rate_series
+  - on_time_rate_history
   - on_time_rate_by_warehouse
   - on_time_rate_by_carrier
   - on_time_rate_by_region
   - orders_shipped_extent
   - orders_shipped_series
+  - orders_shipped_history
   - orders_shipped_by_warehouse
   - orders_shipped_by_carrier
   - orders_shipped_by_region

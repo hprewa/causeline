@@ -24,6 +24,8 @@ export interface PeriodInfo {
   notes: string[];
   /** The periods (or, for a date range, the windows) this was resolved from, oldest first. */
   periodSeries?: Bucket[];
+  /** The time level whose buckets `periodSeries` are, when they are whole buckets of one level (absent for a date range cut into windows). */
+  periodLevel?: string;
   /** Slot restrictions the baseline rows of node queries need because the period sits in only some positions of a cycle (a range of a few weekdays). */
   cycleFilter?: Record<string, string>;
 }

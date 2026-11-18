@@ -6,17 +6,23 @@ tools:
   service_level_series:
     kind: series
     metric: service_level
-    levels: &a1
+    levels: &a2
       - week
       - day
       - interval_30m
-    filters: &a2
+    filters: &a1
       - centre
       - site
       - team
       - agent
       - queue
       - call_reason
+  service_level_history:
+    kind: history
+    metric: service_level
+    by: *a1
+    levels: *a2
+    filters: *a1
   service_level_by_centre:
     kind: slice
     metric: service_level
@@ -83,8 +89,14 @@ tools:
   aht_series:
     kind: series
     metric: aht
-    levels: *a1
-    filters: *a2
+    levels: *a2
+    filters: *a1
+  aht_history:
+    kind: history
+    metric: aht
+    by: *a1
+    levels: *a2
+    filters: *a1
   aht_by_centre:
     kind: slice
     metric: aht
@@ -151,8 +163,14 @@ tools:
   calls_offered_series:
     kind: series
     metric: calls_offered
-    levels: *a1
-    filters: *a2
+    levels: *a2
+    filters: *a1
+  calls_offered_history:
+    kind: history
+    metric: calls_offered
+    by: *a1
+    levels: *a2
+    filters: *a1
   calls_offered_by_centre:
     kind: slice
     metric: calls_offered
